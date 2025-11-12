@@ -2185,7 +2185,7 @@ class OnboardingPreferencesView(generics.RetrieveUpdateAPIView, generics.CreateA
 @permission_classes([AllowAny])
 @csrf_exempt
 def like_startup(request, pk):
-	"""Like a startup"""
+	"""Like a startup - uses service layer"""
 	user = get_session_user(request)
 	if not user:
 		return Response(
@@ -2202,7 +2202,18 @@ def like_startup(request, pk):
 		)
 	
 	from .recommendation_models import UserInteraction
-	from django.db import IntegrityError
+	from .services.interaction_service import InteractionService
+	
+	# Get recommendation context (optional)
+	recommendation_session_id = request.data.get('recommendation_session_id') or request.GET.get('recommendation_session_id')
+	recommendation_rank = request.data.get('recommendation_rank') or request.GET.get('recommendation_rank')
+	
+	# Build metadata using service
+	metadata = InteractionService.build_interaction_metadata(
+		recommendation_session_id=recommendation_session_id,
+		recommendation_rank=recommendation_rank,
+		user_id=str(user.id)
+	)
 	
 	# Remove any existing dislike
 	UserInteraction.objects.filter(
@@ -2211,28 +2222,18 @@ def like_startup(request, pk):
 		interaction_type='dislike'
 	).delete()
 	
-	# Create or get like interaction
-	# Handle race condition: if two requests try to create simultaneously,
-	# the unique constraint will prevent duplicates
-	try:
-		interaction, created = UserInteraction.objects.get_or_create(
-			user=user,
-			startup=startup,
-			interaction_type='like',
-			defaults={'weight': 2.0}
-		)
-	except IntegrityError:
-		# Race condition: another request created it, fetch it
-		interaction = UserInteraction.objects.get(
-			user=user,
-			startup=startup,
-			interaction_type='like'
-		)
-		created = False
+	# Create interaction using service
+	interaction, created = InteractionService.create_interaction(
+		user=user,
+		startup=startup,
+		interaction_type='like',
+		metadata=metadata
+	)
 	
 	return Response({
 		"message": "Startup liked" if created else "Startup already liked",
-		"interaction_id": str(interaction.id)
+		"interaction_id": str(interaction.id),
+		"source": metadata.get('source', 'organic')
 	}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
@@ -2274,7 +2275,7 @@ def unlike_startup(request, pk):
 @permission_classes([AllowAny])
 @csrf_exempt
 def dislike_startup(request, pk):
-	"""Dislike a startup"""
+	"""Dislike a startup - uses service layer"""
 	user = get_session_user(request)
 	if not user:
 		return Response(
@@ -2291,7 +2292,18 @@ def dislike_startup(request, pk):
 		)
 	
 	from .recommendation_models import UserInteraction
-	from django.db import IntegrityError
+	from .services.interaction_service import InteractionService
+	
+	# Get recommendation context (optional)
+	recommendation_session_id = request.data.get('recommendation_session_id') or request.GET.get('recommendation_session_id')
+	recommendation_rank = request.data.get('recommendation_rank') or request.GET.get('recommendation_rank')
+	
+	# Build metadata using service
+	metadata = InteractionService.build_interaction_metadata(
+		recommendation_session_id=recommendation_session_id,
+		recommendation_rank=recommendation_rank,
+		user_id=str(user.id)
+	)
 	
 	# Remove any existing like
 	UserInteraction.objects.filter(
@@ -2300,28 +2312,18 @@ def dislike_startup(request, pk):
 		interaction_type='like'
 	).delete()
 	
-	# Create or get dislike interaction
-	# Handle race condition: if two requests try to create simultaneously,
-	# the unique constraint will prevent duplicates
-	try:
-		interaction, created = UserInteraction.objects.get_or_create(
-			user=user,
-			startup=startup,
-			interaction_type='dislike',
-			defaults={'weight': -1.0}
-		)
-	except IntegrityError:
-		# Race condition: another request created it, fetch it
-		interaction = UserInteraction.objects.get(
-			user=user,
-			startup=startup,
-			interaction_type='dislike'
-		)
-		created = False
+	# Create interaction using service
+	interaction, created = InteractionService.create_interaction(
+		user=user,
+		startup=startup,
+		interaction_type='dislike',
+		metadata=metadata
+	)
 	
 	return Response({
 		"message": "Startup disliked" if created else "Startup already disliked",
-		"interaction_id": str(interaction.id)
+		"interaction_id": str(interaction.id),
+		"source": metadata.get('source', 'organic')
 	}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
@@ -2406,6 +2408,65 @@ def startup_interaction_status(request, pk):
 	})
 	
 	return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def store_recommendation_session(request):
+	"""Store recommendation session - uses service layer"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	data = request.data
+	session_id = data.get('recommendation_session_id')
+	use_case = data.get('use_case')
+	method = data.get('method')
+	recommendations = data.get('recommendations', [])
+	model_version = data.get('model_version', '')
+	
+	if not all([session_id, use_case, method]):
+		return Response(
+			{"error": "Missing required fields: recommendation_session_id, use_case, method"},
+			status=status.HTTP_400_BAD_REQUEST
+		)
+	
+	from .services.session_service import SessionService
+	from django.utils import timezone
+	from datetime import timedelta
+	import logging
+	
+	logger = logging.getLogger(__name__)
+	
+	# Use service to create/update session
+	try:
+		from .recommendation_models import RecommendationSession
+		session, created = RecommendationSession.objects.update_or_create(
+			id=session_id,
+			defaults={
+				'user_id': user,
+				'use_case': use_case,
+				'recommendation_method': method,
+				'model_version': model_version,
+				'recommendations_shown': recommendations,
+				'expires_at': timezone.now() + timedelta(hours=24)
+			}
+		)
+		
+		return Response({
+			"message": "Session stored" if created else "Session updated",
+			"session_id": str(session.id)
+		}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+	except Exception as e:
+		logger.error(f"Error storing session: {e}")
+		return Response(
+			{"error": "Failed to store session"},
+			status=status.HTTP_500_INTERNAL_SERVER_ERROR
+		)
 
 
 # Trending Startups Endpoint

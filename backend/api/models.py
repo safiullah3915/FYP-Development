@@ -27,6 +27,7 @@ class User(AbstractUser):
 	embedding_model = models.CharField(max_length=50, default='all-MiniLM-L6-v2', blank=True)
 	embedding_version = models.IntegerField(default=1)
 	embedding_updated_at = models.DateTimeField(null=True, blank=True)
+	embedding_needs_update = models.BooleanField(default=False, db_index=True)  # Flag to track if embedding needs regeneration
 	
 	# Fix related_name conflicts with default User model
 	groups = models.ManyToManyField(
@@ -55,6 +56,8 @@ class User(AbstractUser):
 			models.Index(fields=['email']),
 			models.Index(fields=['username']),
 			models.Index(fields=['role']),
+			models.Index(fields=['embedding_needs_update']),
+			models.Index(fields=['embedding_updated_at']),
 		]
 
 

@@ -47,6 +47,8 @@ class UserInteraction(models.Model):
             models.Index(fields=['startup', 'created_at']),
             models.Index(fields=['interaction_type']),
             models.Index(fields=['position']),
+            # ETL-optimized index for date-range queries
+            models.Index(fields=['created_at', 'interaction_type']),
         ]
         # Unique constraint to prevent duplicate interactions of same type
         # Allows multiple interactions of different types, but only one per type per user-startup pair
@@ -65,6 +67,24 @@ class UserInteraction(models.Model):
         }
         self.weight = weight_mapping.get(self.interaction_type, 1.0)
         super().save(*args, **kwargs)
+    
+    def get_metadata_value(self, key: str, default=None):
+        """Helper to safely get metadata value"""
+        if isinstance(self.metadata, dict):
+            return self.metadata.get(key, default)
+        return default
+    
+    def is_recommendation_interaction(self) -> bool:
+        """Check if interaction is from recommendation"""
+        return self.get_metadata_value('source') == 'recommendation'
+    
+    def get_recommendation_session_id(self) -> str:
+        """Get recommendation session ID if exists"""
+        return self.get_metadata_value('recommendation_session_id')
+    
+    def get_recommendation_rank(self) -> int:
+        """Get recommendation rank if exists"""
+        return self.get_metadata_value('recommendation_rank')
     
     def __str__(self):
         return f"{self.user.username} - {self.interaction_type} - {self.startup.title}"
@@ -213,4 +233,91 @@ class RecommendationModel(models.Model):
     
     def __str__(self):
         return f"{self.model_name} - {self.use_case} - {self.model_type}"
+
+
+class RecommendationSession(models.Model):
+    """Track recommendation sessions for feedback analysis and training"""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_id = models.ForeignKey('api.User', on_delete=models.CASCADE, db_column='user_id')
+    use_case = models.CharField(max_length=50)  # 'developer_startup', 'founder_developer', etc.
+    recommendation_method = models.CharField(max_length=50)  # 'content_based', 'collaborative', etc.
+    model_version = models.CharField(max_length=50, blank=True)  # Model version used (for future training tracking)
+    recommendations_shown = models.JSONField(default=list)  # Full recommendation data with ranks
+    
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    expires_at = models.DateTimeField(null=True, blank=True, db_index=True)  # Indexed for cleanup queries
+    
+    # Analytics fields (computed periodically - ETL-ready)
+    # These fields are pre-computed for performance, but can be recalculated via ETL
+    total_interactions = models.IntegerField(default=0, db_index=True)  # Indexed for ETL filtering
+    total_clicks = models.IntegerField(default=0)
+    total_likes = models.IntegerField(default=0)
+    total_dislikes = models.IntegerField(default=0)
+    total_applies = models.IntegerField(default=0)
+    ctr = models.FloatField(default=0.0, db_index=True)  # Indexed for ETL sorting
+    engagement_rate = models.FloatField(default=0.0)
+    metrics_computed_at = models.DateTimeField(null=True, blank=True, db_index=True)  # For ETL: find uncomputed sessions
+    
+    # ETL metadata (for future dataset extraction)
+    etl_processed = models.BooleanField(default=False, db_index=True)  # Mark if used in training dataset
+    etl_processed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'recommendation_sessions'
+        indexes = [
+            # Existing indexes
+            models.Index(fields=['user_id', 'created_at']),
+            models.Index(fields=['use_case', 'created_at']),
+            models.Index(fields=['recommendation_method']),
+            # ETL-optimized indexes
+            models.Index(fields=['created_at', 'use_case']),  # For date-range ETL queries
+            models.Index(fields=['etl_processed', 'created_at']),  # Find unprocessed sessions
+            models.Index(fields=['use_case', 'metrics_computed_at']),  # For metrics update jobs
+        ]
+        ordering = ['-created_at']
+    
+    def get_interactions(self):
+        """Get all interactions linked to this session - ETL-ready method"""
+        from django.db.models import Q
+        return UserInteraction.objects.filter(
+            Q(metadata__recommendation_session_id=str(self.id)) |
+            Q(metadata__contains={'recommendation_session_id': str(self.id)})
+        )
+    
+    def calculate_metrics(self):
+        """Calculate metrics - can be called by ETL or cron jobs"""
+        interactions = self.get_interactions()
+        total_shown = len(self.recommendations_shown)
+        
+        if total_shown == 0:
+            return {}
+        
+        metrics = {
+            'total_shown': total_shown,
+            'total_interactions': interactions.count(),
+            'ctr': interactions.count() / total_shown,
+            'likes': interactions.filter(interaction_type='like').count(),
+            'dislikes': interactions.filter(interaction_type='dislike').count(),
+            'applies': interactions.filter(interaction_type='apply').count(),
+            'favorites': interactions.filter(interaction_type='favorite').count(),
+            'engagement_rate': interactions.filter(
+                interaction_type__in=['like', 'favorite', 'apply', 'interest']
+            ).count() / total_shown
+        }
+        
+        # Update model fields (for ETL queries)
+        self.total_interactions = metrics['total_interactions']
+        self.total_clicks = interactions.filter(interaction_type='click').count()
+        self.total_likes = metrics['likes']
+        self.total_dislikes = metrics['dislikes']
+        self.total_applies = metrics['applies']
+        self.ctr = metrics['ctr']
+        self.engagement_rate = metrics['engagement_rate']
+        self.metrics_computed_at = timezone.now()
+        
+        return metrics
+    
+    def __str__(self):
+        return f"Session {self.id} - {self.use_case} - {self.user_id.username}"
 

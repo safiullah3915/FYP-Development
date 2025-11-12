@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_extensions',
+    'django_apscheduler',  # For APScheduler integration
     'api',
 ]
 
@@ -225,6 +226,36 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
+
+# Recommendation System Configuration
+RECOMMENDATION_CONFIG = {
+    'SESSION_TTL_HOURS': config('REC_SESSION_TTL_HOURS', default=24, cast=int),
+    'ENABLE_CACHING': config('REC_ENABLE_CACHING', default=False, cast=bool),
+    'CACHE_TTL_SECONDS': config('REC_CACHE_TTL', default=3600, cast=int),
+    'ENABLE_ETL': config('REC_ENABLE_ETL', default=False, cast=bool),
+    'ETL_BATCH_SIZE': config('REC_ETL_BATCH_SIZE', default=1000, cast=int),
+}
+
+# Redis Configuration (for future use)
+REDIS_HOST = config('REDIS_HOST', default='localhost')
+REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
+REDIS_DB = config('REDIS_DB', default=0, cast=int)
+REDIS_PASSWORD = config('REDIS_PASSWORD', default=None)
+REDIS_ENABLED = config('REDIS_ENABLED', default=False, cast=bool)
+
+# Update cache settings conditionally
+if REDIS_ENABLED and RECOMMENDATION_CONFIG['ENABLE_CACHING']:
+    CACHES['default'] = {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'startup_platform',
+        'TIMEOUT': RECOMMENDATION_CONFIG['CACHE_TTL_SECONDS'],
+    }
+    if REDIS_PASSWORD:
+        CACHES['default']['OPTIONS']['PASSWORD'] = REDIS_PASSWORD
 
 # Email Configuration
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')

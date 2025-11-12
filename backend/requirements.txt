@@ -10,3 +10,6 @@ django-ratelimit
 Pillow
 django-extensions
 Faker
+sentence-transformers
+APScheduler
+django-apscheduler

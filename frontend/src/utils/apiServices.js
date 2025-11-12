@@ -143,11 +143,47 @@ export const recommendationAPI = {
   saveOnboardingPreferences: (preferences) => apiClient.post('/api/onboarding/preferences', preferences),
   updateOnboardingPreferences: (preferences) => apiClient.patch('/api/onboarding/preferences', preferences),
   
-  // Explicit feedback
-  likeStartup: (startupId) => apiClient.post(`/api/startups/${startupId}/like`),
-  unlikeStartup: (startupId) => apiClient.delete(`/api/startups/${startupId}/unlike`),
-  dislikeStartup: (startupId) => apiClient.post(`/api/startups/${startupId}/dislike`),
-  undislikeStartup: (startupId) => apiClient.delete(`/api/startups/${startupId}/undislike`),
+  // Store recommendation session
+  storeRecommendationSession: (sessionData) => 
+    apiClient.post('/api/recommendations/session', sessionData),
+  
+  // Explicit feedback with recommendation context
+  likeStartup: (startupId, recommendationContext = null) => {
+    const data = {};
+    if (recommendationContext) {
+      data.recommendation_session_id = recommendationContext.sessionId;
+      data.recommendation_rank = recommendationContext.rank;
+    }
+    return apiClient.post(`/api/startups/${startupId}/like`, data);
+  },
+  
+  unlikeStartup: (startupId, recommendationContext = null) => {
+    const params = {};
+    if (recommendationContext) {
+      params.recommendation_session_id = recommendationContext.sessionId;
+      params.recommendation_rank = recommendationContext.rank;
+    }
+    return apiClient.delete(`/api/startups/${startupId}/unlike`, { params });
+  },
+  
+  dislikeStartup: (startupId, recommendationContext = null) => {
+    const data = {};
+    if (recommendationContext) {
+      data.recommendation_session_id = recommendationContext.sessionId;
+      data.recommendation_rank = recommendationContext.rank;
+    }
+    return apiClient.post(`/api/startups/${startupId}/dislike`, data);
+  },
+  
+  undislikeStartup: (startupId, recommendationContext = null) => {
+    const params = {};
+    if (recommendationContext) {
+      params.recommendation_session_id = recommendationContext.sessionId;
+      params.recommendation_rank = recommendationContext.rank;
+    }
+    return apiClient.delete(`/api/startups/${startupId}/undislike`, { params });
+  },
+  
   getStartupInteractionStatus: (startupId) => apiClient.get(`/api/startups/${startupId}/interaction-status`),
   
   // Trending startups

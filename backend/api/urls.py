@@ -94,4 +94,7 @@ urlpatterns = [
 	
 	# Trending startups endpoint
 	path('api/recommendations/trending/startups', views.TrendingStartupsView.as_view(), name='trending_startups'),
+	
+	# Recommendation session storage
+	path('api/recommendations/session', views.store_recommendation_session, name='store_recommendation_session'),
 ]
