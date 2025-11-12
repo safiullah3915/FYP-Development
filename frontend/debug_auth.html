@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Debug</title>
+    <script src="https://unpkg.com/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+</head>
+<body>
+    <h1>Authentication Token Debug</h1>
+    <div id="results"></div>
+
+    <script>
+        function displayResults() {
+            const results = document.getElementById('results');
+            
+            // Check localStorage tokens
+            const accessToken = localStorage.getItem('access_token');
+            const refreshToken = localStorage.getItem('refresh_token');
+            
+            // Check cookies
+            const cookieToken = Cookies.get('token');
+            const cookieRefreshToken = Cookies.get('refresh_token');
+            
+            results.innerHTML = `
+                <h2>Token Status:</h2>
+                <h3>localStorage:</h3>
+                <p><strong>access_token:</strong> ${accessToken ? `${accessToken.substring(0, 30)}...` : 'NOT FOUND'}</p>
+                <p><strong>refresh_token:</strong> ${refreshToken ? `${refreshToken.substring(0, 30)}...` : 'NOT FOUND'}</p>
+                
+                <h3>Cookies:</h3>
+                <p><strong>token:</strong> ${cookieToken ? `${cookieToken.substring(0, 30)}...` : 'NOT FOUND'}</p>
+                <p><strong>refresh_token:</strong> ${cookieRefreshToken ? `${cookieRefreshToken.substring(0, 30)}...` : 'NOT FOUND'}</p>
+                
+                <h3>All localStorage keys:</h3>
+                <p>${Object.keys(localStorage).join(', ')}</p>
+                
+                <h3>All cookies:</h3>
+                <p>${document.cookie}</p>
+                
+                <h3>Recommendations:</h3>
+                <ul>
+                    <li>If no tokens found: User needs to login</li>
+                    <li>If tokens found: Check if they're valid by making an authenticated request</li>
+                </ul>
+                
+                <button onclick="testAuthenticatedRequest()">Test Authenticated Request</button>
+                <div id="test-results"></div>
+            `;
+        }
+        
+        async function testAuthenticatedRequest() {
+            const testResults = document.getElementById('test-results');
+            testResults.innerHTML = '<p>Testing authenticated request...</p>';
+            
+            const accessToken = localStorage.getItem('access_token');
+            
+            if (!accessToken) {
+                testResults.innerHTML = '<p style="color: red;">❌ No access token found - user needs to login</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/users/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    testResults.innerHTML = `<p style="color: green;">✅ Token is valid! User: ${data.user?.username || 'Unknown'}</p>`;
+                } else {
+                    const errorData = await response.text();
+                    testResults.innerHTML = `<p style="color: red;">❌ Token invalid or expired (${response.status}): ${errorData}</p>`;
+                }
+            } catch (error) {
+                testResults.innerHTML = `<p style="color: red;">❌ Request failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Run on page load
+        displayResults();
+        
+        // Refresh every 5 seconds
+        setInterval(displayResults, 5000);
+    </script>
+</body>
+</html>

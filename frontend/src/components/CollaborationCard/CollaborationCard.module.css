@@ -1,0 +1,136 @@
+.marketplace {
+  padding: 2rem;
+  max-width: 1400px;
+  
+  margin: auto;
+}
+.linkWrapper{
+  text-decoration: none;
+  color:#292929;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* justify-content: space-between; */
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  color: #555;
+  /* background-color: red; */
+}
+
+.header h2 {
+  font-size: 2rem;
+  color: #343434;
+  font-weight: bold;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+}
+
+.filters select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  height: 14rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
+  transition: box-shadow 0.3s ease;
+  min-width: 15rem;
+}
+
+.card:hover {
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cardHeader h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #444444;
+  font-weight: bold;
+}
+
+.tag {
+  background-color: #e3dbfa;
+  color: #7b61ff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.description {
+  font-size: 0.95rem;
+  color: #555;
+   margin: 2.5rem 0rem 2.5rem 0rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+}
+
+.stats div {
+  text-align: center;
+}
+
+.stats strong {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.stats p {
+    color: #434343;
+  /* font-weight: bold; */
+  /* margin: 2.5rem 0rem 2.5rem 0rem; */
+
+
+}
+.statsheading p{
+    color: #484848;
+    font-size: 0.rem;
+    padding: 0.5rem;
+}
+.icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.icon img:nth-child(1){
+    position: relative;
+    /* background-color: red; */
+}
+.icon img:nth-child(2){
+    transform: translateX(-150%);
+    /* transform: translateY(50%); */
+    /* background-color: blue; */
+}

@@ -1,0 +1,98 @@
+.stats_section {
+  width: 100%;
+  height: 300px;
+  /* background-image: url("./sapiencycle.png"); */
+  background-color: #25224A;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  justify-content:space-around;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  position: relative;
+}
+
+.visible {
+  opacity: 1;
+}
+
+.stats_container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1000px;
+  padding: 0 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.stat_item {
+  text-align: center;
+  padding: 0 15px;
+}
+
+.stat_label {
+  color: rgb(203, 203, 203);
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  /* font-weight: bold; */
+}
+
+.stat_value {
+  color: white;
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .stats_section {
+    height: auto;
+    min-height: 300px;
+    padding: 3rem 0;
+  }
+  
+  .stats_container {
+    flex-direction: column;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .stat_item {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .stat_label {
+    font-size: 1.8rem;
+  }
+
+  .stat_value {
+    font-size: 4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats_section {
+    min-height: 250px;
+    padding: 2rem 0;
+  }
+
+  .stats_container {
+    gap: 1.5rem;
+  }
+
+  .stat_item {
+    max-width: 250px;
+  }
+
+  .stat_label {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+  }
+
+  .stat_value {
+    font-size: 3.5rem;
+  }
+}

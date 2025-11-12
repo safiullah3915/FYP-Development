@@ -1,0 +1,282 @@
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 2rem;
+  font-family: "Inter", sans-serif;
+  color: #222;
+  margin-top: 10rem;
+  margin-bottom: 5rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #383838;
+  margin-bottom: 2rem;
+ 
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.tag {
+  padding: 0.4rem 1rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.fund {
+  background-color: #c8bafe;
+}
+
+.equity {
+  background-color: #8a7cff;
+}
+
+.collab {
+  background-color: #2b254d;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #444;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.description {
+  color: #444;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 2rem 0;
+}
+
+.performance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric {
+  min-width: 180px;
+}
+
+.metricLabel {
+  font-size: 0.85rem;
+  text-decoration: underline;
+  margin-bottom: 1rem;
+  color: #666;
+}
+.metricLabel2{
+  display: flex;
+  
+}
+.metricLabel2 img{
+padding-right: 1rem;
+width: 2rem;
+}
+.metricValue {
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 1rem 0 1rem 0;
+  color: #313131;
+}
+
+.positions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  background-color: #f1f1f1;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn:hover , .btn1:hover {
+  background-color: #ded8ff;
+  color: #2b254d;
+}
+.btn1{
+   padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  background-color: #f1f1f1;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+
+input[type="text"],
+input[type="url"],
+textarea {
+  width: 80%;
+  padding: 10px;
+  border: none;
+  /* height: 2rem; */
+  border-radius: 3px;
+  background-color: #EFEFEF;
+  transition: 0.4s all ease-in-outx;
+}
+input[type="text"]:focus,
+input[type="url"]:focus,
+textarea:focus{
+    border: 1px solid rgb(188, 188, 188);
+    outline: none;
+}
+
+
+textarea {
+  resize: vertical;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+/* File Input Styling */
+.fileInputWrapper {
+  position: relative;
+  display: inline-block;
+  width: 80%;
+}
+
+.fileInput {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.fileInputLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 3px;
+  background-color: #EFEFEF;
+  border: none;
+  cursor: pointer;
+  transition: 0.4s all ease-in-out;
+  font-family: "Inter", sans-serif;
+  color: #444;
+  text-align: center;
+  font-size: 0.95rem;
+  min-height: 36px;
+}
+
+.fileInputLabel:hover {
+  background-color: #e0e0e0;
+  border: 1px solid rgb(188, 188, 188);
+}
+
+.fileInputLabel:focus-within {
+  border: 1px solid rgb(188, 188, 188);
+  outline: none;
+}
+
+.fileName {
+  margin-top: 0.5rem;
+  padding: 8px 10px;
+  background-color: #f9f9f9;
+  border-radius: 3px;
+  color: #444;
+  font-size: 0.9rem;
+  display: inline-block;
+  width: 80%;
+}
+
+.fileName::before {
+  content: "📎 ";
+  margin-right: 0.5rem;
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.cancelBtn {
+  padding: 10px 16px;
+  background-color: #25224A;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background-color: #f0f0f0;
+  color: black;
+}
+
+.submitBtn {
+  padding: 10px 20px;
+  background-color: #25224A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 217px;
+}
+
+.submitBtn:hover {
+  background-color: #312c69;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  /* .performance {
+    flex-direction: column;
+  } */
+
+  .positions {
+    flex-direction: column;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+@media (max-width: 880px) {
+  .container , .tags , .performance{
+    justify-content: center;
+    /* background-color: red; */
+    align-items: center;
+    text-align: center;
+  }
+}

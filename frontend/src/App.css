@@ -1,0 +1,39 @@
+.spinner-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+}
+
+.spinner {
+  width: 64px;
+  height: 64px;
+  border: 6px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.page-transition {
+  min-height: 100%;
+  transition: opacity 0.25s ease;
+}
+
+.page-transition.fade-in {
+  opacity: 1;
+}
+
+.page-transition.fade-out {
+  opacity: 0;
+}
+

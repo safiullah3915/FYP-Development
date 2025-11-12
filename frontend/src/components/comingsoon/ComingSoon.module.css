@@ -1,0 +1,89 @@
+.comingSoon {
+  height: 90vh;
+  width: 97%;
+  background: linear-gradient(135deg, #7f00ff, #e100ff);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s infinite;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.countdown {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.countdown div {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  min-width: 80px;
+}
+
+.countdown span {
+  font-size: 2rem;
+  font-weight: bold;
+  display: block;
+}
+
+.countdown small {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.notifyForm {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 25px;
+}
+
+.notifyForm input {
+  border: none;
+  outline: none;
+  padding: 0.8rem;
+  border-radius: 20px;
+  flex: 1;
+}
+
+.notifyForm button {
+  background: #7f00ff;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.notifyForm button:hover {
+  background: #e100ff;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

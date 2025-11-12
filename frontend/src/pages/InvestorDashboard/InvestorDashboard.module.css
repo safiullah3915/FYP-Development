@@ -1,0 +1,396 @@
+.container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  margin-top: 8rem;
+  min-height: calc(100vh - 200px);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: #343434;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: #555;
+  font-size: 1.1rem;
+}
+
+.statsSection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.statCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
+  transition: box-shadow 0.3s ease;
+}
+
+.statCard:hover {
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.statNumber {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #434343;
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  color: #4a4a4a;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tabNavigation {
+  display: flex;
+  background: white;
+  border-radius: 7px;
+  padding: 0.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
+  gap: 0.5rem;
+}
+
+.tabButton {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #555555;
+  transition: all 0.3s ease;
+}
+
+.tabButton:hover {
+  background: #f9fafb;
+  color: #343434;
+}
+
+.tabButton.active {
+  background: #25224A;
+  color: white;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.tabContent {
+  background: white;
+  border-radius: 7px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
+  margin-bottom: 2rem;
+}
+
+.tabHeader {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+}
+
+.tabHeader h2 {
+  font-size: 1.5rem;
+  color: #343434;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.tabHeader p {
+  color: #555;
+  font-size: 1rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.emptyState h3 {
+  font-size: 1.3rem;
+  color: #343434;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.emptyState p {
+  color: #555;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.actionButton {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #25224A;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.actionButton:hover {
+  background-color: #312c69;
+}
+
+.startupsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 4rem;
+}
+
+.interestsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.interestCard {
+  display: flex;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 1.5rem;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.startupInfo {
+  flex: 1;
+}
+
+.startupInfo h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #444444;
+  margin-bottom: 0.5rem;
+}
+
+.category {
+  background-color: #e3dbfa;
+  color: #7b61ff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  font-size: 0.9rem;
+  color: #555555;
+  line-height: 1.4;
+}
+
+.interestInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-end;
+  min-width: 200px;
+}
+
+.interestDate span {
+  color: #4a4a4a;
+  font-size: 0.8rem;
+  display: block;
+}
+
+.interestDate strong {
+  color: #434343;
+  font-size: 0.9rem;
+}
+
+.interestMessage span {
+  color: #4a4a4a;
+  font-size: 0.8rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.interestMessage p {
+  color: #555555;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin: 0;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 5px;
+  border-left: 3px solid #25224A;
+}
+
+.viewButton {
+  padding: 8px 16px;
+  background: white;
+  color: #25224A;
+  border: 1px solid #25224A;
+  border-radius: 6px;
+  text-decoration: none;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.viewButton:hover {
+  background: #25224A;
+  color: white;
+}
+
+.seeMore {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.seeMoreButton {
+  display: inline-block;
+  padding: 10px 20px;
+  background: white;
+  color: #25224A;
+  border: 1px solid #25224A;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.seeMoreButton:hover {
+  background: #25224A;
+  color: white;
+}
+
+.actionSection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.actionCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
+  text-align: center;
+}
+
+.actionCard h3 {
+  font-size: 1.2rem;
+  color: #343434;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.actionCard p {
+  color: #555;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
+  }
+
+  .statsSection {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .statCard {
+    padding: 1.5rem;
+  }
+
+  .statNumber {
+    font-size: 2rem;
+  }
+
+  .tabNavigation {
+    flex-direction: column;
+    padding: 0.5rem;
+  }
+
+  .tabButton {
+    text-align: center;
+  }
+
+  .tabContent {
+    padding: 1.5rem;
+  }
+
+  .startupsGrid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .interestCard {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .interestInfo {
+    align-items: stretch;
+    min-width: auto;
+  }
+
+  .actionSection {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .header p {
+    font-size: 1rem;
+  }
+
+  .tabHeader h2 {
+    font-size: 1.3rem;
+  }
+
+  .emptyState h3 {
+    font-size: 1.2rem;
+  }
+
+  .actionCard {
+    padding: 1.5rem;
+  }
+}

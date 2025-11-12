@@ -1,0 +1,602 @@
+.container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  margin-top: 8rem;
+  min-height: calc(100vh - 200px);
+}
+
+/* Progress Overlay for deletion */
+.progressOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.progressModal {
+  background: white;
+  padding: 2rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  min-width: 200px;
+}
+
+.progressSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-radius: 50%;
+  border-top-color: #2563eb;
+  animation: spin 1s linear infinite;
+}
+
+.progressText {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.headerContent h1 {
+  font-size: 2rem;
+  color: #343434;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.startupInfo {
+  margin-top: 1rem;
+}
+
+.startupInfo h2 {
+  font-size: 1.4rem;
+  color: #444444;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.startupInfo p {
+  color: #555555;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.createButton {
+  padding: 10px 20px;
+  background-color: #25224A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.createButton:hover {
+  background-color: #312c69;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.modalHeader h3 {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0;
+  font-weight: bold;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  color: #333;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 500;
+  color: #333;
+}
+
+.formGroup input,
+.formGroup textarea {
+  padding: 10px;
+  border: none;
+  border-radius: 3px;
+  background-color: #EFEFEF;
+  font-size: 1rem;
+  transition: 0.4s all ease-in-out;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border: 1px solid rgb(188, 188, 188);
+}
+
+.formGroup textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.cancelButton {
+  padding: 10px 16px;
+  background-color: #25224A;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  
+  transition: background 0.3s ease;
+}
+
+.cancelButton:hover {
+  background-color: #f0f0f0;
+  color: black;
+}
+
+.submitButton {
+  padding: 10px 20px;
+  background-color: #25224A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.submitButton:hover {
+  background-color: #312c69;
+}
+
+.positionsSection {
+  margin-bottom: 3rem;
+}
+
+.sectionHeader {
+  margin-bottom: 2rem;
+}
+
+.sectionHeader h3 {
+  font-size: 1.5rem;
+  color: #343434;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.sectionHeader p {
+  color: #555;
+  font-size: 1rem;
+}
+
+.positionStats {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.positionStats span {
+  font-weight: 500;
+}
+
+.subsectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 1.5rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.emptyState {
+  background: white;
+  border-radius: 10px;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.emptyState h4 {
+  font-size: 1.3rem;
+  color: #343434;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.emptyState p {
+  color: #555;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.primaryButton {
+  padding: 10px 20px;
+  background-color: #25224A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.primaryButton:hover {
+  background-color: #312c69;
+}
+
+.positionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.positionCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
+  transition: box-shadow 0.3s ease;
+}
+
+.positionCard:hover {
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  margin-bottom: 1rem;
+}
+
+.cardTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cardTitle h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #444444;
+  margin: 0;
+}
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.badge.active {
+  background-color: #e3dbfa;
+  color: #7b61ff;
+}
+
+.badge.inactive {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.cardContent {
+  margin-bottom: 1.5rem;
+}
+
+.description {
+  font-size: 0.95rem;
+  color: #555555;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.requirements {
+  margin-bottom: 1rem;
+}
+
+.requirements strong {
+  color: #4a4a4a;
+  font-size: 0.9rem;
+}
+
+.requirements p {
+  font-size: 0.9rem;
+  color: #555555;
+  margin: 0.5rem 0 0 0;
+  line-height: 1.3;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.stat {
+  text-align: center;
+  flex: 1;
+}
+
+.statNumber {
+  display: block;
+  font-weight: bold;
+  color: #434343;
+  font-size: 1.1rem;
+}
+
+.statLabel {
+  color: #4a4a4a;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.viewButton {
+  flex: 1;
+  padding: 8px 16px;
+  background: white;
+  color: #25224A;
+  border: 1px solid #25224A;
+  border-radius: 6px;
+  text-decoration: none;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.viewButton:hover {
+  background: #25224A;
+  color: white;
+}
+
+.toggleButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background 0.3s ease;
+}
+
+.toggleButton.closeBtn {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.toggleButton.closeBtn:hover {
+  background-color: #fecaca;
+}
+
+.toggleButton.openBtn {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.toggleButton.openBtn:hover {
+  background-color: #bbf7d0;
+}
+
+.toggleButton.disabledBtn {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.toggleButton.disabledBtn:hover {
+  background-color: #9ca3af;
+}
+
+.helpSection {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.helpSection h3 {
+  font-size: 1.4rem;
+  color: #343434;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+
+.tips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.tip {
+  padding: 1rem;
+  border-left: 4px solid #25224A;
+  background: #f9fafb;
+  border-radius: 0 6px 6px 0;
+}
+
+.tip h4 {
+  font-size: 1.1rem;
+  color: #25224A;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.tip p {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+
+  .createButton {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .modalContent {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .formActions {
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+  }
+
+  .positionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardActions {
+    flex-direction: column;
+  }
+
+  .tips {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContent h1 {
+    font-size: 1.5rem;
+  }
+
+  .startupInfo h2 {
+    font-size: 1.2rem;
+  }
+
+  .modalHeader h3 {
+    font-size: 1.3rem;
+  }
+
+  .sectionHeader h3 {
+    font-size: 1.3rem;
+  }
+}

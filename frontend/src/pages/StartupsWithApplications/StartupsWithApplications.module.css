@@ -1,0 +1,256 @@
+.container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  margin-top: 8rem;
+  min-height: calc(100vh - 200px);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.header {
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.headerContent h1 {
+  font-size: 2rem;
+  color: #343434;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.headerContent p {
+  color: #555;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: #25224A;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.backLink:hover {
+  color: #312c69;
+  text-decoration: underline;
+}
+
+.startupsSection {
+  margin-bottom: 3rem;
+}
+
+.emptyState {
+  background: white;
+  border-radius: 10px;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.emptyState h4 {
+  font-size: 1.3rem;
+  color: #343434;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.emptyState p {
+  color: #555;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.startupsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.startupCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
+  transition: box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.startupCard:hover {
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.startupInfo {
+  flex: 1;
+}
+
+.startupInfo h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #444444;
+  margin: 0 0 0.5rem 0;
+}
+
+.startupDescription {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0 0 0.75rem 0;
+}
+
+.startupMeta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.categoryTag,
+.typeTag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.categoryTag {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.typeTag {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
+.applicationCount {
+  text-align: center;
+  min-width: 100px;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.countNumber {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #25224A;
+  line-height: 1;
+}
+
+.countLabel {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: auto;
+}
+
+.viewButton {
+  flex: 1;
+  padding: 10px 20px;
+  background-color: #25224A;
+  color: white;
+  border: 1px solid #25224A;
+  border-radius: 6px;
+  text-decoration: none;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.viewButton:hover {
+  background-color: #312c69;
+  border-color: #312c69;
+}
+
+.detailsButton {
+  flex: 1;
+  padding: 10px 20px;
+  background: white;
+  color: #25224A;
+  border: 1px solid #25224A;
+  border-radius: 6px;
+  text-decoration: none;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.detailsButton:hover {
+  background: #25224A;
+  color: white;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header {
+    padding: 1.5rem;
+  }
+
+  .headerContent h1 {
+    font-size: 1.5rem;
+  }
+
+  .startupsList {
+    grid-template-columns: 1fr;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+  }
+
+  .applicationCount {
+    align-self: flex-start;
+  }
+
+  .cardActions {
+    flex-direction: column;
+  }
+}
+
+
+
+
+
+
+
+

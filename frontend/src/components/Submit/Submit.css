@@ -1,0 +1,33 @@
+.btn{
+    margin: 4rem 0 0 0;
+    height: 3rem;
+    /* width: 100%; */
+    width: 12rem;
+    /* background: linear-gradient(to bottom,#00171F -27% , #00A8E8 67%); */
+    background: #25224A;
+    border: 1px solid white;
+    color: white;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+
+}
+
+.btn:hover{
+    background: transparent;
+    color: #00171F;
+    border: 1px solid #25224A;
+    cursor: pointer;
+    width: 12.2rem;
+}
+
+.btn:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgb(71, 71, 71);
+}
+
+@media (max-width:500px){
+    .btn{
+        margin: 2rem 0 0 0 ;
+    }
+}

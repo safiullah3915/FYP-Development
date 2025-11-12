@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+:root{
+    --txtgrey:#414141;
+    --blue3:#0095CD;
+}
+
+*{
+    margin: 0;
+    padding: 0;
+    font-family: "Inter", sans-serif;
+}
+label{
+    font-weight: bold;
+    color: var(--txtgrey);
+    padding: 2rem 2rem 2rem 0;
+    font-size: 1.2rem;
+}
+.right{
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    justify-content: center;
+    align-items: center;
+    height: 90vh;
+    text-align: left;
+}
+.noaccount{
+    text-decoration: none;
+}
+input[type="email"]::placeholder{
+padding: 0 0 0 1rem;
+transition: all 0.5s ease;
+}
+.txt::placeholder{
+padding: 0 0 0 1rem;
+transition: all 0.5s ease;
+}
+input[type="password"]::placeholder{
+padding: 0 0 0 1rem;
+transition: all 0.5s ease;
+}
+input[type="email"]:hover::placeholder{
+color: var(--blue3);
+font-size: 0.9rem;
+}
+input[type="password"]:hover::placeholder{
+color: var(--blue3);
+font-size: 0.9rem;
+}
+.txt:hover::placeholder{
+color: var(--blue3);
+font-size: 0.9rem;
+}
+input:focus {
+    outline: none;
+}
+.inp{
+    width: 30rem;
+    height: 3rem;
+    border: none;
+    border-bottom: 1px solid var(--txtgrey);
+    transition: all 0.5s ease-in-out;
+    font-size: 1rem;
+    color: var(--txtgrey);
+}
+.inp:hover{
+    border-bottom: 1px solid var(--blue3);
+    
+}
+
+.loginbox{
+    display: flex;
+    flex-direction: column;
+
+}
+.logoimg {
+    width: 10rem;
+    margin-left: -2rem;
+
+
+    height: auto;
+}
+.main{
+    /* background-color: red; */
+    display: flex;
+    width: 100%;
+    /* flex-direction: column; */
+}
+.left{
+    width: 50%;
+    
+    height: 90vh;
+    position: relative;
+}
+.leftimg img{
+    width: 100%;
+    height: 100vh;
+    object-fit: cover;
+}
+.head {
+    position: absolute;
+    width: 90%;
+    top: 55%;
+    left: 55%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 2rem;
+}
+
+.btnbox{
+    display: flex;
+    /* width: 100%; */
+    /* background-color: red; */
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+.signupText {
+    margin-bottom: 1rem;
+    text-decoration: none;
+    font-weight: bold;
+    color: rgb(69, 69, 69);
+    transition: all 0.3s;
+}
+.signupText:hover{
+color: #007EA7;
+}
+.pas
+{
+    /* background-color: red; */
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+.pas p{
+    position: absolute;
+    margin: 0 2rem 0 0;
+}
+.pas p:hover{
+    cursor: pointer;
+}
+/* .pasinp{
+    width: 25rem;
+} */
+
+.forgot {
+    margin-top: 2rem;
+    /* text-decoration: underline; */
+    transition: all 0.3s ease;
+    font-weight: bold;
+    color: rgb(47, 47, 47);
+}
+.forgot:hover {
+ cursor: pointer;
+ color: #007EA7;
+}
+
+@media (max-width:1700px){
+    .head{
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width:1000px){
+    .left{
+        display: none;
+    }
+    .right{
+        width: 100%;
+
+    }
+    .loginbox{
+        width: 80%;
+        /* align-items: center; */
+        text-align: left;
+        padding: 2rem;
+    }
+    .inp{
+        width: 100%;
+    }
+    .emailinp{
+        margin-bottom: 2rem;
+    }
+    .signupText{
+        margin-bottom: 0rem;
+        margin-top: 2rem;
+    }
+}
