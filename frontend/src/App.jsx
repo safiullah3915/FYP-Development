@@ -25,6 +25,7 @@ import StartupApplications from './pages/StartupApplications/StartupApplications
 import InvestorDashboard from './pages/InvestorDashboard/InvestorDashboard';
 import PitchIdea from './pages/PitchIdea/PitchIdea';
 import TrendingStartups from './pages/TrendingStartups/TrendingStartups';
+import OnboardingPreferences from './pages/OnboardingPreferences/OnboardingPreferences';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import RoleBasedRoute from './components/RoleBasedRoute/RoleBasedRoute';
 
@@ -82,7 +83,7 @@ function AppRoutes() {
       />
       <Route 
         path="/signup" 
-        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Signup />} 
+        element={<Signup />} 
       />
       <Route 
         path="/verify-email" 
@@ -139,6 +140,13 @@ function AppRoutes() {
       <Route path="/trending-startups" element={
         <ProtectedRoute>
           <TrendingStartups />
+        </ProtectedRoute>
+      } />
+      
+      {/* Onboarding Preferences - accessible to all authenticated users */}
+      <Route path="/onboarding-preferences" element={
+        <ProtectedRoute>
+          <OnboardingPreferences />
         </ProtectedRoute>
       } />
       

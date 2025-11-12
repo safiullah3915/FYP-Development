@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Navbar } from '../../components/Navbar/Navbar';
+import { Footer } from '../../components/Footer/Footer';
 import { recommendationAPI } from '../../utils/apiServices';
 import styles from './OnboardingPreferences.module.css';
 
@@ -98,8 +100,10 @@ const OnboardingPreferences = () => {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
+    <>
+      <Navbar />
+      <div className={styles.container}>
+        <div className={styles.card}>
         <h1 className={styles.title}>Tell Us About Your Interests</h1>
         <p className={styles.subtitle}>
           Help us personalize your experience by selecting your preferences. You can skip this step and update it later.
@@ -323,8 +327,10 @@ const OnboardingPreferences = () => {
             </button>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 

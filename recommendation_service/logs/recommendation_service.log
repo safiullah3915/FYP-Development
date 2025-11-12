@@ -1,0 +1,10 @@
+2025-11-12 12:16:48 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-12 12:16:48 - __main__ - INFO - Debug mode: True
+2025-11-12 12:17:25 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-12 12:17:25 - __main__ - INFO - Debug mode: True
+2025-11-12 12:17:25 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-12 12:17:25 - __main__ - INFO - Database connection successful
+2025-11-12 12:17:26 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-12 12:17:26 - __main__ - INFO - Debug mode: True
+2025-11-12 12:17:26 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-12 12:17:26 - __main__ - INFO - Database connection successful
