@@ -21,7 +21,8 @@ from .serializers import (
 	ApplicationSerializer, ApplicationCreateSerializer, UserStartupSerializer,
 	SearchResultSerializer, NotificationSerializer, FavoriteSerializer, InterestSerializer,
 	MessageSerializer, ConversationSerializer, ConversationCreateSerializer, MessageCreateSerializer,
-	UserProfileSerializer, UserProfileUpdateSerializer, FileUploadSerializer, FileUploadCreateSerializer
+	UserProfileSerializer, UserProfileUpdateSerializer, FileUploadSerializer, FileUploadCreateSerializer,
+	UserOnboardingPreferencesSerializer, UserInteractionSerializer, StartupInteractionStatusSerializer
 )
 
 User = get_user_model()
@@ -586,9 +587,21 @@ class StartupDetailView(generics.RetrieveDestroyAPIView):
 	
 	def retrieve(self, request, *args, **kwargs):
 		instance = self.get_object()
-		# Increment view count
+		# Increment view count (for backward compatibility)
 		instance.views += 1
 		instance.save(update_fields=['views'])
+		
+		# Track user interaction if user is logged in
+		user = get_session_user(request)
+		if user:
+			from .recommendation_models import UserInteraction
+			UserInteraction.objects.create(
+				user=user,
+				startup=instance,
+				interaction_type='view',
+				weight=0.5
+			)
+		
 		return super().retrieve(request, *args, **kwargs)
 	
 	def destroy(self, request, *args, **kwargs):
@@ -2136,3 +2149,304 @@ class ProfileDataView(generics.RetrieveUpdateAPIView):
 			serializer.save()
 			return Response(serializer.data)
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Recommendation System Endpoints
+class OnboardingPreferencesView(generics.RetrieveUpdateAPIView, generics.CreateAPIView):
+	"""Get, create, or update user onboarding preferences"""
+	permission_classes = [AllowAny]
+	serializer_class = UserOnboardingPreferencesSerializer
+	
+	def get_object(self):
+		user = get_session_user(self.request)
+		if not user:
+			raise PermissionDenied("Authentication required")
+		from .recommendation_models import UserOnboardingPreferences
+		prefs, created = UserOnboardingPreferences.objects.get_or_create(user=user)
+		return prefs
+	
+	def create(self, request, *args, **kwargs):
+		user = get_session_user(request)
+		if not user:
+			return Response(
+				{"error": "Authentication required"},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+		from .recommendation_models import UserOnboardingPreferences
+		prefs, created = UserOnboardingPreferences.objects.get_or_create(user=user)
+		serializer = self.get_serializer(prefs, data=request.data, partial=True)
+		if serializer.is_valid():
+			serializer.save(onboarding_completed=True)
+			return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def like_startup(request, pk):
+	"""Like a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	try:
+		startup = Startup.objects.get(pk=pk)
+	except Startup.DoesNotExist:
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	from django.db import IntegrityError
+	
+	# Remove any existing dislike
+	UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='dislike'
+	).delete()
+	
+	# Create or get like interaction
+	# Handle race condition: if two requests try to create simultaneously,
+	# the unique constraint will prevent duplicates
+	try:
+		interaction, created = UserInteraction.objects.get_or_create(
+			user=user,
+			startup=startup,
+			interaction_type='like',
+			defaults={'weight': 2.0}
+		)
+	except IntegrityError:
+		# Race condition: another request created it, fetch it
+		interaction = UserInteraction.objects.get(
+			user=user,
+			startup=startup,
+			interaction_type='like'
+		)
+		created = False
+	
+	return Response({
+		"message": "Startup liked" if created else "Startup already liked",
+		"interaction_id": str(interaction.id)
+	}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def unlike_startup(request, pk):
+	"""Remove like from a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	try:
+		startup = Startup.objects.get(pk=pk)
+	except Startup.DoesNotExist:
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	
+	deleted = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='like'
+	).delete()
+	
+	return Response({
+		"message": "Like removed",
+		"deleted": deleted[0] > 0
+	}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def dislike_startup(request, pk):
+	"""Dislike a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	try:
+		startup = Startup.objects.get(pk=pk)
+	except Startup.DoesNotExist:
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	from django.db import IntegrityError
+	
+	# Remove any existing like
+	UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='like'
+	).delete()
+	
+	# Create or get dislike interaction
+	# Handle race condition: if two requests try to create simultaneously,
+	# the unique constraint will prevent duplicates
+	try:
+		interaction, created = UserInteraction.objects.get_or_create(
+			user=user,
+			startup=startup,
+			interaction_type='dislike',
+			defaults={'weight': -1.0}
+		)
+	except IntegrityError:
+		# Race condition: another request created it, fetch it
+		interaction = UserInteraction.objects.get(
+			user=user,
+			startup=startup,
+			interaction_type='dislike'
+		)
+		created = False
+	
+	return Response({
+		"message": "Startup disliked" if created else "Startup already disliked",
+		"interaction_id": str(interaction.id)
+	}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def undislike_startup(request, pk):
+	"""Remove dislike from a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	try:
+		startup = Startup.objects.get(pk=pk)
+	except Startup.DoesNotExist:
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	
+	deleted = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='dislike'
+	).delete()
+	
+	return Response({
+		"message": "Dislike removed",
+		"deleted": deleted[0] > 0
+	}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def startup_interaction_status(request, pk):
+	"""Get user's interaction status for a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	try:
+		startup = Startup.objects.get(pk=pk)
+	except Startup.DoesNotExist:
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	
+	# Check for various interactions
+	has_like = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='like'
+	).exists()
+	
+	has_dislike = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='dislike'
+	).exists()
+	
+	has_favorite = Favorite.objects.filter(user=user, startup=startup).exists()
+	has_interest = Interest.objects.filter(user=user, startup=startup).exists()
+	has_application = Application.objects.filter(applicant=user, startup=startup).exists()
+	
+	serializer = StartupInteractionStatusSerializer({
+		'has_like': has_like,
+		'has_dislike': has_dislike,
+		'has_favorite': has_favorite,
+		'has_interest': has_interest,
+		'has_application': has_application
+	})
+	
+	return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# Trending Startups Endpoint
+class TrendingStartupsView(generics.ListAPIView):
+	"""Get trending startups from Flask recommendation service"""
+	permission_classes = [AllowAny]
+	
+	def list(self, request, *args, **kwargs):
+		import requests
+		import os
+		
+		# Get Flask service URL from environment or use default
+		flask_service_url = os.getenv(
+			'FLASK_RECOMMENDATION_SERVICE_URL',
+			'http://localhost:5000/api/recommendations/trending/startups'
+		)
+		
+		# Get query parameters
+		limit = request.query_params.get('limit', '50')
+		sort_by = request.query_params.get('sort_by', 'trending_score')
+		
+		# Prepare request to Flask service
+		params = {
+			'limit': limit,
+			'sort_by': sort_by
+		}
+		
+		try:
+			# Call Flask service
+			response = requests.get(flask_service_url, params=params, timeout=5)
+			response.raise_for_status()
+			flask_data = response.json()
+			
+			# Return Flask service response
+			return Response(flask_data, status=status.HTTP_200_OK)
+			
+		except requests.exceptions.RequestException as e:
+			# If Flask service is unavailable, return empty list with error message
+			return Response({
+				'startups': [],
+				'total': 0,
+				'error': 'Recommendation service temporarily unavailable',
+				'computed_at': None
+			}, status=status.HTTP_503_SERVICE_UNAVAILABLE)

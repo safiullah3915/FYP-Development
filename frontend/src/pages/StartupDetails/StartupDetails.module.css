@@ -24,8 +24,13 @@
   flex: 1;
 }
  
+.headerSection .actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .headerSection .actionBtn {
-  margin-right: 2rem;
   white-space: nowrap;
 }
 
@@ -273,6 +278,24 @@ width: 2rem;
 
 .actionBtn.favorited:hover {
   background: #b91c1c;
+}
+
+.actionBtn.liked {
+  background-color: #10b981;
+  color: white;
+}
+
+.actionBtn.liked:hover {
+  background-color: #059669;
+}
+
+.actionBtn.disliked {
+  background-color: #ef4444;
+  color: white;
+}
+
+.actionBtn.disliked:hover {
+  background-color: #dc2626;
 }
 
 .interestSection {

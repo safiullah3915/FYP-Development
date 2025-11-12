@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 import bcrypt
 from .models import Startup, StartupTag, Position, Application, Notification, Favorite, Interest
 from .messaging_models import Conversation, Message, UserProfile, FileUpload
+from .recommendation_models import UserInteraction, UserOnboardingPreferences, StartupTrendingMetrics, RecommendationModel
 
 User = get_user_model()
 
@@ -537,3 +538,35 @@ class FileUploadCreateSerializer(serializers.ModelSerializer):
         validated_data['file_size'] = validated_data['file'].size
         validated_data['mime_type'] = validated_data['file'].content_type
         return super().create(validated_data)
+
+
+# Recommendation System Serializers
+class UserOnboardingPreferencesSerializer(serializers.ModelSerializer):
+    """Serializer for user onboarding preferences"""
+    
+    class Meta:
+        model = UserOnboardingPreferences
+        fields = (
+            'id', 'selected_categories', 'selected_fields', 'selected_tags',
+            'preferred_startup_stages', 'preferred_engagement_types',
+            'preferred_skills', 'onboarding_completed', 'created_at', 'updated_at'
+        )
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class UserInteractionSerializer(serializers.ModelSerializer):
+    """Serializer for creating user interactions"""
+    
+    class Meta:
+        model = UserInteraction
+        fields = ('id', 'startup', 'interaction_type', 'position', 'metadata', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+
+class StartupInteractionStatusSerializer(serializers.Serializer):
+    """Serializer for startup interaction status response"""
+    has_like = serializers.BooleanField()
+    has_dislike = serializers.BooleanField()
+    has_favorite = serializers.BooleanField()
+    has_interest = serializers.BooleanField()
+    has_application = serializers.BooleanField()

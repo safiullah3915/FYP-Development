@@ -136,6 +136,24 @@ export const uploadAPI = {
   getUserUploads: () => apiClient.get('/api/uploads'),
 };
 
+// Recommendation system endpoints
+export const recommendationAPI = {
+  // Onboarding preferences
+  getOnboardingPreferences: () => apiClient.get('/api/onboarding/preferences'),
+  saveOnboardingPreferences: (preferences) => apiClient.post('/api/onboarding/preferences', preferences),
+  updateOnboardingPreferences: (preferences) => apiClient.patch('/api/onboarding/preferences', preferences),
+  
+  // Explicit feedback
+  likeStartup: (startupId) => apiClient.post(`/api/startups/${startupId}/like`),
+  unlikeStartup: (startupId) => apiClient.delete(`/api/startups/${startupId}/unlike`),
+  dislikeStartup: (startupId) => apiClient.post(`/api/startups/${startupId}/dislike`),
+  undislikeStartup: (startupId) => apiClient.delete(`/api/startups/${startupId}/undislike`),
+  getStartupInteractionStatus: (startupId) => apiClient.get(`/api/startups/${startupId}/interaction-status`),
+  
+  // Trending startups
+  getTrendingStartups: (params) => apiClient.get('/api/recommendations/trending/startups', { params }),
+};
+
 // Export the configured axios client for custom requests
 export { apiClient };
 

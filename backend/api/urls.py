@@ -83,4 +83,15 @@ urlpatterns = [
 	path('api/upload/startup-image', views.upload_startup_image, name='upload_startup_image'),
 	path('api/upload/profile-picture', views.upload_profile_picture, name='upload_profile_picture'),
 	path('api/uploads', views.FileUploadListView.as_view(), name='file_uploads_list'),
+	
+	# Recommendation system endpoints
+	path('api/onboarding/preferences', views.OnboardingPreferencesView.as_view(), name='onboarding_preferences'),
+	path('api/startups/<uuid:pk>/like', views.like_startup, name='like_startup'),
+	path('api/startups/<uuid:pk>/unlike', views.unlike_startup, name='unlike_startup'),
+	path('api/startups/<uuid:pk>/dislike', views.dislike_startup, name='dislike_startup'),
+	path('api/startups/<uuid:pk>/undislike', views.undislike_startup, name='undislike_startup'),
+	path('api/startups/<uuid:pk>/interaction-status', views.startup_interaction_status, name='startup_interaction_status'),
+	
+	# Trending startups endpoint
+	path('api/recommendations/trending/startups', views.TrendingStartupsView.as_view(), name='trending_startups'),
 ]

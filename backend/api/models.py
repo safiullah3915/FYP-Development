@@ -22,6 +22,12 @@ class User(AbstractUser):
 	role = models.CharField(max_length=32, choices=ROLE_CHOICES, default='entrepreneur')
 	phone_number = models.CharField(max_length=20, blank=True)
 	
+	# Embedding fields for recommendation system
+	profile_embedding = models.TextField(null=True, blank=True)  # JSON string of embedding vector
+	embedding_model = models.CharField(max_length=50, default='all-MiniLM-L6-v2', blank=True)
+	embedding_version = models.IntegerField(default=1)
+	embedding_updated_at = models.DateTimeField(null=True, blank=True)
+	
 	# Fix related_name conflicts with default User model
 	groups = models.ManyToManyField(
 		'auth.Group',
@@ -105,6 +111,13 @@ class Startup(models.Model):
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
 	views = models.IntegerField(default=0)
 	featured = models.BooleanField(default=False)
+	
+	# Embedding fields for recommendation system
+	profile_embedding = models.TextField(null=True, blank=True)  # JSON string of embedding vector
+	embedding_model = models.CharField(max_length=50, default='all-MiniLM-L6-v2', blank=True)
+	embedding_version = models.IntegerField(default=1)
+	embedding_updated_at = models.DateTimeField(null=True, blank=True)
+	
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 	

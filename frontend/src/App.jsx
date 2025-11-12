@@ -24,6 +24,7 @@ import StartupsWithApplications from './pages/StartupsWithApplications/StartupsW
 import StartupApplications from './pages/StartupApplications/StartupApplications';
 import InvestorDashboard from './pages/InvestorDashboard/InvestorDashboard';
 import PitchIdea from './pages/PitchIdea/PitchIdea';
+import TrendingStartups from './pages/TrendingStartups/TrendingStartups';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import RoleBasedRoute from './components/RoleBasedRoute/RoleBasedRoute';
 
@@ -131,6 +132,13 @@ function AppRoutes() {
       <Route path="/search" element={
         <ProtectedRoute>
           <SearchStartups />
+        </ProtectedRoute>
+      } />
+      
+      {/* Trending Startups - accessible to all authenticated users */}
+      <Route path="/trending-startups" element={
+        <ProtectedRoute>
+          <TrendingStartups />
         </ProtectedRoute>
       } />
       
