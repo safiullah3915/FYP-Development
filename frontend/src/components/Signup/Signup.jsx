@@ -17,15 +17,8 @@ import { Navbar } from "../Navbar/Navbar";
 
 
 function Signup({leftimg, logo, line1, line2, paragraph}){
-    const { signup, isAuthenticated } = useAuth();
+    const { signup } = useAuth();
     const navigate = useNavigate();
-
-    // Redirect if already authenticated
-    useEffect(() => {
-        if (isAuthenticated) {
-            navigate("/dashboard");
-        }
-    }, [isAuthenticated, navigate]);
 
 //javascript
 
@@ -109,7 +102,11 @@ const register = async (e) => {
             } else {
                 // User is already verified and authenticated
                 sucess();
-                navigate('/dashboard');
+                // Redirect to onboarding preferences after signup
+                // Use setTimeout to ensure state updates complete before navigation
+                setTimeout(() => {
+                    navigate('/onboarding-preferences', { replace: true });
+                }, 100);
             }
         } else {
             console.log('❌ Signup failed with result:', result);

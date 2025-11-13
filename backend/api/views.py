@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, AllowAny
+from rest_framework.permissions import AllowAny
 import rest_framework.parsers
 from django_ratelimit.decorators import ratelimit
 from django.conf import settings
@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from django.db.models import Q, Count
 import re
 import bcrypt
+import logging
 from .models import Startup, StartupTag, Position, Application, Notification, Favorite, Interest
 from .messaging_models import Conversation, Message, UserProfile, FileUpload
 from .serializers import (
@@ -21,7 +22,8 @@ from .serializers import (
 	ApplicationSerializer, ApplicationCreateSerializer, UserStartupSerializer,
 	SearchResultSerializer, NotificationSerializer, FavoriteSerializer, InterestSerializer,
 	MessageSerializer, ConversationSerializer, ConversationCreateSerializer, MessageCreateSerializer,
-	UserProfileSerializer, UserProfileUpdateSerializer, FileUploadSerializer, FileUploadCreateSerializer
+	UserProfileSerializer, UserProfileUpdateSerializer, FileUploadSerializer, FileUploadCreateSerializer,
+	UserOnboardingPreferencesSerializer, UserInteractionSerializer, StartupInteractionStatusSerializer
 )
 
 User = get_user_model()
@@ -49,7 +51,7 @@ def get_session_user(request):
 					user = User.objects.get(id=user_id, is_active=True)
 					print(f"✅ Found user from auth token: {user.username}")
 					return user
-			except:
+			except (User.DoesNotExist, ValueError, KeyError, TypeError):
 				continue
 		
 		print(f"❌ Invalid or expired auth token")
@@ -585,11 +587,52 @@ class StartupDetailView(generics.RetrieveDestroyAPIView):
 	permission_classes = [AllowAny]
 	
 	def retrieve(self, request, *args, **kwargs):
-		instance = self.get_object()
-		# Increment view count
-		instance.views += 1
-		instance.save(update_fields=['views'])
-		return super().retrieve(request, *args, **kwargs)
+		try:
+			instance = self.get_object()
+		except Exception as e:
+			print(f"❌ Error getting startup object: {type(e).__name__}: {str(e)}")
+			import traceback
+			print(f"❌ Traceback:\n{traceback.format_exc()}")
+			return Response(
+				{"error": "Startup not found", "detail": str(e)},
+				status=status.HTTP_404_NOT_FOUND
+			)
+		
+		# Increment view count (for backward compatibility)
+		try:
+			instance.views += 1
+			instance.save(update_fields=['views'])
+		except Exception as e:
+			print(f"⚠️ Warning: Failed to increment view count: {str(e)}")
+		
+		# Track user interaction if user is logged in
+		user = get_session_user(request)
+		if user:
+			from .recommendation_models import UserInteraction
+			from django.db import IntegrityError
+			try:
+				UserInteraction.objects.get_or_create(
+					user=user,
+					startup=instance,
+					interaction_type='view',
+					defaults={}
+				)
+			except IntegrityError:
+				# Race condition - interaction already exists, ignore
+				pass
+			except Exception as e:
+				print(f"⚠️ Warning: Failed to track user interaction: {str(e)}")
+		
+		try:
+			return super().retrieve(request, *args, **kwargs)
+		except Exception as e:
+			print(f"❌ Error serializing startup: {type(e).__name__}: {str(e)}")
+			import traceback
+			print(f"❌ Traceback:\n{traceback.format_exc()}")
+			return Response(
+				{"error": "Failed to load startup details", "detail": str(e)},
+				status=status.HTTP_500_INTERNAL_SERVER_ERROR
+			)
 	
 	def destroy(self, request, *args, **kwargs):
 		"""Delete startup - only owner can delete"""
@@ -2136,3 +2179,607 @@ class ProfileDataView(generics.RetrieveUpdateAPIView):
 			serializer.save()
 			return Response(serializer.data)
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Recommendation System Endpoints
+class OnboardingPreferencesView(generics.RetrieveUpdateAPIView, generics.CreateAPIView):
+	"""Get, create, or update user onboarding preferences"""
+	permission_classes = [AllowAny]
+	serializer_class = UserOnboardingPreferencesSerializer
+	
+	def get_object(self):
+		user = get_session_user(self.request)
+		if not user:
+			raise PermissionDenied("Authentication required")
+		from .recommendation_models import UserOnboardingPreferences
+		prefs, created = UserOnboardingPreferences.objects.get_or_create(user=user)
+		return prefs
+	
+	def create(self, request, *args, **kwargs):
+		user = get_session_user(request)
+		if not user:
+			return Response(
+				{"error": "Authentication required"},
+				status=status.HTTP_401_UNAUTHORIZED
+			)
+		from .recommendation_models import UserOnboardingPreferences
+		prefs, created = UserOnboardingPreferences.objects.get_or_create(user=user)
+		serializer = self.get_serializer(prefs, data=request.data, partial=True)
+		if serializer.is_valid():
+			serializer.save(onboarding_completed=True)
+			return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def like_startup(request, pk):
+	"""Like a startup - uses service layer"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	print(f"🔍 [like_startup] User: {user.id}, Startup ID: {pk}")
+	try:
+		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [like_startup] Startup found: {startup.title}")
+	except Startup.DoesNotExist:
+		print(f"❌ [like_startup] Startup not found: {pk}")
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	from .services.interaction_service import InteractionService
+	
+	# Get recommendation context (optional)
+	recommendation_session_id = request.data.get('recommendation_session_id') or request.GET.get('recommendation_session_id')
+	recommendation_rank = request.data.get('recommendation_rank') or request.GET.get('recommendation_rank')
+	
+	# Build metadata using service
+	metadata = InteractionService.build_interaction_metadata(
+		recommendation_session_id=recommendation_session_id,
+		recommendation_rank=recommendation_rank,
+		user_id=str(user.id)
+	)
+	
+	# Remove any existing dislike
+	UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='dislike'
+	).delete()
+	
+	# Create interaction using service
+	interaction, created = InteractionService.create_interaction(
+		user=user,
+		startup=startup,
+		interaction_type='like',
+		metadata=metadata
+	)
+	
+	print(f"✅ [like_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
+	return Response({
+		"message": "Startup liked" if created else "Startup already liked",
+		"interaction_id": str(interaction.id),
+		"source": metadata.get('source', 'organic')
+	}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def unlike_startup(request, pk):
+	"""Remove like from a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	print(f"🔍 [unlike_startup] User: {user.id}, Startup ID: {pk}")
+	try:
+		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [unlike_startup] Startup found: {startup.title}")
+	except Startup.DoesNotExist:
+		print(f"❌ [unlike_startup] Startup not found: {pk}")
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	
+	deleted = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='like'
+	).delete()
+	
+	print(f"✅ [unlike_startup] Deleted {deleted[0]} like interaction(s)")
+	return Response({
+		"message": "Like removed",
+		"deleted": deleted[0] > 0
+	}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def dislike_startup(request, pk):
+	"""Dislike a startup - uses service layer"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	print(f"🔍 [dislike_startup] User: {user.id}, Startup ID: {pk}")
+	try:
+		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [dislike_startup] Startup found: {startup.title}")
+	except Startup.DoesNotExist:
+		print(f"❌ [dislike_startup] Startup not found: {pk}")
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	from .services.interaction_service import InteractionService
+	
+	# Get recommendation context (optional)
+	recommendation_session_id = request.data.get('recommendation_session_id') or request.GET.get('recommendation_session_id')
+	recommendation_rank = request.data.get('recommendation_rank') or request.GET.get('recommendation_rank')
+	
+	# Build metadata using service
+	metadata = InteractionService.build_interaction_metadata(
+		recommendation_session_id=recommendation_session_id,
+		recommendation_rank=recommendation_rank,
+		user_id=str(user.id)
+	)
+	
+	# Remove any existing like
+	UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='like'
+	).delete()
+	
+	# Create interaction using service
+	interaction, created = InteractionService.create_interaction(
+		user=user,
+		startup=startup,
+		interaction_type='dislike',
+		metadata=metadata
+	)
+	
+	print(f"✅ [dislike_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
+	return Response({
+		"message": "Startup disliked" if created else "Startup already disliked",
+		"interaction_id": str(interaction.id),
+		"source": metadata.get('source', 'organic')
+	}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def undislike_startup(request, pk):
+	"""Remove dislike from a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	print(f"🔍 [undislike_startup] User: {user.id}, Startup ID: {pk}")
+	try:
+		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [undislike_startup] Startup found: {startup.title}")
+	except Startup.DoesNotExist:
+		print(f"❌ [undislike_startup] Startup not found: {pk}")
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	
+	deleted = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='dislike'
+	).delete()
+	
+	print(f"✅ [undislike_startup] Deleted {deleted[0]} dislike interaction(s)")
+	return Response({
+		"message": "Dislike removed",
+		"deleted": deleted[0] > 0
+	}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def startup_interaction_status(request, pk):
+	"""Get user's interaction status for a startup"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	try:
+		print(f"🔍 [startup_interaction_status] Checking status for startup: {pk}, user: {user.id}")
+		startup = Startup.objects.get(pk=pk)
+	except Startup.DoesNotExist:
+		print(f"❌ [startup_interaction_status] Startup not found: {pk}")
+		return Response(
+			{"error": "Startup not found"},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	from .recommendation_models import UserInteraction
+	
+	# Check for various interactions
+	has_like = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='like'
+	).exists()
+	
+	has_dislike = UserInteraction.objects.filter(
+		user=user,
+		startup=startup,
+		interaction_type='dislike'
+	).exists()
+	
+	has_favorite = Favorite.objects.filter(user=user, startup=startup).exists()
+	has_interest = Interest.objects.filter(user=user, startup=startup).exists()
+	
+	print(f"✅ [startup_interaction_status] Status - Like: {has_like}, Dislike: {has_dislike}, Favorite: {has_favorite}, Interest: {has_interest}")
+	has_application = Application.objects.filter(applicant=user, startup=startup).exists()
+	
+	serializer = StartupInteractionStatusSerializer({
+		'has_like': has_like,
+		'has_dislike': has_dislike,
+		'has_favorite': has_favorite,
+		'has_interest': has_interest,
+		'has_application': has_application
+	})
+	
+	return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def store_recommendation_session(request):
+	"""Store recommendation session - uses service layer"""
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{"error": "Authentication required"},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	data = request.data
+	session_id = data.get('recommendation_session_id')
+	use_case = data.get('use_case')
+	method = data.get('method')
+	recommendations = data.get('recommendations', [])
+	model_version = data.get('model_version', '')
+	
+	if not all([session_id, use_case, method]):
+		return Response(
+			{"error": "Missing required fields: recommendation_session_id, use_case, method"},
+			status=status.HTTP_400_BAD_REQUEST
+		)
+	
+	from django.utils import timezone
+	from datetime import timedelta
+	
+	logger = logging.getLogger(__name__)
+	
+	# Use service to create/update session
+	try:
+		from .recommendation_models import RecommendationSession
+		session, created = RecommendationSession.objects.update_or_create(
+			id=session_id,
+			defaults={
+				'user_id': user,
+				'use_case': use_case,
+				'recommendation_method': method,
+				'model_version': model_version,
+				'recommendations_shown': recommendations,
+				'expires_at': timezone.now() + timedelta(hours=24)
+			}
+		)
+		
+		return Response({
+			"message": "Session stored" if created else "Session updated",
+			"session_id": str(session.id)
+		}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+	except Exception as e:
+		logger.error(f"Error storing session: {e}")
+		return Response(
+			{"error": "Failed to store session"},
+			status=status.HTTP_500_INTERNAL_SERVER_ERROR
+		)
+
+
+# Trending Startups Endpoint
+class TrendingStartupsView(generics.ListAPIView):
+	"""Get trending startups from Flask recommendation service"""
+	permission_classes = [AllowAny]
+	
+	def list(self, request, *args, **kwargs):
+		import requests
+		import os
+		
+		# Get Flask service URL from environment or use default
+		flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+		# Remove trailing path if present (for trending endpoint compatibility)
+		if '/api/recommendations' in flask_base_url:
+			flask_base_url = flask_base_url.split('/api/recommendations')[0]
+		
+		flask_service_url = f'{flask_base_url}/api/recommendations/trending/startups'
+		
+		# Get query parameters
+		limit = request.query_params.get('limit', '50')
+		sort_by = request.query_params.get('sort_by', 'trending_score')
+		
+		# Prepare request to Flask service
+		params = {
+			'limit': limit,
+			'sort_by': sort_by
+		}
+		
+		print(f"📡 Django: Calling Flask trending endpoint: {flask_service_url} with params: {params}")
+		
+		try:
+			# Call Flask service
+			response = requests.get(flask_service_url, params=params, timeout=10)
+			response.raise_for_status()
+			flask_data = response.json()
+			
+			print(f"✅ Django: Flask returned {len(flask_data.get('startups', []))} startups")
+			print(f"📊 Django: Flask response keys: {list(flask_data.keys())}")
+			
+			# Return Flask service response
+			return Response(flask_data, status=status.HTTP_200_OK)
+			
+		except requests.exceptions.RequestException as e:
+			# If Flask service is unavailable, return empty list with error message
+			print(f"❌ Django: Flask service error: {str(e)}")
+			return Response({
+				'startups': [],
+				'total': 0,
+				'error': 'Recommendation service temporarily unavailable',
+				'computed_at': None
+			}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Personalized Recommendations Endpoint
+@api_view(['GET'])
+def get_personalized_startup_recommendations(request):
+	"""Get personalized startup recommendations from Flask (uses Two-Tower model for warm users)"""
+	import requests
+	import os
+	
+	# Get authenticated user
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{'error': 'Authentication required'},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	# Determine Flask endpoint based on user role
+	if user.role == 'student' or user.role == 'developer':
+		endpoint = f'/api/recommendations/startups/for-developer/{user.id}'
+	elif user.role == 'investor':
+		endpoint = f'/api/recommendations/startups/for-investor/{user.id}'
+	else:
+		return Response(
+			{'error': f'Personalized recommendations not available for role: {user.role}'},
+			status=status.HTTP_400_BAD_REQUEST
+		)
+	
+	# Get Flask service base URL
+	flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+	# Remove trailing path if present (for trending endpoint compatibility)
+	if '/api/recommendations' in flask_base_url:
+		flask_base_url = flask_base_url.split('/api/recommendations')[0]
+	
+	flask_url = f'{flask_base_url}{endpoint}'
+	
+	# Get query parameters
+	params = {}
+	if 'limit' in request.query_params:
+		params['limit'] = request.query_params.get('limit')
+	if 'type' in request.query_params:
+		params['type'] = request.query_params.get('type')
+	if 'min_funding' in request.query_params:
+		params['min_funding'] = request.query_params.get('min_funding')
+	if 'max_funding' in request.query_params:
+		params['max_funding'] = request.query_params.get('max_funding')
+	if 'category' in request.query_params:
+		params['category'] = request.query_params.get('category')
+	if 'stage' in request.query_params:
+		params['stage'] = request.query_params.get('stage')
+	
+	try:
+		print(f"📡 Django: Calling Flask personalized endpoint: {flask_url} with params: {params}")
+		# Call Flask service
+		response = requests.get(flask_url, params=params, timeout=10)
+		response.raise_for_status()
+		flask_data = response.json()
+		
+		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} recommendations")
+		print(f"📊 Django: Flask response keys: {list(flask_data.keys())}")
+		
+		# Return Flask service response with additional user context
+		flask_data['user_id'] = str(user.id)
+		flask_data['user_role'] = user.role
+		
+		return Response(flask_data, status=status.HTTP_200_OK)
+		
+	except requests.exceptions.RequestException as e:
+		# If Flask service is unavailable, return error
+		print(f"❌ Django: Flask service error for personalized recommendations: {str(e)}")
+		return Response({
+			'startup_ids': [],
+			'total': 0,
+			'user_id': str(user.id),
+			'user_role': user.role,
+			'error': 'Recommendation service temporarily unavailable',
+			'details': str(e)
+		}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Personalized Developer Recommendations for Startups
+@api_view(['GET'])
+def get_personalized_developer_recommendations(request, startup_id):
+	"""Get personalized developer recommendations for a startup from Flask"""
+	import requests
+	import os
+	
+	# Get authenticated user (startup owner)
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{'error': 'Authentication required'},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	# Verify user owns the startup or has permission
+	try:
+		startup = Startup.objects.get(id=startup_id)
+		if startup.user_id != user.id:
+			return Response(
+				{'error': 'You do not have permission to get recommendations for this startup'},
+				status=status.HTTP_403_FORBIDDEN
+			)
+	except Startup.DoesNotExist:
+		return Response(
+			{'error': 'Startup not found'},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	# Get Flask service base URL
+	flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+	if '/api/recommendations' in flask_base_url:
+		flask_base_url = flask_base_url.split('/api/recommendations')[0]
+	
+	flask_url = f'{flask_base_url}/api/recommendations/developers/for-startup/{startup_id}'
+	
+	# Get query parameters
+	params = {}
+	if 'limit' in request.query_params:
+		params['limit'] = request.query_params.get('limit')
+	if 'skills' in request.query_params:
+		params['skills'] = request.query_params.get('skills')
+	
+	try:
+		print(f"📡 Django: Calling Flask developer recommendations: {flask_url} with params: {params}")
+		# Call Flask service
+		response = requests.get(flask_url, params=params, timeout=10)
+		response.raise_for_status()
+		flask_data = response.json()
+		
+		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} developer recommendations")
+		
+		# Return Flask service response
+		flask_data['startup_id'] = str(startup_id)
+		
+		return Response(flask_data, status=status.HTTP_200_OK)
+		
+	except requests.exceptions.RequestException as e:
+		# If Flask service is unavailable, return error
+		print(f"❌ Django: Flask service error for developer recommendations: {str(e)}")
+		return Response({
+			'user_ids': [],
+			'total': 0,
+			'startup_id': str(startup_id),
+			'error': 'Recommendation service temporarily unavailable',
+			'details': str(e)
+		}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Personalized Investor Recommendations for Startups
+@api_view(['GET'])
+def get_personalized_investor_recommendations(request, startup_id):
+	"""Get personalized investor recommendations for a startup from Flask"""
+	import requests
+	import os
+	
+	# Get authenticated user (startup owner)
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{'error': 'Authentication required'},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	# Verify user owns the startup or has permission
+	try:
+		startup = Startup.objects.get(id=startup_id)
+		if startup.user_id != user.id:
+			return Response(
+				{'error': 'You do not have permission to get recommendations for this startup'},
+				status=status.HTTP_403_FORBIDDEN
+			)
+	except Startup.DoesNotExist:
+		return Response(
+			{'error': 'Startup not found'},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	# Get Flask service base URL
+	flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+	if '/api/recommendations' in flask_base_url:
+		flask_base_url = flask_base_url.split('/api/recommendations')[0]
+	
+	flask_url = f'{flask_base_url}/api/recommendations/investors/for-startup/{startup_id}'
+	
+	# Get query parameters
+	params = {}
+	if 'limit' in request.query_params:
+		params['limit'] = request.query_params.get('limit')
+	if 'min_investment' in request.query_params:
+		params['min_investment'] = request.query_params.get('min_investment')
+	
+	try:
+		print(f"📡 Django: Calling Flask investor recommendations: {flask_url} with params: {params}")
+		# Call Flask service
+		response = requests.get(flask_url, params=params, timeout=10)
+		response.raise_for_status()
+		flask_data = response.json()
+		
+		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} investor recommendations")
+		
+		# Return Flask service response
+		flask_data['startup_id'] = str(startup_id)
+		
+		return Response(flask_data, status=status.HTTP_200_OK)
+		
+	except requests.exceptions.RequestException as e:
+		# If Flask service is unavailable, return error
+		print(f"❌ Django: Flask service error for investor recommendations: {str(e)}")
+		return Response({
+			'user_ids': [],
+			'total': 0,
+			'startup_id': str(startup_id),
+			'error': 'Recommendation service temporarily unavailable',
+			'details': str(e)
+		}, status=status.HTTP_503_SERVICE_UNAVAILABLE)

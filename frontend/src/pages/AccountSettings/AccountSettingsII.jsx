@@ -30,6 +30,11 @@ const App = () => {
   const [interests, setInterests] = useState([]);
   const [profileStats, setProfileStats] = useState({});
   const [loading, setLoading] = useState(true);
+  
+  // Collapse/expand state for form sections
+  const [isReferencesFormOpen, setIsReferencesFormOpen] = useState(false);
+  const [isSkillsFormOpen, setIsSkillsFormOpen] = useState(false);
+  const [isExperiencesFormOpen, setIsExperiencesFormOpen] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -617,6 +622,48 @@ const App = () => {
           font-weight: 700;
           margin-bottom: 1rem;
         }
+        .section-title-collapsible {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          user-select: none;
+          padding: 0.5rem 0;
+          transition: color 0.2s ease;
+        }
+        .section-title-collapsible:hover {
+          color: #A855F7;
+        }
+        .section-title-collapsible h3 {
+          margin: 0;
+          flex: 1;
+        }
+        .collapse-arrow {
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-top: 10px solid #9CA3AF;
+          transition: transform 0.3s ease;
+          margin-left: 1rem;
+          cursor: pointer;
+        }
+        .collapse-arrow.open {
+          transform: rotate(180deg);
+        }
+        .collapsible-form-container {
+          overflow: hidden;
+          transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+        .collapsible-form-container.collapsed {
+          max-height: 0;
+          opacity: 0;
+          margin-bottom: 0;
+        }
+        .collapsible-form-container.expanded {
+          max-height: 500px;
+          opacity: 1;
+        }
         .collection-form {
           display: flex;
           flex-direction: column;
@@ -626,6 +673,7 @@ const App = () => {
           border-radius: 0.75rem;
           border: 1px solid #374151;
           margin-bottom: 1rem;
+          width: 95%;
         }
         .collection-form label {
           font-size: 0.875rem;
@@ -633,6 +681,7 @@ const App = () => {
           display: flex;
           flex-direction: column;
           gap: 0.35rem;
+          width: 100%;
         }
         .collection-input {
           background-color: #F9FAFB;
@@ -642,6 +691,22 @@ const App = () => {
           padding: 0.6rem 0.75rem;
           font-size: 0.95rem;
           transition: border 0.2s, box-shadow 0.2s;
+          width: 100%;
+          box-sizing: border-box;
+          min-width: 100%;
+          max-width: 100%;
+        }
+        .collection-input[type="text"],
+        input.collection-input {
+          width: 100%;
+          min-width: 100%;
+          max-width: 100%;
+        }
+        textarea.collection-input {
+          width: 100%;
+          min-width: 100%;
+          max-width: 100%;
+          resize: vertical;
         }
         .collection-input:focus {
           outline: none;
@@ -811,6 +876,9 @@ const App = () => {
           color: #E5E7EB;
           font-size: 0.9rem;
           font-weight: 600;
+          width: 100%;
+          margin-bottom: -1rem;
+
         }
         .edit-input {
           background-color: #111827;
@@ -820,19 +888,32 @@ const App = () => {
           color: #F9FAFB;
           font-size: 0.95rem;
           transition: border-color 0.2s, box-shadow 0.2s;
+          width: 100%;
+          box-sizing: border-box;
+          min-width: 100%;
+          max-width: 100%;
         }
-        .edit-input[type="text"] {
+        .edit-input[type="text"],
+        input.edit-input {
           background-color: #111827;
+          width: 100%;
+          min-width: 100%;
+          max-width: 100%;
         }
         .edit-input:focus {
           outline: none;
           border-color: #8B5CF6;
           box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.35);
         }
-        .edit-textarea {
+        .edit-textarea,
+        textarea.edit-input {
           min-height: 100px;
           resize: vertical;
           background-color: #111827;
+          width: 100%;
+          min-width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .edit-modal-actions {
           display: flex;
@@ -1121,8 +1202,15 @@ const App = () => {
               </div>
               {/* Top Skills Section */}
               <div className="section-divider">
-                <h3 className="section-title">Top Skills</h3>
-                <div className="collection-form">
+                <div 
+                  className="section-title-collapsible"
+                  onClick={() => setIsReferencesFormOpen(!isReferencesFormOpen)}
+                >
+                  <h3 className="section-title">Top Skills</h3>
+                  <div className={`collapse-arrow ${isReferencesFormOpen ? 'open' : ''}`}></div>
+                </div>
+                <div className={`collapsible-form-container ${isReferencesFormOpen ? 'expanded' : 'collapsed'}`}>
+                  <div className="collection-form">
                   <label>
                     Skill name
                       <input
@@ -1149,6 +1237,7 @@ const App = () => {
                       </button>
                     </div>
                   </div>
+                </div>
                 {references.length > 0 && (
                   <div className="table-wrapper" key={`${referencesPage}-${references.length}`}>
                   <table className="data-table">
@@ -1194,8 +1283,15 @@ const App = () => {
               </div>
               {/* Skills & Hobbies Section */}
               <div className="section-divider">
+                <div 
+                  className="section-title-collapsible"
+                  onClick={() => setIsSkillsFormOpen(!isSkillsFormOpen)}
+                >
                   <h3 className="section-title">Skills & Hobbies</h3>
-                <div className="collection-form">
+                  <div className={`collapse-arrow ${isSkillsFormOpen ? 'open' : ''}`}></div>
+                </div>
+                <div className={`collapsible-form-container ${isSkillsFormOpen ? 'expanded' : 'collapsed'}`}>
+                  <div className="collection-form">
                   <label>
                     Name
                       <input
@@ -1222,6 +1318,7 @@ const App = () => {
                       </button>
                     </div>
                   </div>
+                </div>
                 {skills.length > 0 && (
                   <div className="table-wrapper" key={`${skillsPage}-${skills.length}`}>
                   <table className="data-table">
@@ -1267,8 +1364,15 @@ const App = () => {
               </div>
               {/* Business Experience Section */}
               <div className="section-divider">
+                <div 
+                  className="section-title-collapsible"
+                  onClick={() => setIsExperiencesFormOpen(!isExperiencesFormOpen)}
+                >
                   <h3 className="section-title">Business Experience</h3>
-                <div className="collection-form">
+                  <div className={`collapse-arrow ${isExperiencesFormOpen ? 'open' : ''}`}></div>
+                </div>
+                <div className={`collapsible-form-container ${isExperiencesFormOpen ? 'expanded' : 'collapsed'}`}>
+                  <div className="collection-form">
                   <label>
                     Company / Role
                       <input
@@ -1295,6 +1399,7 @@ const App = () => {
                       </button>
                     </div>
                   </div>
+                </div>
                 {experiences.length > 0 && (
                   <div className="table-wrapper" key={`${experiencesPage}-${experiences.length}`}>
                   <table className="data-table">

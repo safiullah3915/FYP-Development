@@ -5,7 +5,7 @@ import { Footer } from "../../components/Footer/Footer";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
-import { startupAPI, userAPI } from '../../utils/apiServices';
+import { startupAPI, userAPI, recommendationAPI } from '../../utils/apiServices';
 import apiClient from '../../utils/axiosConfig';
 import { BarChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer, LabelList, Label } from 'recharts';
 
@@ -19,6 +19,8 @@ const StartupDetails = () => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [hasInterest, setHasInterest] = useState(false);
   const [interestMessage, setInterestMessage] = useState('');
+  const [hasLike, setHasLike] = useState(false);
+  const [hasDislike, setHasDislike] = useState(false);
   const [appliedPositionIds, setAppliedPositionIds] = useState(new Set());
   const [appliedStartupIds, setAppliedStartupIds] = useState(new Set());
   const [showConvertModal, setShowConvertModal] = useState(false);
@@ -39,16 +41,41 @@ const StartupDetails = () => {
     checkFavoriteStatus();
     checkInterestStatus();
     checkAppliedPositions();
+    checkInteractionStatus();
   }, [id]);
 
   const loadStartupDetails = async () => {
     try {
+      console.log('[StartupDetails] Loading startup with ID:', id);
       const response = await startupAPI.getStartup(id);
+      console.log('[StartupDetails] Startup loaded successfully:', response.data?.title);
       setStartup(response.data);
     } catch (error) {
-      console.error('Failed to load startup details:', error);
-      toast.error('Failed to load startup details');
-      navigate('/marketplace');
+      console.error('[StartupDetails] Failed to load startup details:', error);
+      const status = error.response?.status;
+      const errorData = error.response?.data;
+      
+      console.error('[StartupDetails] Error details:', {
+        status,
+        id,
+        message: errorData?.message || errorData?.error || error.message,
+        detail: errorData?.detail,
+        fullError: errorData
+      });
+      
+      // Only redirect on 404 (not found) - startup doesn't exist
+      if (status === 404) {
+        toast.error('Startup not found');
+        navigate('/marketplace');
+      } else if (status === 500) {
+        // Server error - might be a serialization issue with older startups
+        toast.error('Error loading startup details. The startup may have incomplete data.');
+        console.error('[StartupDetails] Server error - check backend logs for details');
+        // Don't redirect on 500, let user see the error
+      } else {
+        // For other errors, show error but don't redirect
+        toast.error('Failed to load startup details. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -107,6 +134,66 @@ const StartupDetails = () => {
     } catch (error) {
       console.error('Failed to check interest status:', error);
       // Don't show error to user for this non-critical operation
+    }
+  };
+
+  const checkInteractionStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await recommendationAPI.getStartupInteractionStatus(id);
+      setHasLike(response.data.has_like || false);
+      setHasDislike(response.data.has_dislike || false);
+    } catch (error) {
+      console.error('Failed to check interaction status:', error);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!user) {
+      toast.error('Please log in to like startups');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      if (hasLike) {
+        await recommendationAPI.unlikeStartup(id);
+        setHasLike(false);
+        toast.success('Like removed');
+      } else {
+        await recommendationAPI.likeStartup(id);
+        setHasLike(true);
+        setHasDislike(false);
+        toast.success('Startup liked!');
+      }
+    } catch (error) {
+      console.error('Failed to like startup:', error);
+      toast.error('Failed to like startup');
+    }
+  };
+
+  const handleDislike = async () => {
+    if (!user) {
+      toast.error('Please log in to dislike startups');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      if (hasDislike) {
+        await recommendationAPI.undislikeStartup(id);
+        setHasDislike(false);
+        toast.success('Dislike removed');
+      } else {
+        await recommendationAPI.dislikeStartup(id);
+        setHasDislike(true);
+        setHasLike(false);
+        toast.success('Startup disliked');
+      }
+    } catch (error) {
+      console.error('Failed to dislike startup:', error);
+      toast.error('Failed to dislike startup');
     }
   };
 
@@ -452,19 +539,41 @@ const StartupDetails = () => {
     <>
     <Navbar/>
     <div className={styles.container}>
-      {/* Header with Title and Favorite Button */}
+      {/* Header with Title and Action Buttons */}
       <div className={styles.headerSection}>
       <h1 className={styles.title}>{startup.title}</h1>
         
-        {/* Investor Favorite Button */}
-        {isInvestor() && (
-          <button 
-            className={`${styles.actionBtn} ${isFavorited ? styles.favorited : ''}`}
-            onClick={toggleFavorite}
-          >
-            {isFavorited ? '❤️ Favorited' : '🤍 Add to Favorites'}
-          </button>
-        )}
+        <div className={styles.actionButtons}>
+          {/* Like/Dislike Buttons (for all logged-in users) */}
+          {user && (
+            <>
+              <button 
+                className={`${styles.actionBtn} ${hasLike ? styles.liked : ''}`}
+                onClick={handleLike}
+                title={hasLike ? 'Remove like' : 'Like this startup'}
+              >
+                {hasLike ? '👍 Liked' : '👍 Like'}
+              </button>
+              <button 
+                className={`${styles.actionBtn} ${hasDislike ? styles.disliked : ''}`}
+                onClick={handleDislike}
+                title={hasDislike ? 'Remove dislike' : 'Dislike this startup'}
+              >
+                {hasDislike ? '👎 Disliked' : '👎 Dislike'}
+              </button>
+            </>
+          )}
+          
+          {/* Investor Favorite Button */}
+          {isInvestor() && (
+            <button 
+              className={`${styles.actionBtn} ${isFavorited ? styles.favorited : ''}`}
+              onClick={toggleFavorite}
+            >
+              {isFavorited ? '❤️ Favorited' : '🤍 Add to Favorites'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tags */}

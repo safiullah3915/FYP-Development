@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 import bcrypt
 from .models import Startup, StartupTag, Position, Application, Notification, Favorite, Interest
 from .messaging_models import Conversation, Message, UserProfile, FileUpload
+from .recommendation_models import UserInteraction, UserOnboardingPreferences, StartupTrendingMetrics, RecommendationModel
 
 User = get_user_model()
 
@@ -84,13 +85,14 @@ class PositionSerializer(serializers.ModelSerializer):
 
 	def get_startup(self, obj):
 		# Provide minimal startup info needed by JobCard
+		# Handle missing fields gracefully for older startups
 		return {
 			'id': str(obj.startup.id),
-			'title': obj.startup.title,
-			'category': obj.startup.category,
-			'earn_through': obj.startup.earn_through,
-			'team_size': obj.startup.team_size,
-			'phase': obj.startup.phase,
+			'title': obj.startup.title or '',
+			'category': obj.startup.category or '',
+			'earn_through': getattr(obj.startup, 'earn_through', None) or '',
+			'team_size': getattr(obj.startup, 'team_size', None) or '',
+			'phase': getattr(obj.startup, 'phase', None) or '',
 		}
 
 
@@ -136,14 +138,20 @@ class StartupDetailSerializer(serializers.ModelSerializer):
 		)
 	
 	def get_tags(self, obj):
-		return [tag.tag for tag in obj.tags.all()]
+		# Handle missing tags gracefully
+		try:
+			return [tag.tag for tag in obj.tags.all() if tag.tag]
+		except Exception as e:
+			print(f"⚠️ Warning: Error getting tags for startup {obj.id}: {str(e)}")
+			return []
 	
 	def get_performance(self, obj):
+		# Handle missing fields gracefully for older startups
 		return {
-			'ttmRevenue': obj.ttm_revenue or '$0',
-			'ttmProfit': obj.ttm_profit or '$0',
-			'lastMonthRevenue': obj.last_month_revenue or '$0',
-			'lastMonthProfit': obj.last_month_profit or '$0',
+			'ttmRevenue': getattr(obj, 'ttm_revenue', None) or '$0',
+			'ttmProfit': getattr(obj, 'ttm_profit', None) or '$0',
+			'lastMonthRevenue': getattr(obj, 'last_month_revenue', None) or '$0',
+			'lastMonthProfit': getattr(obj, 'last_month_profit', None) or '$0',
 		}
 
 
@@ -537,3 +545,35 @@ class FileUploadCreateSerializer(serializers.ModelSerializer):
         validated_data['file_size'] = validated_data['file'].size
         validated_data['mime_type'] = validated_data['file'].content_type
         return super().create(validated_data)
+
+
+# Recommendation System Serializers
+class UserOnboardingPreferencesSerializer(serializers.ModelSerializer):
+    """Serializer for user onboarding preferences"""
+    
+    class Meta:
+        model = UserOnboardingPreferences
+        fields = (
+            'id', 'selected_categories', 'selected_fields', 'selected_tags',
+            'preferred_startup_stages', 'preferred_engagement_types',
+            'preferred_skills', 'onboarding_completed', 'created_at', 'updated_at'
+        )
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class UserInteractionSerializer(serializers.ModelSerializer):
+    """Serializer for creating user interactions"""
+    
+    class Meta:
+        model = UserInteraction
+        fields = ('id', 'startup', 'interaction_type', 'position', 'metadata', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+
+class StartupInteractionStatusSerializer(serializers.Serializer):
+    """Serializer for startup interaction status response"""
+    has_like = serializers.BooleanField()
+    has_dislike = serializers.BooleanField()
+    has_favorite = serializers.BooleanField()
+    has_interest = serializers.BooleanField()
+    has_application = serializers.BooleanField()

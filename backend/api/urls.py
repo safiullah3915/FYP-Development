@@ -83,4 +83,23 @@ urlpatterns = [
 	path('api/upload/startup-image', views.upload_startup_image, name='upload_startup_image'),
 	path('api/upload/profile-picture', views.upload_profile_picture, name='upload_profile_picture'),
 	path('api/uploads', views.FileUploadListView.as_view(), name='file_uploads_list'),
+	
+	# Recommendation system endpoints
+	path('api/onboarding/preferences', views.OnboardingPreferencesView.as_view(), name='onboarding_preferences'),
+	path('api/startups/<uuid:pk>/like', views.like_startup, name='like_startup'),
+	path('api/startups/<uuid:pk>/unlike', views.unlike_startup, name='unlike_startup'),
+	path('api/startups/<uuid:pk>/dislike', views.dislike_startup, name='dislike_startup'),
+	path('api/startups/<uuid:pk>/undislike', views.undislike_startup, name='undislike_startup'),
+	path('api/startups/<uuid:pk>/interaction-status', views.startup_interaction_status, name='startup_interaction_status'),
+	
+	# Trending startups endpoint
+	path('api/recommendations/trending/startups', views.TrendingStartupsView.as_view(), name='trending_startups'),
+	
+	# Personalized recommendations (proxies to Flask - uses Two-Tower model)
+	path('api/recommendations/personalized/startups', views.get_personalized_startup_recommendations, name='personalized_startup_recommendations'),
+	path('api/recommendations/personalized/developers/<uuid:startup_id>', views.get_personalized_developer_recommendations, name='personalized_developer_recommendations'),
+	path('api/recommendations/personalized/investors/<uuid:startup_id>', views.get_personalized_investor_recommendations, name='personalized_investor_recommendations'),
+	
+	# Recommendation session storage
+	path('api/recommendations/session', views.store_recommendation_session, name='store_recommendation_session'),
 ]

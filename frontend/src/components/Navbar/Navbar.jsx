@@ -123,6 +123,7 @@ const Navbar = () => {
     if (isAuthenticated) {
       baseLinks.push(
         { path: "/dashboard", label: "Dashboard" },
+        { path: "/trending-startups", label: "Trending Startups" },
         { path: "/message", label: "Messages" },
         { path: "/account", label: "Account" }
       );

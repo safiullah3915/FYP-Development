@@ -65,6 +65,12 @@ class UserProfile(models.Model):
     skills = models.JSONField(default=list, blank=True)
     experience = models.JSONField(default=list, blank=True)
     references = models.JSONField(default=list, blank=True)
+    
+    # Preference fields for recommendation system
+    onboarding_completed = models.BooleanField(default=False)
+    preferred_work_modes = models.JSONField(default=list, blank=True)  # e.g., ['remote', 'hybrid', 'onsite']
+    preferred_compensation_types = models.JSONField(default=list, blank=True)  # e.g., ['paid', 'equity', 'both']
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

@@ -6,6 +6,7 @@
   "homepage": "https://mshamilkhan.github.io/Startup-Sales-Purchase-Frontend",
   "scripts": {
     "dev": "vite",
+    "start": "vite",
     "deploy": "gh-pages -d dist",
     "build": "vite build",
     "lint": "eslint .",
