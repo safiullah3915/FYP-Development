@@ -13,3 +13,4 @@ Faker
 sentence-transformers
 APScheduler
 django-apscheduler
+requests

@@ -105,6 +105,24 @@ def update_pending_startup_embeddings():
             logger.error(f"Embedding error: {error}")
 
 
+def compute_trending_metrics():
+    """
+    Periodic task to compute trending metrics for all active startups.
+    This function is called by APScheduler at scheduled intervals.
+    Calculates popularity_score, trending_score, velocity_score, and various view/application counts.
+    """
+    from django.core.management import call_command
+    
+    logger.info("Starting periodic trending metrics computation task...")
+    
+    try:
+        # Call the management command to compute trending metrics
+        call_command('compute_trending_metrics', verbosity=0)
+        logger.info("Trending metrics computation task completed successfully")
+    except Exception as e:
+        logger.error(f"Error computing trending metrics: {e}", exc_info=True)
+
+
 # Global scheduler instance to prevent multiple instances
 _scheduler = None
 
@@ -146,6 +164,15 @@ def start_scheduler():
         trigger=CronTrigger(hour="*/6"),  # Every 6 hours
         id="update_startup_embeddings",
         name="Update startup embeddings for changed data",
+        replace_existing=True,
+    )
+    
+    # Schedule the trending metrics computation task to run every hour
+    _scheduler.add_job(
+        compute_trending_metrics,
+        trigger=CronTrigger(minute=0),  # Every hour at minute 0
+        id="compute_trending_metrics",
+        name="Compute trending metrics for all active startups",
         replace_existing=True,
     )
     

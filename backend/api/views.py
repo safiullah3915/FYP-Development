@@ -2223,9 +2223,12 @@ def like_startup(request, pk):
 			status=status.HTTP_401_UNAUTHORIZED
 		)
 	
+	print(f"🔍 [like_startup] User: {user.id}, Startup ID: {pk}")
 	try:
 		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [like_startup] Startup found: {startup.title}")
 	except Startup.DoesNotExist:
+		print(f"❌ [like_startup] Startup not found: {pk}")
 		return Response(
 			{"error": "Startup not found"},
 			status=status.HTTP_404_NOT_FOUND
@@ -2260,6 +2263,7 @@ def like_startup(request, pk):
 		metadata=metadata
 	)
 	
+	print(f"✅ [like_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
 	return Response({
 		"message": "Startup liked" if created else "Startup already liked",
 		"interaction_id": str(interaction.id),
@@ -2279,9 +2283,12 @@ def unlike_startup(request, pk):
 			status=status.HTTP_401_UNAUTHORIZED
 		)
 	
+	print(f"🔍 [unlike_startup] User: {user.id}, Startup ID: {pk}")
 	try:
 		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [unlike_startup] Startup found: {startup.title}")
 	except Startup.DoesNotExist:
+		print(f"❌ [unlike_startup] Startup not found: {pk}")
 		return Response(
 			{"error": "Startup not found"},
 			status=status.HTTP_404_NOT_FOUND
@@ -2295,6 +2302,7 @@ def unlike_startup(request, pk):
 		interaction_type='like'
 	).delete()
 	
+	print(f"✅ [unlike_startup] Deleted {deleted[0]} like interaction(s)")
 	return Response({
 		"message": "Like removed",
 		"deleted": deleted[0] > 0
@@ -2313,9 +2321,12 @@ def dislike_startup(request, pk):
 			status=status.HTTP_401_UNAUTHORIZED
 		)
 	
+	print(f"🔍 [dislike_startup] User: {user.id}, Startup ID: {pk}")
 	try:
 		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [dislike_startup] Startup found: {startup.title}")
 	except Startup.DoesNotExist:
+		print(f"❌ [dislike_startup] Startup not found: {pk}")
 		return Response(
 			{"error": "Startup not found"},
 			status=status.HTTP_404_NOT_FOUND
@@ -2350,6 +2361,7 @@ def dislike_startup(request, pk):
 		metadata=metadata
 	)
 	
+	print(f"✅ [dislike_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
 	return Response({
 		"message": "Startup disliked" if created else "Startup already disliked",
 		"interaction_id": str(interaction.id),
@@ -2369,9 +2381,12 @@ def undislike_startup(request, pk):
 			status=status.HTTP_401_UNAUTHORIZED
 		)
 	
+	print(f"🔍 [undislike_startup] User: {user.id}, Startup ID: {pk}")
 	try:
 		startup = Startup.objects.get(pk=pk)
+		print(f"✅ [undislike_startup] Startup found: {startup.title}")
 	except Startup.DoesNotExist:
+		print(f"❌ [undislike_startup] Startup not found: {pk}")
 		return Response(
 			{"error": "Startup not found"},
 			status=status.HTTP_404_NOT_FOUND
@@ -2385,6 +2400,7 @@ def undislike_startup(request, pk):
 		interaction_type='dislike'
 	).delete()
 	
+	print(f"✅ [undislike_startup] Deleted {deleted[0]} dislike interaction(s)")
 	return Response({
 		"message": "Dislike removed",
 		"deleted": deleted[0] > 0
@@ -2403,8 +2419,10 @@ def startup_interaction_status(request, pk):
 		)
 	
 	try:
+		print(f"🔍 [startup_interaction_status] Checking status for startup: {pk}, user: {user.id}")
 		startup = Startup.objects.get(pk=pk)
 	except Startup.DoesNotExist:
+		print(f"❌ [startup_interaction_status] Startup not found: {pk}")
 		return Response(
 			{"error": "Startup not found"},
 			status=status.HTTP_404_NOT_FOUND
@@ -2427,6 +2445,8 @@ def startup_interaction_status(request, pk):
 	
 	has_favorite = Favorite.objects.filter(user=user, startup=startup).exists()
 	has_interest = Interest.objects.filter(user=user, startup=startup).exists()
+	
+	print(f"✅ [startup_interaction_status] Status - Like: {has_like}, Dislike: {has_dislike}, Favorite: {has_favorite}, Interest: {has_interest}")
 	has_application = Application.objects.filter(applicant=user, startup=startup).exists()
 	
 	serializer = StartupInteractionStatusSerializer({
@@ -2507,10 +2527,12 @@ class TrendingStartupsView(generics.ListAPIView):
 		import os
 		
 		# Get Flask service URL from environment or use default
-		flask_service_url = os.getenv(
-			'FLASK_RECOMMENDATION_SERVICE_URL',
-			'http://localhost:5000/api/recommendations/trending/startups'
-		)
+		flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+		# Remove trailing path if present (for trending endpoint compatibility)
+		if '/api/recommendations' in flask_base_url:
+			flask_base_url = flask_base_url.split('/api/recommendations')[0]
+		
+		flask_service_url = f'{flask_base_url}/api/recommendations/trending/startups'
 		
 		# Get query parameters
 		limit = request.query_params.get('limit', '50')
@@ -2522,17 +2544,23 @@ class TrendingStartupsView(generics.ListAPIView):
 			'sort_by': sort_by
 		}
 		
+		print(f"📡 Django: Calling Flask trending endpoint: {flask_service_url} with params: {params}")
+		
 		try:
 			# Call Flask service
-			response = requests.get(flask_service_url, params=params, timeout=5)
+			response = requests.get(flask_service_url, params=params, timeout=10)
 			response.raise_for_status()
 			flask_data = response.json()
+			
+			print(f"✅ Django: Flask returned {len(flask_data.get('startups', []))} startups")
+			print(f"📊 Django: Flask response keys: {list(flask_data.keys())}")
 			
 			# Return Flask service response
 			return Response(flask_data, status=status.HTTP_200_OK)
 			
 		except requests.exceptions.RequestException as e:
 			# If Flask service is unavailable, return empty list with error message
+			print(f"❌ Django: Flask service error: {str(e)}")
 			return Response({
 				'startups': [],
 				'total': 0,
@@ -2591,10 +2619,14 @@ def get_personalized_startup_recommendations(request):
 		params['stage'] = request.query_params.get('stage')
 	
 	try:
+		print(f"📡 Django: Calling Flask personalized endpoint: {flask_url} with params: {params}")
 		# Call Flask service
 		response = requests.get(flask_url, params=params, timeout=10)
 		response.raise_for_status()
 		flask_data = response.json()
+		
+		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} recommendations")
+		print(f"📊 Django: Flask response keys: {list(flask_data.keys())}")
 		
 		# Return Flask service response with additional user context
 		flask_data['user_id'] = str(user.id)
@@ -2604,10 +2636,12 @@ def get_personalized_startup_recommendations(request):
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error
+		print(f"❌ Django: Flask service error for personalized recommendations: {str(e)}")
 		return Response({
-			'startups': [],
+			'startup_ids': [],
 			'total': 0,
 			'user_id': str(user.id),
+			'user_role': user.role,
 			'error': 'Recommendation service temporarily unavailable',
 			'details': str(e)
 		}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -2657,10 +2691,13 @@ def get_personalized_developer_recommendations(request, startup_id):
 		params['skills'] = request.query_params.get('skills')
 	
 	try:
+		print(f"📡 Django: Calling Flask developer recommendations: {flask_url} with params: {params}")
 		# Call Flask service
 		response = requests.get(flask_url, params=params, timeout=10)
 		response.raise_for_status()
 		flask_data = response.json()
+		
+		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} developer recommendations")
 		
 		# Return Flask service response
 		flask_data['startup_id'] = str(startup_id)
@@ -2669,8 +2706,9 @@ def get_personalized_developer_recommendations(request, startup_id):
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error
+		print(f"❌ Django: Flask service error for developer recommendations: {str(e)}")
 		return Response({
-			'developers': [],
+			'user_ids': [],
 			'total': 0,
 			'startup_id': str(startup_id),
 			'error': 'Recommendation service temporarily unavailable',
@@ -2722,10 +2760,13 @@ def get_personalized_investor_recommendations(request, startup_id):
 		params['min_investment'] = request.query_params.get('min_investment')
 	
 	try:
+		print(f"📡 Django: Calling Flask investor recommendations: {flask_url} with params: {params}")
 		# Call Flask service
 		response = requests.get(flask_url, params=params, timeout=10)
 		response.raise_for_status()
 		flask_data = response.json()
+		
+		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} investor recommendations")
 		
 		# Return Flask service response
 		flask_data['startup_id'] = str(startup_id)
@@ -2734,8 +2775,9 @@ def get_personalized_investor_recommendations(request, startup_id):
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error
+		print(f"❌ Django: Flask service error for investor recommendations: {str(e)}")
 		return Response({
-			'investors': [],
+			'user_ids': [],
 			'total': 0,
 			'startup_id': str(startup_id),
 			'error': 'Recommendation service temporarily unavailable',

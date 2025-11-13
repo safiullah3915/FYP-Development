@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
+import math
 from api.models import Startup
 from api.recommendation_models import UserInteraction, StartupTrendingMetrics
 
@@ -27,8 +28,9 @@ class Command(BaseCommand):
         total = startups.count()
         processed = 0
         
+        # First pass: Collect all interaction counts to find global maximums
+        all_metrics = []
         for startup in startups:
-            # Get interactions for this startup
             interactions_30d = UserInteraction.objects.filter(
                 startup=startup,
                 created_at__gte=cutoff_30d
@@ -36,7 +38,6 @@ class Command(BaseCommand):
             interactions_7d = interactions_30d.filter(created_at__gte=cutoff_7d)
             interactions_24h = interactions_7d.filter(created_at__gte=cutoff_24h)
             
-            # Count by type
             view_count_24h = interactions_24h.filter(interaction_type='view').count()
             view_count_7d = interactions_7d.filter(interaction_type='view').count()
             view_count_30d = interactions_30d.filter(interaction_type='view').count()
@@ -50,32 +51,86 @@ class Command(BaseCommand):
             interest_count_7d = interactions_7d.filter(interaction_type='interest').count()
             interest_count_30d = interactions_30d.filter(interaction_type='interest').count()
             
+            all_metrics.append({
+                'startup': startup,
+                'view_count_24h': view_count_24h,
+                'view_count_7d': view_count_7d,
+                'view_count_30d': view_count_30d,
+                'application_count_24h': application_count_24h,
+                'application_count_7d': application_count_7d,
+                'application_count_30d': application_count_30d,
+                'favorite_count_7d': favorite_count_7d,
+                'favorite_count_30d': favorite_count_30d,
+                'interest_count_7d': interest_count_7d,
+                'interest_count_30d': interest_count_30d,
+            })
+        
+        # Find global maximums across all startups
+        if all_metrics:
+            max_views_30d = max([m['view_count_30d'] for m in all_metrics], default=1)
+            max_apps_30d = max([m['application_count_30d'] for m in all_metrics], default=1)
+            max_favs_30d = max([m['favorite_count_30d'] for m in all_metrics], default=1)
+            max_ints_30d = max([m['interest_count_30d'] for m in all_metrics], default=1)
+            max_views_7d = max([m['view_count_7d'] for m in all_metrics], default=1)
+            max_apps_7d = max([m['application_count_7d'] for m in all_metrics], default=1)
+            max_engagement_7d = max([m['favorite_count_7d'] + m['interest_count_7d'] for m in all_metrics], default=1)
+        else:
+            max_views_30d = max_apps_30d = max_favs_30d = max_ints_30d = 1
+            max_views_7d = max_apps_7d = max_engagement_7d = 1
+        
+        # Second pass: Calculate scores using global maximums
+        for metrics_data in all_metrics:
+            startup = metrics_data['startup']
+            view_count_24h = metrics_data['view_count_24h']
+            view_count_7d = metrics_data['view_count_7d']
+            view_count_30d = metrics_data['view_count_30d']
+            application_count_24h = metrics_data['application_count_24h']
+            application_count_7d = metrics_data['application_count_7d']
+            application_count_30d = metrics_data['application_count_30d']
+            favorite_count_7d = metrics_data['favorite_count_7d']
+            favorite_count_30d = metrics_data['favorite_count_30d']
+            interest_count_7d = metrics_data['interest_count_7d']
+            interest_count_30d = metrics_data['interest_count_30d']
+            
             # Count active positions
             active_positions_count = startup.positions.filter(is_active=True).count()
             
-            # Compute scores (simplified normalization)
-            max_views = max(view_count_30d, 1)
-            max_apps = max(application_count_30d, 1)
-            max_favs = max(favorite_count_30d, 1)
-            max_ints = max(interest_count_30d, 1)
+            # Compute popularity score (30-day window) - normalized against global max
+            # Use logarithmic scaling for better distribution
+            def log_normalize(value, max_value):
+                if max_value == 0 or value == 0:
+                    return 0.0
+                # Use log scale: log(1 + value) / log(1 + max_value)
+                # This creates a more natural distribution where differences are more visible
+                return math.log(1 + value) / math.log(1 + max_value)
             
             popularity_score = (
-                0.3 * normalize(view_count_30d, max_views) +
-                0.4 * normalize(application_count_30d, max_apps) +
-                0.2 * normalize(favorite_count_30d, max_favs) +
-                0.1 * normalize(interest_count_30d, max_ints)
+                0.25 * log_normalize(view_count_30d, max_views_30d) +
+                0.35 * log_normalize(application_count_30d, max_apps_30d) +
+                0.25 * log_normalize(favorite_count_30d, max_favs_30d) +
+                0.15 * log_normalize(interest_count_30d, max_ints_30d)
             )
+            # Cap popularity score at 1.0
+            popularity_score = min(popularity_score, 1.0)
             
+            # Compute trending score (7-day window with recency boost) - normalized against global max
             trending_score = (
-                0.5 * normalize(view_count_7d, max_views) +
-                0.3 * normalize(application_count_7d, max_apps) +
-                0.2 * normalize(favorite_count_7d + interest_count_7d, max_favs + max_ints)
+                0.40 * log_normalize(view_count_7d, max_views_7d) +
+                0.30 * log_normalize(application_count_7d, max_apps_7d) +
+                0.30 * log_normalize(favorite_count_7d + interest_count_7d, max_engagement_7d)
             )
             
-            # Velocity score (activity_7d / activity_30d) - Fixed: use 30-day counts for all interaction types
+            # Velocity score (activity_7d / activity_30d) - measures growth momentum
             activity_7d = view_count_7d + application_count_7d + favorite_count_7d + interest_count_7d
             activity_30d = view_count_30d + application_count_30d + favorite_count_30d + interest_count_30d
             velocity_score = activity_7d / max(activity_30d, 1)
+            
+            # Apply velocity boost to trending score (startups with increasing activity get higher scores)
+            # Cap velocity boost to prevent extreme scores
+            velocity_boost = min(velocity_score, 2.0) * 0.25  # Max 50% boost
+            trending_score = trending_score * (1 + velocity_boost)
+            # Cap trending score at 1.0
+            trending_score = min(trending_score, 1.0)
             
             # Update or create metrics
             StartupTrendingMetrics.objects.update_or_create(
