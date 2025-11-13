@@ -48,7 +48,7 @@ echo [OK] ALS model trained
 echo.
 
 REM Step 4: Train Two-Tower Model
-echo [4/4] Training Two-Tower model...
+echo [4/5] Training Two-Tower model...
 cd %REC_SERVICE_DIR%
 python train_standalone.py --data data/two_tower_train.csv --epochs 10 --batch-size 256
 if %errorlevel% neq 0 (
@@ -58,6 +58,27 @@ if %errorlevel% neq 0 (
 cd ..
 echo [OK] Two-Tower model trained
 echo.
+
+REM Step 5: Train Ranker Model (Optional)
+echo [5/5] Training Ranker model...
+cd %BACKEND_DIR%
+python manage.py generate_ranker_dataset --output ../recommendation_service/data/ranker_train.csv
+if %errorlevel% neq 0 (
+    echo Warning: Ranker dataset generation failed (may be due to insufficient data)
+    echo Skipping ranker training - rule-based ranker will be used
+    cd ..
+    goto :skip_ranker
+)
+cd ..%REC_SERVICE_DIR%
+python train_ranker.py --data data/ranker_train.csv --epochs 20 --batch-size 128
+if %errorlevel% neq 0 (
+    echo Warning: Ranker training failed
+    echo Rule-based ranker will be used
+)
+cd ..
+echo [OK] Ranker model trained
+echo.
+:skip_ranker
 
 echo ======================================================================
 echo  ALL MODELS TRAINED SUCCESSFULLY!
@@ -72,6 +93,7 @@ echo   3. Smart routing will be active:
 echo      - Cold start (^< 5 interactions) - Content-Based
 echo      - Warm (5-19 interactions) - ALS
 echo      - Hot (20+ interactions) - Ensemble (ALS + Two-Tower)
+echo   4. Ranker will reorder all personalized recommendations
 echo.
 
 

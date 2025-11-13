@@ -48,7 +48,7 @@ echo "✓ ALS model trained"
 echo ""
 
 # Step 4: Train Two-Tower Model
-echo "[4/4] Training Two-Tower model..."
+echo "[4/5] Training Two-Tower model..."
 cd "$REC_SERVICE_DIR" || exit 1
 python train_standalone.py --data data/two_tower_train.csv --epochs 10 --batch-size 256
 if [ $? -ne 0 ]; then
@@ -57,6 +57,28 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 echo "✓ Two-Tower model trained"
+echo ""
+
+# Step 5: Train Ranker Model (Optional)
+echo "[5/5] Training Ranker model..."
+cd "$BACKEND_DIR" || exit 1
+python manage.py generate_ranker_dataset --output ../recommendation_service/data/ranker_train.csv
+if [ $? -ne 0 ]; then
+    echo "⚠ Warning: Ranker dataset generation failed (may be due to insufficient data)"
+    echo "Skipping ranker training - rule-based ranker will be used"
+    cd ..
+else
+    cd ..
+    cd "$REC_SERVICE_DIR" || exit 1
+    python train_ranker.py --data data/ranker_train.csv --epochs 20 --batch-size 128
+    if [ $? -ne 0 ]; then
+        echo "⚠ Warning: Ranker training failed"
+        echo "Rule-based ranker will be used"
+    else
+        echo "✓ Ranker model trained"
+    fi
+    cd ..
+fi
 echo ""
 
 echo "======================================================================"
@@ -72,6 +94,7 @@ echo "  3. Smart routing will be active:"
 echo "     - Cold start (< 5 interactions) → Content-Based"
 echo "     - Warm (5-19 interactions) → ALS"
 echo "     - Hot (20+ interactions) → Ensemble (ALS + Two-Tower)"
+echo "  4. Ranker will reorder all personalized recommendations"
 echo ""
 
 

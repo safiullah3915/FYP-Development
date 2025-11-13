@@ -68,7 +68,7 @@ class EnsembleInference:
         
         logger.info(f"Ensemble initialized with weights: ALS={self.als_weight:.2f}, Two-Tower={self.two_tower_weight:.2f}")
     
-    def recommend(self, user_id: str, limit: int = 10, filters: Optional[Dict] = None) -> Dict:
+    def recommend(self, user_id: str, limit: int = 10, filters: Optional[Dict] = None, fetch_multiplier: int = 1) -> Dict:
         """
         Generate ensemble recommendations
         
@@ -76,16 +76,18 @@ class EnsembleInference:
             user_id: User ID (UUID string)
             limit: Number of recommendations
             filters: Optional filters
+            fetch_multiplier: Multiplier for fetching more candidates (for reranking)
         
         Returns:
             dict with startups, total, scores, method_used
         """
         try:
-            logger.info(f"Ensemble inference for user {user_id}, limit {limit}")
+            actual_limit = limit * fetch_multiplier
+            logger.info(f"Ensemble inference for user {user_id}, limit {limit} (fetching {actual_limit} candidates)")
             
-            # Get predictions from both models
-            als_results = self._get_als_results(user_id, limit, filters)
-            two_tower_results = self._get_two_tower_results(user_id, limit, filters)
+            # Get predictions from both models with fetch_multiplier
+            als_results = self._get_als_results(user_id, actual_limit, filters)
+            two_tower_results = self._get_two_tower_results(user_id, actual_limit, filters)
             
             # If both models failed, return empty
             if not als_results['startups'] and not two_tower_results['startups']:
@@ -110,7 +112,7 @@ class EnsembleInference:
             
             # Both models have results - combine them
             combined_results = self._combine_results(
-                als_results, two_tower_results, limit
+                als_results, two_tower_results, actual_limit
             )
             
             logger.info(f"Ensemble generated {combined_results['total']} recommendations")
@@ -131,8 +133,8 @@ class EnsembleInference:
             return {'startups': [], 'total': 0, 'scores': {}}
         
         try:
-            # Get more candidates for ensemble diversity
-            results = self.als_model.recommend(user_id, limit * 2, filters)
+            # Note: limit is already multiplied by caller if needed
+            results = self.als_model.recommend(user_id, limit, filters)
             return results
         except Exception as e:
             logger.error(f"Error getting ALS results: {e}")
@@ -144,8 +146,8 @@ class EnsembleInference:
             return {'startups': [], 'total': 0, 'scores': {}}
         
         try:
-            # Get more candidates for ensemble diversity
-            results = self.two_tower_model.recommend(user_id, limit * 2, filters)
+            # Note: limit is already multiplied by caller if needed
+            results = self.two_tower_model.recommend(user_id, limit, filters)
             return results
         except Exception as e:
             logger.error(f"Error getting Two-Tower results: {e}")

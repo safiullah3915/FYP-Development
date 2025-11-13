@@ -289,7 +289,7 @@ class TwoTowerInference:
             logger.error(f"Error in predict: {e}", exc_info=True)
             return {}
     
-    def recommend(self, user_id: str, limit: int = 10, filters: Dict = None) -> Dict:
+    def recommend(self, user_id: str, limit: int = 10, filters: Dict = None, fetch_multiplier: int = 1) -> Dict:
         """
         Get top-K recommendations for a user
         
@@ -297,11 +297,15 @@ class TwoTowerInference:
             user_id: User ID
             limit: Number of recommendations
             filters: Optional filters (type, category, etc.)
+            fetch_multiplier: Multiplier for fetching more candidates (for reranking)
             
         Returns:
             Dict with item_ids, scores, match_reasons
         """
         try:
+            actual_limit = limit * fetch_multiplier
+            logger.info(f"Two-Tower inference for user {user_id}, limit {limit} (fetching {actual_limit} candidates)")
+            
             # Get candidate startups from database
             query = self.db.query(Startup).filter(Startup.status == 'active')
             
@@ -329,7 +333,7 @@ class TwoTowerInference:
             
             # Sort and take top-K
             sorted_items = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-            top_items = sorted_items[:limit]
+            top_items = sorted_items[:actual_limit]
             
             item_ids = [item_id for item_id, _ in top_items]
             top_scores = {item_id: score for item_id, score in top_items}
