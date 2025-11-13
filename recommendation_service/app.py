@@ -24,9 +24,13 @@ app = Flask(__name__)
 CORS(app, origins=CORS_ORIGINS)
 
 # ============================================================================
-# Initialize Two-Tower Model
+# Initialize ML Models
 # ============================================================================
 two_tower_model = None
+als_model = None
+ensemble_model = None
+
+# Load Two-Tower Model
 try:
     from inference_two_tower import TwoTowerInference
     model_path = Path(__file__).parent / "models" / "two_tower_v1_best.pth"
@@ -36,10 +40,43 @@ try:
         logger.info("✓ Two-Tower model loaded successfully!")
     else:
         logger.warning(f"Two-Tower model not found at {model_path}")
-        logger.warning("  → Will use content-based recommendations only")
 except Exception as e:
     logger.error(f"Failed to load Two-Tower model: {e}")
-    logger.warning("  → Will use content-based recommendations only")
+
+# Load ALS Model
+try:
+    from inference_als import ALSInference
+    als_path = Path(__file__).parent / "models" / "als_v1.pkl"
+    
+    if als_path.exists():
+        als_model = ALSInference(str(als_path))
+        logger.info("✓ ALS model loaded successfully!")
+    else:
+        logger.warning(f"ALS model not found at {als_path}")
+except Exception as e:
+    logger.error(f"Failed to load ALS model: {e}")
+
+# Load Ensemble Model (if both base models available)
+try:
+    if two_tower_model and als_model:
+        from inference_ensemble import EnsembleInference
+        ensemble_model = EnsembleInference(
+            als_model_path=str(Path(__file__).parent / "models" / "als_v1.pkl"),
+            two_tower_model_path=str(Path(__file__).parent / "models" / "two_tower_v1_best.pth"),
+            als_weight=0.6
+        )
+        logger.info("✓ Ensemble model initialized successfully!")
+        logger.info("  → Routing: cold start(<5) → content, warm(5-19) → ALS, hot(20+) → ensemble")
+    else:
+        logger.warning("Ensemble not initialized (requires both ALS and Two-Tower)")
+        if two_tower_model:
+            logger.info("  → Will use: content-based + Two-Tower")
+        elif als_model:
+            logger.info("  → Will use: content-based + ALS")
+        else:
+            logger.info("  → Will use: content-based only")
+except Exception as e:
+    logger.error(f"Failed to initialize ensemble: {e}")
 
 
 @app.route('/health', methods=['GET'])
@@ -225,16 +262,12 @@ def get_startups_for_developer(user_id):
         
         logger.info(f"User {user_id} has {interaction_count} interactions")
         
-        # Use Two-Tower for warm/hot users, Content-Based for cold start
-        if two_tower_model and interaction_count >= 5:
-            logger.info(f"→ Using Two-Tower model (warm/hot user)")
-            results = two_tower_model.recommend(user_id, limit, filters)
-            method_used = 'two_tower'
-            model_version = 'two_tower_v1.0'
-        else:
+        # Smart routing based on interaction count
+        if interaction_count < 5:
+            # Cold start: content-based
             logger.info(f"→ Using Content-Based (cold start: {interaction_count} interactions)")
             from services.recommendation_service import RecommendationService
-            rec_service = RecommendationService(db, enable_two_tower=False)
+            rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
                 user_id=user_id,
                 use_case='developer_startup',
@@ -243,6 +276,59 @@ def get_startups_for_developer(user_id):
             )
             method_used = results.get('method_used', 'content_based')
             model_version = 'content_based_v1.0'
+        elif interaction_count < 20:
+            # Warm users: ALS
+            logger.info(f"→ Using ALS (warm user: {interaction_count} interactions)")
+            if als_model:
+                results = als_model.recommend(user_id, limit, filters)
+                method_used = 'als'
+                model_version = 'als_v1.0'
+            elif two_tower_model:
+                logger.info("  ALS unavailable, falling back to Two-Tower")
+                results = two_tower_model.recommend(user_id, limit, filters)
+                method_used = 'two_tower'
+                model_version = 'two_tower_v1.0'
+            else:
+                logger.info("  No models available, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=user_id,
+                    use_case='developer_startup',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
+        else:
+            # Hot users: Ensemble
+            logger.info(f"→ Using Ensemble (hot user: {interaction_count} interactions)")
+            if ensemble_model:
+                results = ensemble_model.recommend(user_id, limit, filters)
+                method_used = 'ensemble'
+                model_version = 'ensemble_v1.0'
+            elif als_model:
+                logger.info("  Ensemble unavailable, falling back to ALS")
+                results = als_model.recommend(user_id, limit, filters)
+                method_used = 'als'
+                model_version = 'als_v1.0'
+            elif two_tower_model:
+                logger.info("  ALS/Ensemble unavailable, falling back to Two-Tower")
+                results = two_tower_model.recommend(user_id, limit, filters)
+                method_used = 'two_tower'
+                model_version = 'two_tower_v1.0'
+            else:
+                logger.info("  No models available, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=user_id,
+                    use_case='developer_startup',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
         
         # Create session data
         from services.session_service import SessionService
@@ -312,16 +398,11 @@ def get_startups_for_investor(user_id):
         
         logger.info(f"Investor {user_id} has {interaction_count} interactions")
         
-        # Use Two-Tower for warm/hot users, Content-Based for cold start
-        if two_tower_model and interaction_count >= 5:
-            logger.info(f"→ Using Two-Tower model (warm/hot investor)")
-            results = two_tower_model.recommend(user_id, limit, filters)
-            method_used = 'two_tower'
-            model_version = 'two_tower_v1.0'
-        else:
+        # Smart routing based on interaction count (same as developer routing)
+        if interaction_count < 5:
             logger.info(f"→ Using Content-Based (cold start: {interaction_count} interactions)")
             from services.recommendation_service import RecommendationService
-            rec_service = RecommendationService(db, enable_two_tower=False)
+            rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
                 user_id=user_id,
                 use_case='investor_startup',
@@ -330,6 +411,57 @@ def get_startups_for_investor(user_id):
             )
             method_used = results.get('method_used', 'content_based')
             model_version = 'content_based_v1.0'
+        elif interaction_count < 20:
+            logger.info(f"→ Using ALS (warm investor: {interaction_count} interactions)")
+            if als_model:
+                results = als_model.recommend(user_id, limit, filters)
+                method_used = 'als'
+                model_version = 'als_v1.0'
+            elif two_tower_model:
+                logger.info("  ALS unavailable, falling back to Two-Tower")
+                results = two_tower_model.recommend(user_id, limit, filters)
+                method_used = 'two_tower'
+                model_version = 'two_tower_v1.0'
+            else:
+                logger.info("  No models available, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=user_id,
+                    use_case='investor_startup',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
+        else:
+            logger.info(f"→ Using Ensemble (hot investor: {interaction_count} interactions)")
+            if ensemble_model:
+                results = ensemble_model.recommend(user_id, limit, filters)
+                method_used = 'ensemble'
+                model_version = 'ensemble_v1.0'
+            elif als_model:
+                logger.info("  Ensemble unavailable, falling back to ALS")
+                results = als_model.recommend(user_id, limit, filters)
+                method_used = 'als'
+                model_version = 'als_v1.0'
+            elif two_tower_model:
+                logger.info("  ALS/Ensemble unavailable, falling back to Two-Tower")
+                results = two_tower_model.recommend(user_id, limit, filters)
+                method_used = 'two_tower'
+                model_version = 'two_tower_v1.0'
+            else:
+                logger.info("  No models available, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=user_id,
+                    use_case='investor_startup',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
         
         # Create session data
         from services.session_service import SessionService

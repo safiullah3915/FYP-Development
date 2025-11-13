@@ -159,3 +159,125 @@
 2025-11-13 07:02:37 - __main__ - INFO - Debug mode: True
 2025-11-13 07:02:37 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
 2025-11-13 07:02:37 - __main__ - INFO - Database connection successful
+2025-11-13 07:34:17 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:34:17 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:34:17 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:34:17 - __main__ - INFO - Debug mode: True
+2025-11-13 07:34:17 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:34:17 - __main__ - INFO - Database connection successful
+2025-11-13 07:35:33 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:35:33 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:35:33 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:35:33 - __main__ - INFO - Debug mode: True
+2025-11-13 07:35:33 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:35:33 - __main__ - INFO - Database connection successful
+2025-11-13 07:36:39 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:36:39 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:36:39 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:36:39 - __main__ - INFO - Debug mode: True
+2025-11-13 07:36:39 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:36:39 - __main__ - INFO - Database connection successful
+2025-11-13 07:37:00 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:37:00 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:37:00 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:37:00 - __main__ - INFO - Debug mode: True
+2025-11-13 07:37:00 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:37:00 - __main__ - INFO - Database connection successful
+2025-11-13 07:37:05 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:37:05 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:37:05 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:37:05 - __main__ - INFO - Debug mode: True
+2025-11-13 07:37:05 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:37:05 - __main__ - INFO - Database connection successful
+2025-11-13 07:37:20 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:37:20 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:37:20 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:37:20 - __main__ - INFO - Debug mode: True
+2025-11-13 07:37:20 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:37:20 - __main__ - INFO - Database connection successful
+2025-11-13 07:37:24 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:37:24 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:37:24 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:37:24 - __main__ - INFO - Debug mode: True
+2025-11-13 07:37:24 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:37:24 - __main__ - INFO - Database connection successful
+2025-11-13 07:37:35 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:37:35 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:37:35 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:37:35 - __main__ - INFO - Debug mode: True
+2025-11-13 07:37:35 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:37:35 - __main__ - INFO - Database connection successful
+2025-11-13 07:37:41 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:37:41 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:37:41 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:37:41 - __main__ - INFO - Debug mode: True
+2025-11-13 07:37:41 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:37:41 - __main__ - INFO - Database connection successful
+2025-11-13 07:38:02 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:38:02 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:38:02 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
+2025-11-13 07:38:02 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
+2025-11-13 07:38:02 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:38:02 - __main__ - INFO - Debug mode: True
+2025-11-13 07:38:02 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:38:02 - __main__ - INFO - Database connection successful
+2025-11-13 07:38:17 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:38:17 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:38:17 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
+2025-11-13 07:38:17 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
+2025-11-13 07:38:17 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:38:17 - __main__ - INFO - Debug mode: True
+2025-11-13 07:38:17 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:38:17 - __main__ - INFO - Database connection successful
+2025-11-13 07:38:37 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:38:37 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:38:37 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
+2025-11-13 07:38:37 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
+2025-11-13 07:38:37 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:38:37 - __main__ - INFO - Debug mode: True
+2025-11-13 07:38:37 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:38:37 - __main__ - INFO - Database connection successful
+2025-11-13 07:39:01 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:39:01 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:39:01 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
+2025-11-13 07:39:01 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
+2025-11-13 07:39:01 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:39:01 - __main__ - INFO - Debug mode: True
+2025-11-13 07:39:01 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:39:01 - __main__ - INFO - Database connection successful
+2025-11-13 07:44:29 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 07:44:29 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 07:44:29 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
+2025-11-13 07:44:29 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
+2025-11-13 07:44:29 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 07:44:29 - __main__ - INFO - Debug mode: True
+2025-11-13 07:44:29 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 07:44:29 - __main__ - INFO - Database connection successful

@@ -1,0 +1,174 @@
+"""
+Django management command to generate ALS training dataset
+Creates sparse user-item interaction matrix for collaborative filtering
+"""
+import os
+import json
+import numpy as np
+from scipy.sparse import csr_matrix, save_npz
+from django.core.management.base import BaseCommand
+from django.db.models import Count
+from api.recommendation_models import UserInteraction
+from api.models import User, Startup
+
+
+class Command(BaseCommand):
+    help = 'Generate ALS training dataset from UserInteraction table'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--output-dir',
+            type=str,
+            default='../recommendation_service/data',
+            help='Output directory for dataset files'
+        )
+        parser.add_argument(
+            '--min-interactions',
+            type=int,
+            default=1,
+            help='Minimum interactions required for user/startup inclusion'
+        )
+
+    def handle(self, *args, **options):
+        output_dir = options['output_dir']
+        min_interactions = options['min_interactions']
+
+        self.stdout.write(self.style.SUCCESS('\n=== ALS Dataset Generation ===\n'))
+
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Step 1: Load interactions
+        self.stdout.write('Loading interactions from database...')
+        interactions = self.load_interactions(min_interactions)
+        
+        if interactions.empty:
+            self.stdout.write(self.style.ERROR('No interactions found!'))
+            return
+
+        self.stdout.write(self.style.SUCCESS(f'Loaded {len(interactions)} interactions'))
+
+        # Step 2: Create user and item mappings
+        self.stdout.write('Creating user and item mappings...')
+        user_mapping, item_mapping = self.create_mappings(interactions)
+        
+        self.stdout.write(self.style.SUCCESS(
+            f'Users: {len(user_mapping)}, Startups: {len(item_mapping)}'
+        ))
+
+        # Step 3: Build sparse matrix
+        self.stdout.write('Building sparse interaction matrix...')
+        sparse_matrix = self.build_sparse_matrix(
+            interactions, user_mapping, item_mapping
+        )
+        
+        self.stdout.write(self.style.SUCCESS(
+            f'Matrix shape: {sparse_matrix.shape}, '
+            f'Non-zero entries: {sparse_matrix.nnz}, '
+            f'Density: {sparse_matrix.nnz / (sparse_matrix.shape[0] * sparse_matrix.shape[1]) * 100:.4f}%'
+        ))
+
+        # Step 4: Save outputs
+        self.stdout.write('Saving dataset files...')
+        self.save_dataset(sparse_matrix, user_mapping, item_mapping, output_dir)
+        
+        self.stdout.write(self.style.SUCCESS('\n=== Dataset Generation Complete! ===\n'))
+        self.stdout.write(f'Matrix: {os.path.join(output_dir, "als_interactions.npz")}')
+        self.stdout.write(f'User mapping: {os.path.join(output_dir, "als_user_mapping.json")}')
+        self.stdout.write(f'Item mapping: {os.path.join(output_dir, "als_item_mapping.json")}')
+
+    def load_interactions(self, min_interactions):
+        """Load interactions with minimum threshold filter"""
+        import pandas as pd
+
+        # Get users and startups with minimum interactions
+        valid_users = UserInteraction.objects.values('user_id').annotate(
+            count=Count('id')
+        ).filter(count__gte=min_interactions).values_list('user_id', flat=True)
+
+        valid_startups = UserInteraction.objects.values('startup_id').annotate(
+            count=Count('id')
+        ).filter(count__gte=min_interactions).values_list('startup_id', flat=True)
+
+        # Load interactions for valid users and startups
+        interactions = UserInteraction.objects.filter(
+            user_id__in=valid_users,
+            startup_id__in=valid_startups
+        ).select_related('user', 'startup').values(
+            'user_id', 'startup_id', 'interaction_type', 'weight', 'created_at'
+        )
+
+        df = pd.DataFrame(list(interactions))
+        
+        if df.empty:
+            return df
+
+        # Convert UUIDs to strings
+        df['user_id'] = df['user_id'].astype(str)
+        df['startup_id'] = df['startup_id'].astype(str)
+
+        return df
+
+    def create_mappings(self, interactions):
+        """Create bidirectional ID mappings"""
+        # Get unique users and items
+        unique_users = sorted(interactions['user_id'].unique())
+        unique_items = sorted(interactions['startup_id'].unique())
+
+        # Create mappings: UUID -> index
+        user_mapping = {user_id: idx for idx, user_id in enumerate(unique_users)}
+        item_mapping = {item_id: idx for idx, item_id in enumerate(unique_items)}
+
+        # Also create reverse mappings: index -> UUID
+        user_mapping['_reverse'] = {idx: user_id for user_id, idx in user_mapping.items() if user_id != '_reverse'}
+        item_mapping['_reverse'] = {idx: item_id for item_id, idx in item_mapping.items() if item_id != '_reverse'}
+
+        return user_mapping, item_mapping
+
+    def build_sparse_matrix(self, interactions, user_mapping, item_mapping):
+        """Build sparse CSR matrix from interactions"""
+        # Map UUIDs to indices
+        row_indices = interactions['user_id'].map(lambda x: user_mapping.get(x, -1))
+        col_indices = interactions['startup_id'].map(lambda x: item_mapping.get(x, -1))
+        
+        # Filter out any unmapped entries
+        valid_mask = (row_indices != -1) & (col_indices != -1)
+        row_indices = row_indices[valid_mask].values
+        col_indices = col_indices[valid_mask].values
+        weights = interactions.loc[valid_mask, 'weight'].values
+
+        # Create sparse matrix
+        n_users = len([k for k in user_mapping.keys() if k != '_reverse'])
+        n_items = len([k for k in item_mapping.keys() if k != '_reverse'])
+
+        sparse_matrix = csr_matrix(
+            (weights, (row_indices, col_indices)),
+            shape=(n_users, n_items),
+            dtype=np.float32
+        )
+
+        return sparse_matrix
+
+    def save_dataset(self, sparse_matrix, user_mapping, item_mapping, output_dir):
+        """Save sparse matrix and mappings to disk"""
+        # Save sparse matrix
+        matrix_path = os.path.join(output_dir, 'als_interactions.npz')
+        save_npz(matrix_path, sparse_matrix)
+
+        # Save mappings (exclude reverse mappings from JSON for cleaner files)
+        user_mapping_clean = {k: v for k, v in user_mapping.items() if k != '_reverse'}
+        item_mapping_clean = {k: v for k, v in item_mapping.items() if k != '_reverse'}
+
+        user_mapping_path = os.path.join(output_dir, 'als_user_mapping.json')
+        with open(user_mapping_path, 'w') as f:
+            json.dump(user_mapping_clean, f, indent=2)
+
+        item_mapping_path = os.path.join(output_dir, 'als_item_mapping.json')
+        with open(item_mapping_path, 'w') as f:
+            json.dump(item_mapping_clean, f, indent=2)
+
+        self.stdout.write(self.style.SUCCESS(f'Saved sparse matrix: {matrix_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Saved user mapping: {user_mapping_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Saved item mapping: {item_mapping_path}'))
+
+

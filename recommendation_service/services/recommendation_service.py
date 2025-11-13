@@ -5,6 +5,8 @@ Orchestrates the entire recommendation flow
 from engines.router import RecommendationRouter
 from engines.content_based import ContentBasedRecommender
 from engines.two_tower import TwoTowerRecommender
+from engines.collaborative_als import ALSRecommender
+from engines.ensemble import EnsembleRecommender
 from engines.model_registry import get_registry
 from services.session_service import SessionService
 from utils.logger import get_logger
@@ -15,23 +17,36 @@ logger = get_logger(__name__)
 class RecommendationService:
     """Main service for generating recommendations"""
     
-    def __init__(self, db_session, enable_two_tower: bool = False):
+    def __init__(self, db_session, enable_two_tower: bool = False, enable_als: bool = False, enable_ensemble: bool = False):
         """
         Initialize recommendation service
         
         Args:
             db_session: Database session
             enable_two_tower: Enable two-tower model (default: False)
+            enable_als: Enable ALS collaborative filtering (default: False)
+            enable_ensemble: Enable ensemble (ALS + Two-Tower) (default: False)
         """
         self.db = db_session
-        self.router = RecommendationRouter(enable_two_tower=enable_two_tower)
+        self.router = RecommendationRouter(
+            enable_two_tower=enable_two_tower,
+            enable_als=enable_als,
+            enable_ensemble=enable_ensemble
+        )
         self.content_based = ContentBasedRecommender(db_session)
         self.session_service = SessionService()
         
-        # Initialize two-tower if enabled
+        # Initialize models
         self.two_tower = None
+        self.als = None
+        self.ensemble = None
+        
         if enable_two_tower:
             self._initialize_two_tower()
+        if enable_als:
+            self._initialize_als()
+        if enable_ensemble:
+            self._initialize_ensemble()
     
     def _initialize_two_tower(self):
         """Initialize two-tower model"""
@@ -58,6 +73,62 @@ class RecommendationService:
         except Exception as e:
             logger.error(f"Error initializing Two-Tower model: {e}")
             self.two_tower = None
+    
+    def _initialize_als(self):
+        """Initialize ALS model"""
+        try:
+            logger.info("Initializing ALS model...")
+            registry = get_registry()
+            
+            # Get active model path
+            model_info = registry.get_active_model(
+                use_case='developer_startup',
+                model_type='als'
+            )
+            
+            if model_info and 'model_path' in model_info:
+                self.als = ALSRecommender(
+                    db_session=self.db,
+                    model_path=model_info['model_path']
+                )
+                logger.info("ALS model loaded successfully")
+            else:
+                logger.warning("No ALS model found")
+                
+        except Exception as e:
+            logger.error(f"Error initializing ALS model: {e}")
+            self.als = None
+    
+    def _initialize_ensemble(self):
+        """Initialize ensemble model"""
+        try:
+            logger.info("Initializing Ensemble model...")
+            
+            # Ensemble requires both ALS and Two-Tower
+            if not self.als or not self.two_tower:
+                logger.warning("Ensemble requires both ALS and Two-Tower models")
+                logger.warning("Attempting to initialize missing models...")
+                
+                if not self.als:
+                    self._initialize_als()
+                if not self.two_tower:
+                    self._initialize_two_tower()
+            
+            # Create ensemble if both models available
+            if self.als and self.two_tower:
+                self.ensemble = EnsembleRecommender(
+                    als_recommender=self.als,
+                    two_tower_recommender=self.two_tower,
+                    als_weight=0.6
+                )
+                logger.info("Ensemble model initialized successfully")
+            else:
+                logger.warning("Could not initialize ensemble (missing base models)")
+                self.ensemble = None
+                
+        except Exception as e:
+            logger.error(f"Error initializing Ensemble model: {e}")
+            self.ensemble = None
     
     def get_recommendations(self, user_id, use_case, limit=10, filters=None):
         """
@@ -97,6 +168,14 @@ class RecommendationService:
             # 2. Get recommendations from engine
             if method == 'content_based':
                 results = self.content_based.recommend(user_id, use_case, limit, filters)
+            elif method == 'als':
+                # Use ALS if available, otherwise fallback
+                if self.als:
+                    results = self.als.recommend(user_id, use_case, limit, filters)
+                else:
+                    logger.warning("ALS not available, falling back to content_based")
+                    results = self.content_based.recommend(user_id, use_case, limit, filters)
+                    method = 'content_based'
             elif method == 'two_tower':
                 # Use two-tower if available, otherwise fallback
                 if self.two_tower:
@@ -105,9 +184,24 @@ class RecommendationService:
                     logger.warning("Two-Tower not available, falling back to content_based")
                     results = self.content_based.recommend(user_id, use_case, limit, filters)
                     method = 'content_based'
+            elif method == 'ensemble':
+                # Use ensemble if available, otherwise fallback
+                if self.ensemble:
+                    results = self.ensemble.recommend(user_id, use_case, limit, filters)
+                elif self.als:
+                    logger.warning("Ensemble not available, falling back to ALS")
+                    results = self.als.recommend(user_id, use_case, limit, filters)
+                    method = 'als'
+                elif self.two_tower:
+                    logger.warning("Ensemble/ALS not available, falling back to Two-Tower")
+                    results = self.two_tower.recommend(user_id, use_case, limit, filters)
+                    method = 'two_tower'
+                else:
+                    logger.warning("No advanced models available, falling back to content_based")
+                    results = self.content_based.recommend(user_id, use_case, limit, filters)
+                    method = 'content_based'
             else:
-                # Future: other methods (collaborative, ensemble)
-                logger.warning(f"Method {method} not implemented, falling back to content_based")
+                logger.warning(f"Method {method} not recognized, falling back to content_based")
                 results = self.content_based.recommend(user_id, use_case, limit, filters)
                 method = 'content_based'
             
