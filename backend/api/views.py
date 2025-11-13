@@ -587,10 +587,23 @@ class StartupDetailView(generics.RetrieveDestroyAPIView):
 	permission_classes = [AllowAny]
 	
 	def retrieve(self, request, *args, **kwargs):
-		instance = self.get_object()
+		try:
+			instance = self.get_object()
+		except Exception as e:
+			print(f"❌ Error getting startup object: {type(e).__name__}: {str(e)}")
+			import traceback
+			print(f"❌ Traceback:\n{traceback.format_exc()}")
+			return Response(
+				{"error": "Startup not found", "detail": str(e)},
+				status=status.HTTP_404_NOT_FOUND
+			)
+		
 		# Increment view count (for backward compatibility)
-		instance.views += 1
-		instance.save(update_fields=['views'])
+		try:
+			instance.views += 1
+			instance.save(update_fields=['views'])
+		except Exception as e:
+			print(f"⚠️ Warning: Failed to increment view count: {str(e)}")
 		
 		# Track user interaction if user is logged in
 		user = get_session_user(request)
@@ -607,8 +620,19 @@ class StartupDetailView(generics.RetrieveDestroyAPIView):
 			except IntegrityError:
 				# Race condition - interaction already exists, ignore
 				pass
+			except Exception as e:
+				print(f"⚠️ Warning: Failed to track user interaction: {str(e)}")
 		
-		return super().retrieve(request, *args, **kwargs)
+		try:
+			return super().retrieve(request, *args, **kwargs)
+		except Exception as e:
+			print(f"❌ Error serializing startup: {type(e).__name__}: {str(e)}")
+			import traceback
+			print(f"❌ Traceback:\n{traceback.format_exc()}")
+			return Response(
+				{"error": "Failed to load startup details", "detail": str(e)},
+				status=status.HTTP_500_INTERNAL_SERVER_ERROR
+			)
 	
 	def destroy(self, request, *args, **kwargs):
 		"""Delete startup - only owner can delete"""

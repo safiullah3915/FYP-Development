@@ -46,12 +46,36 @@ const StartupDetails = () => {
 
   const loadStartupDetails = async () => {
     try {
+      console.log('[StartupDetails] Loading startup with ID:', id);
       const response = await startupAPI.getStartup(id);
+      console.log('[StartupDetails] Startup loaded successfully:', response.data?.title);
       setStartup(response.data);
     } catch (error) {
-      console.error('Failed to load startup details:', error);
-      toast.error('Failed to load startup details');
-      navigate('/marketplace');
+      console.error('[StartupDetails] Failed to load startup details:', error);
+      const status = error.response?.status;
+      const errorData = error.response?.data;
+      
+      console.error('[StartupDetails] Error details:', {
+        status,
+        id,
+        message: errorData?.message || errorData?.error || error.message,
+        detail: errorData?.detail,
+        fullError: errorData
+      });
+      
+      // Only redirect on 404 (not found) - startup doesn't exist
+      if (status === 404) {
+        toast.error('Startup not found');
+        navigate('/marketplace');
+      } else if (status === 500) {
+        // Server error - might be a serialization issue with older startups
+        toast.error('Error loading startup details. The startup may have incomplete data.');
+        console.error('[StartupDetails] Server error - check backend logs for details');
+        // Don't redirect on 500, let user see the error
+      } else {
+        // For other errors, show error but don't redirect
+        toast.error('Failed to load startup details. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
