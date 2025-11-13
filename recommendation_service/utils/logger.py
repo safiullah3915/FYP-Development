@@ -4,6 +4,10 @@ Logging configuration for Flask Recommendation Service
 import logging
 import sys
 from pathlib import Path
+
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from config import LOG_LEVEL, LOG_FILE
 
 # Create logs directory if it doesn't exist

@@ -21,7 +21,7 @@ FLASK_PORT = int(os.getenv('FLASK_PORT', 5000))
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
 
 # Database Connection String
-DATABASE_URL = f'sqlite:///{DATABASE_PATH}'
+DATABASE_URL = f'sqlite:///{DATABASE_PATH.as_posix()}'
 
 # SQLAlchemy Configuration
 SQLALCHEMY_ECHO = os.getenv('SQLALCHEMY_ECHO', 'False').lower() == 'true'
@@ -40,4 +40,23 @@ CORS_ORIGINS = os.getenv(
     'http://localhost:5173,http://localhost:8000'
 ).split(',')
 
+# Recommendation System Configuration
+# Routing thresholds
+COLD_START_THRESHOLD = int(os.getenv('COLD_START_THRESHOLD', 5))  # interactions
 
+# Content-based weights
+EMBEDDING_WEIGHT = float(os.getenv('EMBEDDING_WEIGHT', 0.33))
+PREFERENCE_WEIGHT = float(os.getenv('PREFERENCE_WEIGHT', 0.33))
+PROFILE_WEIGHT = float(os.getenv('PROFILE_WEIGHT', 0.34))
+
+# Diversity
+DIVERSITY_LAMBDA = float(os.getenv('DIVERSITY_LAMBDA', 0.7))  # 70% relevance, 30% diversity
+
+# Business rules
+RECENCY_BOOST_DAYS = int(os.getenv('RECENCY_BOOST_DAYS', 30))
+RECENCY_BOOST_FACTOR = float(os.getenv('RECENCY_BOOST_FACTOR', 1.2))
+POSITION_AVAILABILITY_BOOST = float(os.getenv('POSITION_AVAILABILITY_BOOST', 1.15))
+FRESHNESS_WEIGHT = float(os.getenv('FRESHNESS_WEIGHT', 0.15))
+
+# Session configuration
+SESSION_TTL_HOURS = int(os.getenv('SESSION_TTL_HOURS', 24))

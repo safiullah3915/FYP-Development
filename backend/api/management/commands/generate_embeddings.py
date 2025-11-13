@@ -17,7 +17,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--startups',
             action='store_true',
-            help='Generate embeddings for startups (not yet implemented)',
+            help='Generate embeddings for startups',
         )
         parser.add_argument(
             '--all',
@@ -32,13 +32,13 @@ class Command(BaseCommand):
         parser.add_argument(
             '--only-pending',
             action='store_true',
-            help='Only process users with embedding_needs_update=True or no embedding',
+            help='Only process users/startups with embedding_needs_update=True or no embedding',
         )
         parser.add_argument(
             '--batch-size',
             type=int,
             default=50,
-            help='Number of users to process in each batch (default: 50)',
+            help='Number of users/startups to process in each batch (default: 50)',
         )
 
     def handle(self, *args, **options):
@@ -100,9 +100,59 @@ class Command(BaseCommand):
                         ))
         
         if options['all'] or options['startups']:
-            self.stdout.write(self.style.WARNING(
-                'Startup embedding generation is not yet implemented. Skipping...'
-            ))
+            self.stdout.write(self.style.SUCCESS('Generating startup embeddings...'))
+            
+            # Build query based on options (only active startups)
+            startups_query = Startup.objects.filter(status='active')
+            
+            if options['only_pending']:
+                # Only process startups that need updates
+                startups_query = startups_query.filter(
+                    models.Q(embedding_needs_update=True) |
+                    models.Q(embedding_updated_at__isnull=True) |
+                    models.Q(profile_embedding__isnull=True) |
+                    models.Q(profile_embedding='')
+                )
+                self.stdout.write(self.style.WARNING(
+                    f'Processing only pending startups (embedding_needs_update=True or no embedding)'
+                ))
+            elif not options['force']:
+                # By default, skip startups that already have embeddings
+                startups_query = startups_query.filter(
+                    models.Q(profile_embedding__isnull=True) |
+                    models.Q(profile_embedding='')
+                )
+                self.stdout.write(self.style.WARNING(
+                    'Skipping startups with existing embeddings. Use --force to regenerate all.'
+                ))
+            
+            startups = list(startups_query)
+            total = len(startups)
+            
+            if total == 0:
+                self.stdout.write(self.style.WARNING('No startups to process.'))
+            else:
+                self.stdout.write(f'Processing {total} startups...')
+                
+                # Process in batches
+                batch_size = options['batch_size']
+                results = embedding_service.generate_startup_embeddings_batch(startups, batch_size=batch_size)
+                
+                # Report results
+                self.stdout.write(self.style.SUCCESS(
+                    f'\nStartup embedding generation complete!'
+                ))
+                self.stdout.write(f'  Success: {results["success"]}')
+                self.stdout.write(f'  Failed: {results["failed"]}')
+                
+                if results['errors']:
+                    self.stdout.write(self.style.WARNING(f'\nErrors ({len(results["errors"])}):'))
+                    for error in results['errors'][:10]:  # Show first 10 errors
+                        self.stdout.write(self.style.ERROR(f'  - {error}'))
+                    if len(results['errors']) > 10:
+                        self.stdout.write(self.style.WARNING(
+                            f'  ... and {len(results["errors"]) - 10} more errors'
+                        ))
         
         self.stdout.write(self.style.SUCCESS('\nCommand completed!'))
 

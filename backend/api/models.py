@@ -120,6 +120,7 @@ class Startup(models.Model):
 	embedding_model = models.CharField(max_length=50, default='all-MiniLM-L6-v2', blank=True)
 	embedding_version = models.IntegerField(default=1)
 	embedding_updated_at = models.DateTimeField(null=True, blank=True)
+	embedding_needs_update = models.BooleanField(default=False, db_index=True)  # Flag to track if embedding needs regeneration
 	
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
@@ -132,6 +133,8 @@ class Startup(models.Model):
 			models.Index(fields=['category']),
 			models.Index(fields=['status']),
 			models.Index(fields=['created_at']),
+			models.Index(fields=['embedding_needs_update']),
+			models.Index(fields=['embedding_updated_at']),
 		]
 	
 	def __str__(self):

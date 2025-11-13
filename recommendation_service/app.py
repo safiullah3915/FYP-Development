@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config import FLASK_HOST, FLASK_PORT, FLASK_DEBUG, CORS_ORIGINS
 from database.connection import check_db_connection, SessionLocal
-from database.models import User, Startup
+from database.models import User, Startup, UserInteraction
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +22,24 @@ app = Flask(__name__)
 
 # Enable CORS
 CORS(app, origins=CORS_ORIGINS)
+
+# ============================================================================
+# Initialize Two-Tower Model
+# ============================================================================
+two_tower_model = None
+try:
+    from inference_two_tower import TwoTowerInference
+    model_path = Path(__file__).parent / "models" / "two_tower_v1_best.pth"
+    
+    if model_path.exists():
+        two_tower_model = TwoTowerInference(str(model_path))
+        logger.info("✓ Two-Tower model loaded successfully!")
+    else:
+        logger.warning(f"Two-Tower model not found at {model_path}")
+        logger.warning("  → Will use content-based recommendations only")
+except Exception as e:
+    logger.error(f"Failed to load Two-Tower model: {e}")
+    logger.warning("  → Will use content-based recommendations only")
 
 
 @app.route('/health', methods=['GET'])
@@ -175,29 +193,81 @@ def get_startups_for_developer(user_id):
     Returns:
         List of recommended startups with scores and match reasons
     """
-    limit = int(request.args.get('limit', 10))
-    startup_type = request.args.get('type', None)
-    
-    # TODO: Implement recommendation logic
-    recommendations = []  # Placeholder
-    
-    # Generate session data
-    session_data = generate_recommendation_session(
-        user_id=user_id,
-        use_case='developer_startup',
-        method='content_based',  # Will be dynamic
-        recommendations=recommendations
-    )
-    
-    return jsonify({
-        **session_data,  # Include all session fields
-        'recommendations': session_data['recommendations'],
-        'total': len(recommendations),
-        'limit': limit,
-        'filters': {
-            'type': startup_type
-        }
-    }), 200
+    db = SessionLocal()
+    try:
+        # Validate user_id
+        if not user_id or not isinstance(user_id, str):
+            return jsonify({'error': 'Invalid user_id'}), 400
+        
+        # Validate and sanitize limit
+        try:
+            limit = int(request.args.get('limit', 10))
+            if limit < 1:
+                limit = 10
+            elif limit > 100:
+                limit = 100  # Cap at 100 for performance
+        except (ValueError, TypeError):
+            limit = 10
+        
+        startup_type = request.args.get('type', None)
+        if startup_type and startup_type not in ['marketplace', 'collaboration']:
+            startup_type = None
+        
+        # Build filters
+        filters = {}
+        if startup_type:
+            filters['type'] = startup_type
+        
+        # Check interaction count for routing
+        interaction_count = db.query(UserInteraction).filter(
+            UserInteraction.user_id == user_id
+        ).count()
+        
+        logger.info(f"User {user_id} has {interaction_count} interactions")
+        
+        # Use Two-Tower for warm/hot users, Content-Based for cold start
+        if two_tower_model and interaction_count >= 5:
+            logger.info(f"→ Using Two-Tower model (warm/hot user)")
+            results = two_tower_model.recommend(user_id, limit, filters)
+            method_used = 'two_tower'
+            model_version = 'two_tower_v1.0'
+        else:
+            logger.info(f"→ Using Content-Based (cold start: {interaction_count} interactions)")
+            from services.recommendation_service import RecommendationService
+            rec_service = RecommendationService(db, enable_two_tower=False)
+            results = rec_service.get_recommendations(
+                user_id=user_id,
+                use_case='developer_startup',
+                limit=limit,
+                filters=filters
+            )
+            method_used = results.get('method_used', 'content_based')
+            model_version = 'content_based_v1.0'
+        
+        # Create session data
+        from services.session_service import SessionService
+        session_service = SessionService()
+        
+        session_data = session_service.create_session_data(
+            user_id=user_id,
+            use_case='developer_startup',
+            method=method_used,
+            recommendations=results,
+            model_version=model_version
+        )
+        
+        # Format for API response
+        response = session_service.format_for_api_response(session_data, results)
+        response['interaction_count'] = interaction_count
+        response['method_used'] = method_used
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_startups_for_developer: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
+    finally:
+        db.close()
 
 
 @app.route('/api/recommendations/startups/for-investor/<user_id>', methods=['GET'])
@@ -212,30 +282,79 @@ def get_startups_for_investor(user_id):
     Returns:
         List of recommended marketplace startups with scores and match reasons
     """
-    limit = int(request.args.get('limit', 10))
-    category = request.args.get('category', None)
-    
-    # TODO: Implement recommendation logic
-    recommendations = []  # Placeholder
-    
-    # Generate session data
-    session_data = generate_recommendation_session(
-        user_id=user_id,
-        use_case='investor_startup',
-        method='content_based',
-        recommendations=recommendations
-    )
-    
-    return jsonify({
-        **session_data,  # Include all session fields
-        'recommendations': session_data['recommendations'],
-        'total': len(recommendations),
-        'limit': limit,
-        'filters': {
-            'type': 'marketplace',  # Only marketplace startups for investors
-            'category': category
-        }
-    }), 200
+    db = SessionLocal()
+    try:
+        # Validate user_id
+        if not user_id or not isinstance(user_id, str):
+            return jsonify({'error': 'Invalid user_id'}), 400
+        
+        # Validate and sanitize limit
+        try:
+            limit = int(request.args.get('limit', 10))
+            if limit < 1:
+                limit = 10
+            elif limit > 100:
+                limit = 100  # Cap at 100 for performance
+        except (ValueError, TypeError):
+            limit = 10
+        
+        category = request.args.get('category', None)
+        
+        # Build filters (investors only see marketplace)
+        filters = {'type': 'marketplace'}
+        if category:
+            filters['category'] = category
+        
+        # Check interaction count for routing
+        interaction_count = db.query(UserInteraction).filter(
+            UserInteraction.user_id == user_id
+        ).count()
+        
+        logger.info(f"Investor {user_id} has {interaction_count} interactions")
+        
+        # Use Two-Tower for warm/hot users, Content-Based for cold start
+        if two_tower_model and interaction_count >= 5:
+            logger.info(f"→ Using Two-Tower model (warm/hot investor)")
+            results = two_tower_model.recommend(user_id, limit, filters)
+            method_used = 'two_tower'
+            model_version = 'two_tower_v1.0'
+        else:
+            logger.info(f"→ Using Content-Based (cold start: {interaction_count} interactions)")
+            from services.recommendation_service import RecommendationService
+            rec_service = RecommendationService(db, enable_two_tower=False)
+            results = rec_service.get_recommendations(
+                user_id=user_id,
+                use_case='investor_startup',
+                limit=limit,
+                filters=filters
+            )
+            method_used = results.get('method_used', 'content_based')
+            model_version = 'content_based_v1.0'
+        
+        # Create session data
+        from services.session_service import SessionService
+        session_service = SessionService()
+        
+        session_data = session_service.create_session_data(
+            user_id=user_id,
+            use_case='investor_startup',
+            method=method_used,
+            recommendations=results,
+            model_version=model_version
+        )
+        
+        # Format for API response
+        response = session_service.format_for_api_response(session_data, results)
+        response['interaction_count'] = interaction_count
+        response['method_used'] = method_used
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_startups_for_investor: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
+    finally:
+        db.close()
 
 
 @app.route('/api/recommendations/developers/for-startup/<startup_id>', methods=['GET'])
@@ -251,30 +370,70 @@ def get_developers_for_startup(startup_id):
     Returns:
         List of recommended developers with scores and match reasons
     """
-    limit = int(request.args.get('limit', 10))
-    position_id = request.args.get('position_id', None)
-    
-    # TODO: Implement recommendation logic
-    recommendations = []  # Placeholder
-    
-    # Generate session data
-    session_data = generate_recommendation_session(
-        user_id=startup_id,  # For founder use case, startup_id represents the founder
-        use_case='founder_developer',
-        method='content_based',
-        recommendations=recommendations
-    )
-    
-    return jsonify({
-        **session_data,  # Include all session fields
-        'startup_id': startup_id,
-        'recommendations': session_data['recommendations'],
-        'total': len(recommendations),
-        'limit': limit,
-        'filters': {
-            'position_id': position_id
-        }
-    }), 200
+    db = SessionLocal()
+    try:
+        # Validate startup_id
+        if not startup_id or not isinstance(startup_id, str):
+            return jsonify({'error': 'Invalid startup_id'}), 400
+        
+        # Validate and sanitize limit
+        try:
+            limit = int(request.args.get('limit', 10))
+            if limit < 1:
+                limit = 10
+            elif limit > 100:
+                limit = 100  # Cap at 100 for performance
+        except (ValueError, TypeError):
+            limit = 10
+        
+        position_id = request.args.get('position_id', None)
+        
+        # Get startup owner as user_id for routing
+        startup = db.query(Startup).filter(Startup.id == startup_id).first()
+        if not startup:
+            return jsonify({'error': 'Startup not found'}), 404
+        
+        founder_id = str(startup.owner_id)
+        
+        # Build filters
+        filters = {'startup_id': startup_id}
+        if position_id:
+            filters['position_id'] = position_id
+        
+        # Get recommendations
+        from services.recommendation_service import RecommendationService
+        from services.session_service import SessionService
+        
+        rec_service = RecommendationService(db)
+        session_service = SessionService()
+        
+        results = rec_service.get_recommendations(
+            user_id=founder_id,
+            use_case='founder_developer',
+            limit=limit,
+            filters=filters
+        )
+        
+        # Create session data
+        session_data = session_service.create_session_data(
+            user_id=founder_id,
+            use_case='founder_developer',
+            method=results.get('method_used', 'content_based'),
+            recommendations=results,
+            model_version='content_based_v1.0'
+        )
+        
+        # Format for API response
+        response = session_service.format_for_api_response(session_data, results)
+        response['startup_id'] = startup_id
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_developers_for_startup: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
+    finally:
+        db.close()
 
 
 @app.route('/api/recommendations/investors/for-startup/<startup_id>', methods=['GET'])
@@ -289,26 +448,66 @@ def get_investors_for_startup(startup_id):
     Returns:
         List of recommended investors with scores and match reasons
     """
-    limit = int(request.args.get('limit', 10))
-    
-    # TODO: Implement recommendation logic
-    recommendations = []  # Placeholder
-    
-    # Generate session data
-    session_data = generate_recommendation_session(
-        user_id=startup_id,  # For founder use case, startup_id represents the founder
-        use_case='founder_startup',
-        method='content_based',
-        recommendations=recommendations
-    )
-    
-    return jsonify({
-        **session_data,  # Include all session fields
-        'startup_id': startup_id,
-        'recommendations': session_data['recommendations'],
-        'total': len(recommendations),
-        'limit': limit
-    }), 200
+    db = SessionLocal()
+    try:
+        # Validate startup_id
+        if not startup_id or not isinstance(startup_id, str):
+            return jsonify({'error': 'Invalid startup_id'}), 400
+        
+        # Validate and sanitize limit
+        try:
+            limit = int(request.args.get('limit', 10))
+            if limit < 1:
+                limit = 10
+            elif limit > 100:
+                limit = 100  # Cap at 100 for performance
+        except (ValueError, TypeError):
+            limit = 10
+        
+        # Get startup owner as user_id for routing
+        startup = db.query(Startup).filter(Startup.id == startup_id).first()
+        if not startup:
+            return jsonify({'error': 'Startup not found'}), 404
+        
+        founder_id = str(startup.owner_id)
+        
+        # Build filters
+        filters = {'startup_id': startup_id}
+        
+        # Get recommendations
+        from services.recommendation_service import RecommendationService
+        from services.session_service import SessionService
+        
+        rec_service = RecommendationService(db)
+        session_service = SessionService()
+        
+        results = rec_service.get_recommendations(
+            user_id=founder_id,
+            use_case='founder_investor',
+            limit=limit,
+            filters=filters
+        )
+        
+        # Create session data
+        session_data = session_service.create_session_data(
+            user_id=founder_id,
+            use_case='founder_investor',
+            method=results.get('method_used', 'content_based'),
+            recommendations=results,
+            model_version='content_based_v1.0'
+        )
+        
+        # Format for API response
+        response = session_service.format_for_api_response(session_data, results)
+        response['startup_id'] = startup_id
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_investors_for_startup: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
+    finally:
+        db.close()
 
 
 @app.route('/api/recommendations/trending/startups', methods=['GET'])
@@ -324,18 +523,34 @@ def get_trending_startups():
     Returns:
         List of trending startups with metrics
     """
-    limit = int(request.args.get('limit', 50))
-    sort_by = request.args.get('sort_by', 'trending_score')
-    
-    # TODO: Implement trending logic using StartupTrendingMetrics
-    # For now, return empty structure
-    return jsonify({
-        'startups': [],
-        'total': 0,
-        'limit': limit,
-        'sort_by': sort_by,
-        'computed_at': None
-    }), 200
+    try:
+        # Validate and sanitize limit
+        try:
+            limit = int(request.args.get('limit', 50))
+            if limit < 1:
+                limit = 50
+            elif limit > 200:
+                limit = 200  # Cap at 200 for trending
+        except (ValueError, TypeError):
+            limit = 50
+        
+        sort_by = request.args.get('sort_by', 'trending_score')
+        valid_sort_options = ['trending_score', 'popularity_score', 'velocity_score', 'views', 'created_at']
+        if sort_by not in valid_sort_options:
+            sort_by = 'trending_score'
+        
+        # TODO: Implement trending logic using StartupTrendingMetrics
+        # For now, return empty structure
+        return jsonify({
+            'startups': [],
+            'total': 0,
+            'limit': limit,
+            'sort_by': sort_by,
+            'computed_at': None
+        }), 200
+    except Exception as e:
+        logger.error(f"Error in get_trending_startups: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/recommendations/metrics', methods=['GET'])
@@ -350,25 +565,37 @@ def get_recommendation_metrics():
     Returns:
         Metrics and evaluation data for recommendation models
     """
-    use_case = request.args.get('use_case', None)
-    model_type = request.args.get('model_type', None)
-    
-    # TODO: Implement metrics retrieval from RecommendationModel table
-    # For now, return empty structure
-    return jsonify({
-        'models': [],
-        'overall_metrics': {
-            'total_models': 0,
-            'active_models': 0,
-            'average_precision': 0.0,
-            'average_recall': 0.0,
-            'average_ndcg': 0.0
-        },
-        'filters': {
-            'use_case': use_case,
-            'model_type': model_type
-        }
-    }), 200
+    try:
+        use_case = request.args.get('use_case', None)
+        model_type = request.args.get('model_type', None)
+        
+        # Validate use_case if provided
+        if use_case and use_case not in ['developer_startup', 'founder_developer', 'founder_startup', 'investor_startup']:
+            use_case = None
+        
+        # Validate model_type if provided
+        if model_type and model_type not in ['content_based', 'als', 'two_tower', 'ranker']:
+            model_type = None
+        
+        # TODO: Implement metrics retrieval from RecommendationModel table
+        # For now, return empty structure
+        return jsonify({
+            'models': [],
+            'overall_metrics': {
+                'total_models': 0,
+                'active_models': 0,
+                'average_precision': 0.0,
+                'average_recall': 0.0,
+                'average_ndcg': 0.0
+            },
+            'filters': {
+                'use_case': use_case,
+                'model_type': model_type
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error in get_recommendation_metrics: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.errorhandler(404)

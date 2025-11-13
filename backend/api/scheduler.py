@@ -21,7 +21,7 @@ def update_pending_user_embeddings():
     from api.models import User
     from api.services.embedding_service import EmbeddingService
     
-    logger.info("Starting periodic embedding update task...")
+    logger.info("Starting periodic user embedding update task...")
     
     # Query users that need embedding updates
     users_query = User.objects.filter(is_active=True).filter(
@@ -49,12 +49,58 @@ def update_pending_user_embeddings():
     
     # Log results
     logger.info(
-        f"Embedding update task completed: {results['success']} succeeded, "
+        f"User embedding update task completed: {results['success']} succeeded, "
         f"{results['failed']} failed out of {total} users"
     )
     
     if results['errors']:
-        logger.warning(f"Encountered {len(results['errors'])} errors during embedding generation")
+        logger.warning(f"Encountered {len(results['errors'])} errors during user embedding generation")
+        for error in results['errors'][:5]:  # Log first 5 errors
+            logger.error(f"Embedding error: {error}")
+
+
+def update_pending_startup_embeddings():
+    """
+    Periodic task to update embeddings for startups whose data has changed.
+    This function is called by APScheduler at scheduled intervals.
+    """
+    from api.models import Startup
+    from api.services.embedding_service import EmbeddingService
+    
+    logger.info("Starting periodic startup embedding update task...")
+    
+    # Query startups that need embedding updates (only active startups)
+    startups_query = Startup.objects.filter(status='active').filter(
+        models.Q(embedding_needs_update=True) |
+        models.Q(embedding_updated_at__isnull=True) |
+        models.Q(profile_embedding__isnull=True) |
+        models.Q(profile_embedding='')
+    )
+    
+    startups = list(startups_query)
+    total = len(startups)
+    
+    if total == 0:
+        logger.info("No startups need embedding updates.")
+        return
+    
+    logger.info(f"Found {total} startups needing embedding updates. Processing in batches...")
+    
+    # Initialize embedding service
+    embedding_service = EmbeddingService()
+    
+    # Process in batches
+    batch_size = 50
+    results = embedding_service.generate_startup_embeddings_batch(startups, batch_size=batch_size)
+    
+    # Log results
+    logger.info(
+        f"Startup embedding update task completed: {results['success']} succeeded, "
+        f"{results['failed']} failed out of {total} startups"
+    )
+    
+    if results['errors']:
+        logger.warning(f"Encountered {len(results['errors'])} errors during startup embedding generation")
         for error in results['errors'][:5]:  # Log first 5 errors
             logger.error(f"Embedding error: {error}")
 
@@ -85,12 +131,21 @@ def start_scheduler():
     _scheduler = BackgroundScheduler()
     _scheduler.add_jobstore(DjangoJobStore(), "default")
     
-    # Schedule the embedding update task to run every 6 hours
+    # Schedule the user embedding update task to run every 6 hours
     _scheduler.add_job(
         update_pending_user_embeddings,
         trigger=CronTrigger(hour="*/6"),  # Every 6 hours
         id="update_user_embeddings",
         name="Update user embeddings for changed profiles",
+        replace_existing=True,
+    )
+    
+    # Schedule the startup embedding update task to run every 6 hours
+    _scheduler.add_job(
+        update_pending_startup_embeddings,
+        trigger=CronTrigger(hour="*/6"),  # Every 6 hours
+        id="update_startup_embeddings",
+        name="Update startup embeddings for changed data",
         replace_existing=True,
     )
     

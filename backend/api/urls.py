@@ -95,6 +95,11 @@ urlpatterns = [
 	# Trending startups endpoint
 	path('api/recommendations/trending/startups', views.TrendingStartupsView.as_view(), name='trending_startups'),
 	
+	# Personalized recommendations (proxies to Flask - uses Two-Tower model)
+	path('api/recommendations/personalized/startups', views.get_personalized_startup_recommendations, name='personalized_startup_recommendations'),
+	path('api/recommendations/personalized/developers/<uuid:startup_id>', views.get_personalized_developer_recommendations, name='personalized_developer_recommendations'),
+	path('api/recommendations/personalized/investors/<uuid:startup_id>', views.get_personalized_investor_recommendations, name='personalized_investor_recommendations'),
+	
 	# Recommendation session storage
 	path('api/recommendations/session', views.store_recommendation_session, name='store_recommendation_session'),
 ]

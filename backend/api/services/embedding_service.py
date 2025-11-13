@@ -6,7 +6,7 @@ import logging
 from typing import Optional, List
 from sentence_transformers import SentenceTransformer
 from django.utils import timezone
-from api.models import User
+from api.models import User, Startup, StartupTag
 from api.messaging_models import UserProfile
 from api.recommendation_models import UserOnboardingPreferences
 
@@ -190,6 +190,171 @@ class EmbeddingService:
                 except Exception as e:
                     results['failed'] += 1
                     error_msg = f"User {user.id}: {str(e)}"
+                    results['errors'].append(error_msg)
+                    logger.error(error_msg, exc_info=True)
+        
+        logger.info(f"Batch processing complete: {results['success']} succeeded, {results['failed']} failed")
+        return results
+    
+    def build_startup_text(self, startup: Startup) -> str:
+        """
+        Build text from startup data for embedding generation
+        
+        Args:
+            startup: Startup instance
+            
+        Returns:
+            Combined text string for embedding
+        """
+        startup_text_parts = []
+        
+        # Add title
+        if startup.title:
+            startup_text_parts.append(f"Title: {startup.title}")
+        
+        # Add description
+        if startup.description:
+            startup_text_parts.append(f"Description: {startup.description}")
+        
+        # Add field
+        if startup.field:
+            startup_text_parts.append(f"Field: {startup.field}")
+        
+        # Add category
+        if startup.category:
+            startup_text_parts.append(f"Category: {startup.category}")
+        
+        # Add type
+        if startup.type:
+            startup_text_parts.append(f"Type: {startup.type}")
+        
+        # Add stages (JSON array)
+        if startup.stages:
+            try:
+                stages = startup.stages if isinstance(startup.stages, list) else json.loads(startup.stages) if isinstance(startup.stages, str) else []
+                if stages:
+                    startup_text_parts.append(f"Stages: {', '.join(stages)}")
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(f"Error parsing stages for startup {startup.id}: {e}")
+        
+        # Add collaboration-specific fields
+        if startup.type == 'collaboration':
+            if startup.role_title:
+                startup_text_parts.append(f"Role: {startup.role_title}")
+            if startup.phase:
+                startup_text_parts.append(f"Phase: {startup.phase}")
+            if startup.team_size:
+                startup_text_parts.append(f"Team Size: {startup.team_size}")
+            if startup.earn_through:
+                startup_text_parts.append(f"Earn Through: {startup.earn_through}")
+        
+        # Add tags (from StartupTag relationship)
+        try:
+            tags = list(StartupTag.objects.filter(startup=startup).values_list('tag', flat=True))
+            if tags:
+                startup_text_parts.append(f"Tags: {', '.join(tags)}")
+        except Exception as e:
+            logger.warning(f"Error fetching tags for startup {startup.id}: {e}")
+        
+        # Join all parts with spaces
+        startup_text = ' '.join(startup_text_parts)
+        
+        # If no text was generated, use a default
+        if not startup_text.strip():
+            startup_text = f"Startup: {startup.title or 'unknown'} in {startup.category or 'unknown'} category"
+        
+        return startup_text
+    
+    def generate_startup_embedding(self, startup: Startup, force: bool = False) -> bool:
+        """
+        Generate and save embedding for a startup
+        
+        Args:
+            startup: Startup instance
+            force: If True, regenerate even if embedding exists
+            
+        Returns:
+            True if embedding was generated successfully, False otherwise
+        """
+        try:
+            # Build startup text
+            startup_text = self.build_startup_text(startup)
+            
+            if not startup_text.strip():
+                logger.warning(f"No startup text generated for startup {startup.id}, skipping embedding")
+                return False
+            
+            # Generate embedding
+            logger.debug(f"Generating embedding for startup {startup.id}")
+            embedding_vector = self.model.encode(startup_text, convert_to_numpy=True)
+            
+            # Validate embedding
+            if embedding_vector is None or len(embedding_vector) == 0:
+                logger.error(f"Empty embedding generated for startup {startup.id}")
+                return False
+            
+            # Convert to list and save as JSON string
+            embedding_list = embedding_vector.tolist()
+            embedding_json = json.dumps(embedding_list)
+            
+            # Update startup model
+            startup.profile_embedding = embedding_json
+            startup.embedding_model = self.model_name
+            startup.embedding_updated_at = timezone.now()
+            startup.embedding_needs_update = False
+            
+            # Save only the embedding-related fields
+            startup.save(update_fields=[
+                'profile_embedding',
+                'embedding_model',
+                'embedding_updated_at',
+                'embedding_needs_update'
+            ])
+            
+            logger.info(f"Successfully generated embedding for startup {startup.id} (dimension: {len(embedding_list)})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error generating embedding for startup {startup.id}: {str(e)}", exc_info=True)
+            return False
+    
+    def generate_startup_embeddings_batch(self, startups: List[Startup], batch_size: int = 50) -> dict:
+        """
+        Generate embeddings for a batch of startups
+        
+        Args:
+            startups: List of Startup instances
+            batch_size: Number of startups to process in each batch
+            
+        Returns:
+            Dictionary with success count, failure count, and errors
+        """
+        results = {
+            'success': 0,
+            'failed': 0,
+            'errors': []
+        }
+        
+        total = len(startups)
+        logger.info(f"Processing {total} startups in batches of {batch_size}")
+        
+        for i in range(0, total, batch_size):
+            batch = startups[i:i + batch_size]
+            batch_num = (i // batch_size) + 1
+            total_batches = (total + batch_size - 1) // batch_size
+            
+            logger.info(f"Processing batch {batch_num}/{total_batches} ({len(batch)} startups)")
+            
+            for startup in batch:
+                try:
+                    if self.generate_startup_embedding(startup):
+                        results['success'] += 1
+                    else:
+                        results['failed'] += 1
+                        results['errors'].append(f"Startup {startup.id}: Failed to generate embedding")
+                except Exception as e:
+                    results['failed'] += 1
+                    error_msg = f"Startup {startup.id}: {str(e)}"
                     results['errors'].append(error_msg)
                     logger.error(error_msg, exc_info=True)
         

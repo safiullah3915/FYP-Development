@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, AllowAny
+from rest_framework.permissions import AllowAny
 import rest_framework.parsers
 from django_ratelimit.decorators import ratelimit
 from django.conf import settings
@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from django.db.models import Q, Count
 import re
 import bcrypt
+import logging
 from .models import Startup, StartupTag, Position, Application, Notification, Favorite, Interest
 from .messaging_models import Conversation, Message, UserProfile, FileUpload
 from .serializers import (
@@ -50,7 +51,7 @@ def get_session_user(request):
 					user = User.objects.get(id=user_id, is_active=True)
 					print(f"✅ Found user from auth token: {user.username}")
 					return user
-			except:
+			except (User.DoesNotExist, ValueError, KeyError, TypeError):
 				continue
 		
 		print(f"❌ Invalid or expired auth token")
@@ -595,12 +596,17 @@ class StartupDetailView(generics.RetrieveDestroyAPIView):
 		user = get_session_user(request)
 		if user:
 			from .recommendation_models import UserInteraction
-			UserInteraction.objects.create(
-				user=user,
-				startup=instance,
-				interaction_type='view',
-				weight=0.5
-			)
+			from django.db import IntegrityError
+			try:
+				UserInteraction.objects.get_or_create(
+					user=user,
+					startup=instance,
+					interaction_type='view',
+					defaults={}
+				)
+			except IntegrityError:
+				# Race condition - interaction already exists, ignore
+				pass
 		
 		return super().retrieve(request, *args, **kwargs)
 	
@@ -2435,10 +2441,8 @@ def store_recommendation_session(request):
 			status=status.HTTP_400_BAD_REQUEST
 		)
 	
-	from .services.session_service import SessionService
 	from django.utils import timezone
 	from datetime import timedelta
-	import logging
 	
 	logger = logging.getLogger(__name__)
 	
@@ -2511,3 +2515,205 @@ class TrendingStartupsView(generics.ListAPIView):
 				'error': 'Recommendation service temporarily unavailable',
 				'computed_at': None
 			}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Personalized Recommendations Endpoint
+@api_view(['GET'])
+def get_personalized_startup_recommendations(request):
+	"""Get personalized startup recommendations from Flask (uses Two-Tower model for warm users)"""
+	import requests
+	import os
+	
+	# Get authenticated user
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{'error': 'Authentication required'},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	# Determine Flask endpoint based on user role
+	if user.role == 'student' or user.role == 'developer':
+		endpoint = f'/api/recommendations/startups/for-developer/{user.id}'
+	elif user.role == 'investor':
+		endpoint = f'/api/recommendations/startups/for-investor/{user.id}'
+	else:
+		return Response(
+			{'error': f'Personalized recommendations not available for role: {user.role}'},
+			status=status.HTTP_400_BAD_REQUEST
+		)
+	
+	# Get Flask service base URL
+	flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+	# Remove trailing path if present (for trending endpoint compatibility)
+	if '/api/recommendations' in flask_base_url:
+		flask_base_url = flask_base_url.split('/api/recommendations')[0]
+	
+	flask_url = f'{flask_base_url}{endpoint}'
+	
+	# Get query parameters
+	params = {}
+	if 'limit' in request.query_params:
+		params['limit'] = request.query_params.get('limit')
+	if 'type' in request.query_params:
+		params['type'] = request.query_params.get('type')
+	if 'min_funding' in request.query_params:
+		params['min_funding'] = request.query_params.get('min_funding')
+	if 'max_funding' in request.query_params:
+		params['max_funding'] = request.query_params.get('max_funding')
+	if 'category' in request.query_params:
+		params['category'] = request.query_params.get('category')
+	if 'stage' in request.query_params:
+		params['stage'] = request.query_params.get('stage')
+	
+	try:
+		# Call Flask service
+		response = requests.get(flask_url, params=params, timeout=10)
+		response.raise_for_status()
+		flask_data = response.json()
+		
+		# Return Flask service response with additional user context
+		flask_data['user_id'] = str(user.id)
+		flask_data['user_role'] = user.role
+		
+		return Response(flask_data, status=status.HTTP_200_OK)
+		
+	except requests.exceptions.RequestException as e:
+		# If Flask service is unavailable, return error
+		return Response({
+			'startups': [],
+			'total': 0,
+			'user_id': str(user.id),
+			'error': 'Recommendation service temporarily unavailable',
+			'details': str(e)
+		}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Personalized Developer Recommendations for Startups
+@api_view(['GET'])
+def get_personalized_developer_recommendations(request, startup_id):
+	"""Get personalized developer recommendations for a startup from Flask"""
+	import requests
+	import os
+	
+	# Get authenticated user (startup owner)
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{'error': 'Authentication required'},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	# Verify user owns the startup or has permission
+	try:
+		startup = Startup.objects.get(id=startup_id)
+		if startup.user_id != user.id:
+			return Response(
+				{'error': 'You do not have permission to get recommendations for this startup'},
+				status=status.HTTP_403_FORBIDDEN
+			)
+	except Startup.DoesNotExist:
+		return Response(
+			{'error': 'Startup not found'},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	# Get Flask service base URL
+	flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+	if '/api/recommendations' in flask_base_url:
+		flask_base_url = flask_base_url.split('/api/recommendations')[0]
+	
+	flask_url = f'{flask_base_url}/api/recommendations/developers/for-startup/{startup_id}'
+	
+	# Get query parameters
+	params = {}
+	if 'limit' in request.query_params:
+		params['limit'] = request.query_params.get('limit')
+	if 'skills' in request.query_params:
+		params['skills'] = request.query_params.get('skills')
+	
+	try:
+		# Call Flask service
+		response = requests.get(flask_url, params=params, timeout=10)
+		response.raise_for_status()
+		flask_data = response.json()
+		
+		# Return Flask service response
+		flask_data['startup_id'] = str(startup_id)
+		
+		return Response(flask_data, status=status.HTTP_200_OK)
+		
+	except requests.exceptions.RequestException as e:
+		# If Flask service is unavailable, return error
+		return Response({
+			'developers': [],
+			'total': 0,
+			'startup_id': str(startup_id),
+			'error': 'Recommendation service temporarily unavailable',
+			'details': str(e)
+		}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Personalized Investor Recommendations for Startups
+@api_view(['GET'])
+def get_personalized_investor_recommendations(request, startup_id):
+	"""Get personalized investor recommendations for a startup from Flask"""
+	import requests
+	import os
+	
+	# Get authenticated user (startup owner)
+	user = get_session_user(request)
+	if not user:
+		return Response(
+			{'error': 'Authentication required'},
+			status=status.HTTP_401_UNAUTHORIZED
+		)
+	
+	# Verify user owns the startup or has permission
+	try:
+		startup = Startup.objects.get(id=startup_id)
+		if startup.user_id != user.id:
+			return Response(
+				{'error': 'You do not have permission to get recommendations for this startup'},
+				status=status.HTTP_403_FORBIDDEN
+			)
+	except Startup.DoesNotExist:
+		return Response(
+			{'error': 'Startup not found'},
+			status=status.HTTP_404_NOT_FOUND
+		)
+	
+	# Get Flask service base URL
+	flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
+	if '/api/recommendations' in flask_base_url:
+		flask_base_url = flask_base_url.split('/api/recommendations')[0]
+	
+	flask_url = f'{flask_base_url}/api/recommendations/investors/for-startup/{startup_id}'
+	
+	# Get query parameters
+	params = {}
+	if 'limit' in request.query_params:
+		params['limit'] = request.query_params.get('limit')
+	if 'min_investment' in request.query_params:
+		params['min_investment'] = request.query_params.get('min_investment')
+	
+	try:
+		# Call Flask service
+		response = requests.get(flask_url, params=params, timeout=10)
+		response.raise_for_status()
+		flask_data = response.json()
+		
+		# Return Flask service response
+		flask_data['startup_id'] = str(startup_id)
+		
+		return Response(flask_data, status=status.HTTP_200_OK)
+		
+	except requests.exceptions.RequestException as e:
+		# If Flask service is unavailable, return error
+		return Response({
+			'investors': [],
+			'total': 0,
+			'startup_id': str(startup_id),
+			'error': 'Recommendation service temporarily unavailable',
+			'details': str(e)
+		}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
