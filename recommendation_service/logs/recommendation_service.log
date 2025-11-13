@@ -281,3 +281,25 @@
 2025-11-13 07:44:29 - __main__ - INFO - Debug mode: True
 2025-11-13 07:44:29 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
 2025-11-13 07:44:29 - __main__ - INFO - Database connection successful
+2025-11-13 16:54:52 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 16:54:52 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 16:54:52 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
+2025-11-13 16:54:52 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
+2025-11-13 16:54:53 - __main__ - ERROR - Failed to load ranker: cannot import name 'ContentBasedRecommender' from partially initialized module 'engines.content_based' (most likely due to a circular import) (C:\Users\serma\Downloads\FYP-Development\recommendation_service\engines\content_based.py)
+2025-11-13 16:54:53 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 16:54:53 - __main__ - INFO - Debug mode: True
+2025-11-13 16:54:53 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 16:54:53 - __main__ - INFO - Database connection successful
+2025-11-13 16:54:57 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-13 16:54:57 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
+	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
+	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
+2025-11-13 16:54:57 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
+2025-11-13 16:54:57 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
+2025-11-13 16:54:58 - __main__ - ERROR - Failed to load ranker: cannot import name 'ContentBasedRecommender' from partially initialized module 'engines.content_based' (most likely due to a circular import) (C:\Users\serma\Downloads\FYP-Development\recommendation_service\engines\content_based.py)
+2025-11-13 16:54:58 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-13 16:54:58 - __main__ - INFO - Debug mode: True
+2025-11-13 16:54:58 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-13 16:54:58 - __main__ - INFO - Database connection successful

@@ -90,7 +90,7 @@ class ALSInference:
             logger.error(f"Failed to load ALS model: {e}")
             raise
     
-    def recommend(self, user_id: str, limit: int = 10, filters: Optional[Dict] = None) -> Dict:
+    def recommend(self, user_id: str, limit: int = 10, filters: Optional[Dict] = None, fetch_multiplier: int = 1) -> Dict:
         """
         Generate recommendations for a user
         
@@ -98,6 +98,7 @@ class ALSInference:
             user_id: User ID (UUID string)
             limit: Number of recommendations to return
             filters: Optional filters (type, category, field, etc.)
+            fetch_multiplier: Multiplier for fetching more candidates (for reranking)
         
         Returns:
             dict with:
@@ -108,7 +109,8 @@ class ALSInference:
         """
         db = SessionLocal()
         try:
-            logger.info(f"ALS inference for user {user_id}, limit {limit}")
+            actual_limit = limit * fetch_multiplier
+            logger.info(f"ALS inference for user {user_id}, limit {limit} (fetching {actual_limit} candidates)")
             
             # Check if user exists in model
             if user_id not in self.user_mapping:
@@ -123,7 +125,8 @@ class ALSInference:
             scores = self.item_factors.dot(user_embedding)
             
             # Get top candidates (more than limit for filtering)
-            top_k_indices = np.argsort(scores)[::-1][:limit * 5]
+            # Use actual_limit * 5 to allow for filtering
+            top_k_indices = np.argsort(scores)[::-1][:actual_limit * 5]
             
             # Convert to startup IDs and scores
             candidate_ids = []
@@ -159,7 +162,7 @@ class ALSInference:
             for startup_id in candidate_ids:
                 if startup_id in startups_dict:
                     sorted_startups.append(startups_dict[startup_id])
-                if len(sorted_startups) >= limit:
+                if len(sorted_startups) >= actual_limit:
                     break
             
             # Format response

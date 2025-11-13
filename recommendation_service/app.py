@@ -78,6 +78,83 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize ensemble: {e}")
 
+# Load Ranker Model (reranks recommendations for better quality)
+ranker_model = None
+try:
+    from engines.ranker import NeuralRanker
+    ranker_path = Path(__file__).parent / "models" / "ranker_v1.pth"
+    
+    if ranker_path.exists():
+        ranker_model = NeuralRanker(str(ranker_path))
+        logger.info("✓ Ranker model loaded successfully!")
+        logger.info("  → Will rerank all personalized recommendations")
+    else:
+        logger.info("Ranker model not found, using rule-based ranker")
+        ranker_model = NeuralRanker(use_rule_based=True)
+except Exception as e:
+    logger.error(f"Failed to load ranker: {e}")
+    logger.info("  → Using rule-based ranker as fallback")
+    try:
+        ranker_model = NeuralRanker(use_rule_based=True)
+    except:
+        ranker_model = None
+
+
+def apply_ranker(results, user_id, limit, method_used):
+    """
+    Apply ranker to reorder recommendations
+    
+    Args:
+        results: Dict with 'startups' or similar key containing recommendations
+        user_id: User ID for context
+        limit: Final number of items to return
+        method_used: Which recommendation method was used
+    
+    Returns:
+        Updated results dict with reranked items
+    """
+    if not ranker_model:
+        return results
+    
+    # Only rank personalized recommendations (not trending/popular)
+    if method_used in ['trending', 'popular']:
+        return results
+    
+    # Get candidates key (could be 'startups', 'developers', 'investors')
+    candidates_key = None
+    for key in ['startups', 'developers', 'investors']:
+        if key in results and results[key]:
+            candidates_key = key
+            break
+    
+    if not candidates_key:
+        return results
+    
+    candidates = results[candidates_key]
+    
+    if len(candidates) == 0:
+        return results
+    
+    try:
+        # Rerank candidates
+        reranked = ranker_model.rank(
+            candidates=candidates,
+            user_id=user_id,
+            already_ranked=[]
+        )
+        
+        # Update results
+        results[candidates_key] = reranked[:limit]
+        results['reranked'] = True
+        
+        logger.info(f"Reranked {len(candidates)} candidates to {len(results[candidates_key])} items")
+        
+    except Exception as e:
+        logger.error(f"Error applying ranker: {e}")
+        # Keep original order on error
+    
+    return results
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -330,6 +407,9 @@ def get_startups_for_developer(user_id):
                 method_used = results.get('method_used', 'content_based')
                 model_version = 'content_based_v1.0'
         
+        # Apply ranker to reorder recommendations
+        results = apply_ranker(results, user_id, limit, method_used)
+        
         # Create session data
         from services.session_service import SessionService
         session_service = SessionService()
@@ -463,6 +543,9 @@ def get_startups_for_investor(user_id):
                 method_used = results.get('method_used', 'content_based')
                 model_version = 'content_based_v1.0'
         
+        # Apply ranker to reorder recommendations
+        results = apply_ranker(results, user_id, limit, method_used)
+        
         # Create session data
         from services.session_service import SessionService
         session_service = SessionService()
@@ -546,11 +629,15 @@ def get_developers_for_startup(startup_id):
             filters=filters
         )
         
+        # Apply ranker to reorder recommendations
+        method_used = results.get('method_used', 'content_based')
+        results = apply_ranker(results, founder_id, limit, method_used)
+        
         # Create session data
         session_data = session_service.create_session_data(
             user_id=founder_id,
             use_case='founder_developer',
-            method=results.get('method_used', 'content_based'),
+            method=method_used,
             recommendations=results,
             model_version='content_based_v1.0'
         )
@@ -620,11 +707,15 @@ def get_investors_for_startup(startup_id):
             filters=filters
         )
         
+        # Apply ranker to reorder recommendations
+        method_used = results.get('method_used', 'content_based')
+        results = apply_ranker(results, founder_id, limit, method_used)
+        
         # Create session data
         session_data = session_service.create_session_data(
             user_id=founder_id,
             use_case='founder_investor',
-            method=results.get('method_used', 'content_based'),
+            method=method_used,
             recommendations=results,
             model_version='content_based_v1.0'
         )

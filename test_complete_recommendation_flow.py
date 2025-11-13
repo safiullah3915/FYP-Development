@@ -309,6 +309,16 @@ def test_recommendation_quality():
             else:
                 print_warning(f"  Startup field '{field}' missing")
         
+        # Check for ranker metadata
+        method_used = data.get('method_used', '')
+        reranked = data.get('reranked', False)
+        
+        if method_used not in ['trending', 'popular']:
+            if reranked:
+                print_success("Recommendations were reranked by ranker model")
+            else:
+                print_info("Recommendations not reranked (ranker may be unavailable or in rule-based mode)")
+        
         return True
         
     except Exception as e:
