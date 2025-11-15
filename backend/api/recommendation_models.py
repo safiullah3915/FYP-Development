@@ -172,6 +172,12 @@ class StartupTrendingMetrics(models.Model):
     # Last computation timestamp
     computed_at = models.DateTimeField(auto_now=True)
     
+    # Track when metrics were last updated (for real-time updates)
+    last_interaction_at = models.DateTimeField(null=True, blank=True)
+    
+    # Track when time decay was last applied
+    last_decay_applied_at = models.DateTimeField(null=True, blank=True)
+    
     class Meta:
         db_table = 'startup_trending_metrics'
         indexes = [

@@ -1,8 +1,48 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import PropTypes from "prop-types";
 import styles from "./TrendingStartupCard.module.css";
+import { getStartupDetailPath } from "../../utils/idUtils";
 
 const TrendingStartupCard = ({ startup }) => {
+  // Verify startup object and ID
+  console.log('🔍 [TrendingStartupCard] Received startup:', startup);
+  console.log('🔍 [TrendingStartupCard] Startup ID:', startup?.id);
+  
+  if (!startup) {
+    console.error('❌ [TrendingStartupCard] No startup data provided!');
+    return (
+      <div className={styles.card}>
+        <p>Error: No startup data available</p>
+      </div>
+    );
+  }
+  
+  if (!startup.id) {
+    console.error('❌ [TrendingStartupCard] Startup missing ID!', startup);
+    return (
+      <div className={styles.card}>
+        <p>Error: Startup ID is missing</p>
+      </div>
+    );
+  }
+  
+  // Validate UUID format (basic check) - log for debugging but don't block
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeof startup.id !== 'string') {
+    console.error('❌ [TrendingStartupCard] Startup ID is not a string!', typeof startup.id, startup.id);
+    return (
+      <div className={styles.card}>
+        <p>Error: Invalid startup ID type</p>
+      </div>
+    );
+  }
+  
+  // Log UUID validation for debugging but don't block rendering
+  if (!uuidRegex.test(startup.id)) {
+    console.warn('⚠️ [TrendingStartupCard] Startup ID does not match UUID format (but continuing):', startup.id);
+  }
+  
   const {
     id,
     title,
@@ -125,11 +165,36 @@ const TrendingStartupCard = ({ startup }) => {
       </div>
 
       {/* View Details Button */}
-      <Link to={`/startupdetail/${id}`} className={styles.viewDetailsButton}>
+      <Link 
+        to={getStartupDetailPath(id)} 
+        className={styles.viewDetailsButton}
+        onClick={() => {
+          console.log('🔗 [TrendingStartupCard] Navigating to:', getStartupDetailPath(id));
+          console.log('🔗 [TrendingStartupCard] Startup ID:', id);
+        }}
+      >
         View Details
       </Link>
     </div>
   );
+};
+
+TrendingStartupCard.propTypes = {
+  startup: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    category: PropTypes.string,
+    type: PropTypes.string,
+    trending_score: PropTypes.number,
+    popularity_score: PropTypes.number,
+    velocity_score: PropTypes.number,
+    view_count_24h: PropTypes.number,
+    view_count_7d: PropTypes.number,
+    application_count_7d: PropTypes.number,
+    favorite_count_7d: PropTypes.number,
+    active_positions_count: PropTypes.number,
+  }).isRequired,
 };
 
 export default TrendingStartupCard;

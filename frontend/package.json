@@ -16,6 +16,7 @@
     "axios": "^1.10.0",
     "gh-pages": "^6.3.0",
     "js-cookie": "^3.0.5",
+    "prop-types": "^15.8.1",
     "react": "^19.1.0",
     "react-cookie": "^8.0.1",
     "react-dom": "^19.1.0",

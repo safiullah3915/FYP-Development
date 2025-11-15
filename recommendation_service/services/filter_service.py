@@ -217,15 +217,17 @@ class FilterService:
             query = self.apply_user_filters(query, user_id, user_role)
             
             # Step 3: Optional filters from API
-            if filters_dict:
-                if 'type' in filters_dict and filters_dict['type']:
-                    query = self.filter_by_type(query, filters_dict['type'])
-                if 'category' in filters_dict and filters_dict['category']:
-                    query = self.filter_by_category(query, filters_dict['category'])
-                if 'field' in filters_dict and filters_dict['field']:
-                    query = self.filter_by_field(query, filters_dict['field'])
-                if filters_dict.get('fresh_only', False):
-                    query = self.filter_fresh_startups(query, max_age_days=90)
+        if filters_dict:
+            if 'type' in filters_dict and filters_dict['type']:
+                query = self.filter_by_type(query, filters_dict['type'])
+            if 'category' in filters_dict and filters_dict['category']:
+                query = self.filter_by_category(query, filters_dict['category'])
+            if 'field' in filters_dict and filters_dict['field']:
+                query = self.filter_by_field(query, filters_dict['field'])
+            if filters_dict.get('fresh_only', False):
+                query = self.filter_fresh_startups(query, max_age_days=90)
+            if filters_dict.get('require_open_positions'):
+                query = self.filter_has_open_positions(query)
             
             return query
             

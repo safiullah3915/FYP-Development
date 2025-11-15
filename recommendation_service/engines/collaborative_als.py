@@ -8,7 +8,7 @@ import pickle
 import numpy as np
 from .base_recommender import BaseRecommender
 from utils.logger import get_logger
-from database.models import Startup
+from database.models import Startup, Position
 
 logger = get_logger(__name__)
 
@@ -181,6 +181,13 @@ class ALSRecommender(BaseRecommender):
             if filters.get('field'):
                 fields = filters['field'] if isinstance(filters['field'], list) else [filters['field']]
                 query = query.filter(Startup.field.in_(fields))
+            
+            # Require at least one active position if requested
+            if filters.get('require_open_positions'):
+                query = query.join(Position, Position.startup_id == Startup.id).filter(
+                    Position.is_active == True
+                )
+                query = query.distinct()
             
             # Get filtered startup IDs
             filtered_startups = query.all()

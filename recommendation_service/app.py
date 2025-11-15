@@ -43,18 +43,34 @@ try:
 except Exception as e:
     logger.error(f"Failed to load Two-Tower model: {e}")
 
-# Load ALS Model
+# Load ALS Model (Forward: User → Startup)
 try:
     from inference_als import ALSInference
     als_path = Path(__file__).parent / "models" / "als_v1.pkl"
     
     if als_path.exists():
         als_model = ALSInference(str(als_path))
-        logger.info("✓ ALS model loaded successfully!")
+        logger.info("✓ ALS Forward model loaded successfully!")
     else:
-        logger.warning(f"ALS model not found at {als_path}")
+        logger.warning(f"ALS Forward model not found at {als_path}")
 except Exception as e:
-    logger.error(f"Failed to load ALS model: {e}")
+    logger.error(f"Failed to load ALS Forward model: {e}")
+
+# Load ALS Reverse Model (Reverse: Startup → User)
+als_reverse_model = None
+try:
+    from inference_als_reverse import ALSReverseInference
+    als_reverse_path = Path(__file__).parent / "models" / "als_reverse_v1.pkl"
+    
+    if als_reverse_path.exists():
+        als_reverse_model = ALSReverseInference(str(als_reverse_path))
+        logger.info("✓ ALS Reverse model loaded successfully!")
+        logger.info("  -> Will be used for Founder → Developer/Investor recommendations")
+    else:
+        logger.warning(f"ALS Reverse model not found at {als_reverse_path}")
+        logger.info("  -> Founder use cases will use content-based only")
+except Exception as e:
+    logger.error(f"Failed to load ALS Reverse model: {e}")
 
 # Load Ensemble Model (if both base models available)
 try:
@@ -66,38 +82,43 @@ try:
             als_weight=0.6
         )
         logger.info("✓ Ensemble model initialized successfully!")
-        logger.info("  → Routing: cold start(<5) → content, warm(5-19) → ALS, hot(20+) → ensemble")
+        logger.info("  -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble")
     else:
         logger.warning("Ensemble not initialized (requires both ALS and Two-Tower)")
         if two_tower_model:
-            logger.info("  → Will use: content-based + Two-Tower")
+            logger.info("  -> Will use: content-based + Two-Tower")
         elif als_model:
-            logger.info("  → Will use: content-based + ALS")
+            logger.info("  -> Will use: content-based + ALS")
         else:
-            logger.info("  → Will use: content-based only")
+            logger.info("  -> Will use: content-based only")
 except Exception as e:
     logger.error(f"Failed to initialize ensemble: {e}")
 
 # Load Ranker Model (reranks recommendations for better quality)
 ranker_model = None
 try:
-    from engines.ranker import NeuralRanker
     ranker_path = Path(__file__).parent / "models" / "ranker_v1.pth"
+    
+    # Import directly from module to avoid circular import through __init__
+    import sys
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ranker_module", 
+                                                   Path(__file__).parent / "engines" / "ranker.py")
+    ranker_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ranker_module)
+    NeuralRanker = ranker_module.NeuralRanker
     
     if ranker_path.exists():
         ranker_model = NeuralRanker(str(ranker_path))
         logger.info("✓ Ranker model loaded successfully!")
-        logger.info("  → Will rerank all personalized recommendations")
+        logger.info("  -> Will rerank all personalized recommendations")
     else:
         logger.info("Ranker model not found, using rule-based ranker")
         ranker_model = NeuralRanker(use_rule_based=True)
 except Exception as e:
-    logger.error(f"Failed to load ranker: {e}")
-    logger.info("  → Using rule-based ranker as fallback")
-    try:
-        ranker_model = NeuralRanker(use_rule_based=True)
-    except:
-        ranker_model = None
+    logger.warning(f"Could not load ranker: {e}")
+    logger.info("  -> Recommendations will work without ranker")
+    ranker_model = None
 
 
 def apply_ranker(results, user_id, limit, method_used):
@@ -332,6 +353,17 @@ def get_startups_for_developer(user_id):
         if startup_type:
             filters['type'] = startup_type
         
+        # Determine if we should force open positions only (default for collaboration)
+        require_open_positions_param = request.args.get('require_open_positions')
+        require_open_positions = False
+        if require_open_positions_param is not None:
+            require_open_positions = require_open_positions_param.lower() in ['1', 'true', 'yes']
+        elif startup_type == 'collaboration':
+            require_open_positions = True
+        
+        if require_open_positions:
+            filters['require_open_positions'] = True
+        
         # Check interaction count for routing
         interaction_count = db.query(UserInteraction).filter(
             UserInteraction.user_id == user_id
@@ -342,7 +374,7 @@ def get_startups_for_developer(user_id):
         # Smart routing based on interaction count
         if interaction_count < 5:
             # Cold start: content-based
-            logger.info(f"→ Using Content-Based (cold start: {interaction_count} interactions)")
+            logger.info(f"-> Using Content-Based (cold start: {interaction_count} interactions)")
             from services.recommendation_service import RecommendationService
             rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
@@ -355,7 +387,7 @@ def get_startups_for_developer(user_id):
             model_version = 'content_based_v1.0'
         elif interaction_count < 20:
             # Warm users: ALS
-            logger.info(f"→ Using ALS (warm user: {interaction_count} interactions)")
+            logger.info(f"-> Using ALS (warm user: {interaction_count} interactions)")
             if als_model:
                 results = als_model.recommend(user_id, limit, filters)
                 method_used = 'als'
@@ -379,7 +411,7 @@ def get_startups_for_developer(user_id):
                 model_version = 'content_based_v1.0'
         else:
             # Hot users: Ensemble
-            logger.info(f"→ Using Ensemble (hot user: {interaction_count} interactions)")
+            logger.info(f"-> Using Ensemble (hot user: {interaction_count} interactions)")
             if ensemble_model:
                 results = ensemble_model.recommend(user_id, limit, filters)
                 method_used = 'ensemble'
@@ -480,7 +512,7 @@ def get_startups_for_investor(user_id):
         
         # Smart routing based on interaction count (same as developer routing)
         if interaction_count < 5:
-            logger.info(f"→ Using Content-Based (cold start: {interaction_count} interactions)")
+            logger.info(f"-> Using Content-Based (cold start: {interaction_count} interactions)")
             from services.recommendation_service import RecommendationService
             rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
@@ -492,7 +524,7 @@ def get_startups_for_investor(user_id):
             method_used = results.get('method_used', 'content_based')
             model_version = 'content_based_v1.0'
         elif interaction_count < 20:
-            logger.info(f"→ Using ALS (warm investor: {interaction_count} interactions)")
+            logger.info(f"-> Using ALS (warm investor: {interaction_count} interactions)")
             if als_model:
                 results = als_model.recommend(user_id, limit, filters)
                 method_used = 'als'
@@ -515,7 +547,7 @@ def get_startups_for_investor(user_id):
                 method_used = results.get('method_used', 'content_based')
                 model_version = 'content_based_v1.0'
         else:
-            logger.info(f"→ Using Ensemble (hot investor: {interaction_count} interactions)")
+            logger.info(f"-> Using Ensemble (hot investor: {interaction_count} interactions)")
             if ensemble_model:
                 results = ensemble_model.recommend(user_id, limit, filters)
                 method_used = 'ensemble'
@@ -610,36 +642,65 @@ def get_developers_for_startup(startup_id):
         
         founder_id = str(startup.owner_id)
         
-        # Build filters
-        filters = {'startup_id': startup_id}
+        # Build filters (role: student for developers)
+        filters = {'role': 'student'}
         if position_id:
             filters['position_id'] = position_id
         
-        # Get recommendations
-        from services.recommendation_service import RecommendationService
-        from services.session_service import SessionService
+        # Check interaction count for this startup (reverse direction)
+        interaction_count = db.query(UserInteraction).filter(
+            UserInteraction.startup_id == startup_id
+        ).distinct(UserInteraction.user_id).count()
         
-        rec_service = RecommendationService(db)
-        session_service = SessionService()
+        logger.info(f"Startup {startup_id} has {interaction_count} unique user interactions")
         
-        results = rec_service.get_recommendations(
-            user_id=founder_id,
-            use_case='founder_developer',
-            limit=limit,
-            filters=filters
-        )
+        # Smart routing based on interaction count
+        if interaction_count < 5:
+            # Cold start: content-based
+            logger.info(f"-> Using Content-Based (cold start: {interaction_count} interactions)")
+            from services.recommendation_service import RecommendationService
+            rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+            results = rec_service.get_recommendations(
+                user_id=founder_id,
+                use_case='founder_developer',
+                limit=limit,
+                filters=filters
+            )
+            method_used = results.get('method_used', 'content_based')
+            model_version = 'content_based_v1.0'
+        elif interaction_count >= 5:
+            # Warm/Hot startups: ALS Reverse
+            logger.info(f"-> Using ALS Reverse (warm/hot startup: {interaction_count} interactions)")
+            if als_reverse_model:
+                results = als_reverse_model.recommend(startup_id, limit, filters)
+                method_used = 'als_reverse'
+                model_version = 'als_reverse_v1.0'
+            else:
+                logger.info("  ALS Reverse unavailable, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=founder_id,
+                    use_case='founder_developer',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
         
         # Apply ranker to reorder recommendations
-        method_used = results.get('method_used', 'content_based')
         results = apply_ranker(results, founder_id, limit, method_used)
         
         # Create session data
+        from services.session_service import SessionService
+        session_service = SessionService()
+        
         session_data = session_service.create_session_data(
             user_id=founder_id,
             use_case='founder_developer',
             method=method_used,
             recommendations=results,
-            model_version='content_based_v1.0'
+            model_version=model_version
         )
         
         # Format for API response
@@ -690,34 +751,63 @@ def get_investors_for_startup(startup_id):
         
         founder_id = str(startup.owner_id)
         
-        # Build filters
-        filters = {'startup_id': startup_id}
+        # Build filters (role: investor)
+        filters = {'role': 'investor'}
         
-        # Get recommendations
-        from services.recommendation_service import RecommendationService
-        from services.session_service import SessionService
+        # Check interaction count for this startup (reverse direction)
+        interaction_count = db.query(UserInteraction).filter(
+            UserInteraction.startup_id == startup_id
+        ).distinct(UserInteraction.user_id).count()
         
-        rec_service = RecommendationService(db)
-        session_service = SessionService()
+        logger.info(f"Startup {startup_id} has {interaction_count} unique user interactions")
         
-        results = rec_service.get_recommendations(
-            user_id=founder_id,
-            use_case='founder_investor',
-            limit=limit,
-            filters=filters
-        )
+        # Smart routing based on interaction count
+        if interaction_count < 5:
+            # Cold start: content-based
+            logger.info(f"-> Using Content-Based (cold start: {interaction_count} interactions)")
+            from services.recommendation_service import RecommendationService
+            rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+            results = rec_service.get_recommendations(
+                user_id=founder_id,
+                use_case='founder_investor',
+                limit=limit,
+                filters=filters
+            )
+            method_used = results.get('method_used', 'content_based')
+            model_version = 'content_based_v1.0'
+        elif interaction_count >= 5:
+            # Warm/Hot startups: ALS Reverse
+            logger.info(f"-> Using ALS Reverse (warm/hot startup: {interaction_count} interactions)")
+            if als_reverse_model:
+                results = als_reverse_model.recommend(startup_id, limit, filters)
+                method_used = 'als_reverse'
+                model_version = 'als_reverse_v1.0'
+            else:
+                logger.info("  ALS Reverse unavailable, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=founder_id,
+                    use_case='founder_investor',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
         
         # Apply ranker to reorder recommendations
-        method_used = results.get('method_used', 'content_based')
         results = apply_ranker(results, founder_id, limit, method_used)
         
         # Create session data
+        from services.session_service import SessionService
+        session_service = SessionService()
+        
         session_data = session_service.create_session_data(
             user_id=founder_id,
             use_case='founder_investor',
             method=method_used,
             recommendations=results,
-            model_version='content_based_v1.0'
+            model_version=model_version
         )
         
         # Format for API response
@@ -731,6 +821,15 @@ def get_investors_for_startup(startup_id):
         return jsonify({'error': 'Internal server error'}), 500
     finally:
         db.close()
+
+
+# Cache for trending startups (5-minute TTL)
+_trending_cache = {
+    'data': None,
+    'timestamp': None,
+    'params': None
+}
+TRENDING_CACHE_TTL = 300  # 5 minutes in seconds
 
 
 @app.route('/api/recommendations/trending/startups', methods=['GET'])
@@ -747,6 +846,24 @@ def get_trending_startups():
         List of trending startups with metrics
     """
     try:
+        from datetime import datetime
+        
+        # Get request params
+        limit_param = request.args.get('limit', '50')
+        sort_by_param = request.args.get('sort_by', 'trending_score')
+        cache_key = f"{limit_param}_{sort_by_param}"
+        
+        # Check cache
+        if _trending_cache['data'] and _trending_cache['timestamp'] and _trending_cache['params'] == cache_key:
+            time_elapsed = (datetime.now() - _trending_cache['timestamp']).total_seconds()
+            if time_elapsed < TRENDING_CACHE_TTL:
+                logger.info(f"📦 Flask: Returning cached trending data (age: {time_elapsed:.1f}s)")
+                return jsonify(_trending_cache['data']), 200
+            else:
+                logger.info(f"⏰ Flask: Cache expired (age: {time_elapsed:.1f}s), fetching fresh data")
+        
+        # Proceed with normal logic if cache miss
+        logger.info(f"🔍 Flask: Cache miss, fetching from database")
         # Validate and sanitize limit
         try:
             limit = int(request.args.get('limit', 50))
@@ -762,18 +879,91 @@ def get_trending_startups():
         if sort_by not in valid_sort_options:
             sort_by = 'trending_score'
         
-        # TODO: Implement trending logic using StartupTrendingMetrics
-        # For now, return empty structure
-        return jsonify({
-            'startups': [],
-            'total': 0,
-            'limit': limit,
-            'sort_by': sort_by,
-            'computed_at': None
-        }), 200
+        # Query trending startups from database
+        db = SessionLocal()
+        try:
+            from database.models import Startup, StartupTrendingMetrics
+            from sqlalchemy import desc
+            
+            # Get trending metrics sorted by requested field
+            metrics_query = db.query(StartupTrendingMetrics)
+            
+            # Sort by requested field
+            if sort_by == 'trending_score':
+                metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.trending_score))
+            elif sort_by == 'popularity_score':
+                metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.popularity_score))
+            elif sort_by == 'velocity_score':
+                metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.velocity_score))
+            elif sort_by == 'views':
+                metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.total_views))
+            elif sort_by == 'created_at':
+                metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.computed_at))
+            
+            total = metrics_query.count()
+            trending_metrics = metrics_query.limit(limit).all()
+            
+            # Get latest computed_at timestamp
+            computed_at = trending_metrics[0].computed_at.isoformat() if trending_metrics else None
+            
+            # Format response
+            result = []
+            for metrics in trending_metrics:
+                startup = db.query(Startup).filter(
+                    Startup.id == metrics.startup_id
+                ).first()
+                
+                if startup and startup.status == 'active':
+                    startup_data = {
+                        'id': str(startup.id),  # Explicitly convert UUID to string for JSON serialization
+                        'title': startup.title,
+                        'description': startup.description,
+                        'field': startup.field,
+                        'website_url': startup.website_url,
+                        'type': startup.type,
+                        'category': startup.category,
+                        'views': startup.views,
+                        'trending_score': float(metrics.trending_score),
+                        'popularity_score': float(metrics.popularity_score),
+                        'velocity_score': float(metrics.velocity_score),
+                        'view_count_24h': metrics.view_count_24h,
+                        'view_count_7d': metrics.view_count_7d,
+                        'application_count_7d': metrics.application_count_7d,
+                        'favorite_count_7d': metrics.favorite_count_7d,
+                        'interest_count_7d': metrics.interest_count_7d,
+                        'active_positions_count': metrics.active_positions_count,
+                    }
+                    
+                    # Verify ID is present
+                    if not startup_data.get('id'):
+                        logger.warning(f"⚠️ Flask: Startup missing ID! startup_id from metrics: {metrics.startup_id}")
+                    
+                    result.append(startup_data)
+            
+            logger.info(f"📊 Flask: Returning {len(result)} startups")
+            if result:
+                logger.info(f"📊 Flask: Sample startup ID: {result[0].get('id')}")
+            
+            response_data = {
+                'startups': result,
+                'total': len(result),
+                'limit': limit,
+                'sort_by': sort_by,
+                'computed_at': computed_at
+            }
+            
+            # Update cache
+            _trending_cache['data'] = response_data
+            _trending_cache['timestamp'] = datetime.now()
+            _trending_cache['params'] = cache_key
+            logger.info(f"💾 Flask: Cached trending data for {TRENDING_CACHE_TTL}s")
+            
+            return jsonify(response_data), 200
+        finally:
+            db.close()
     except Exception as e:
-        logger.error(f"Error in get_trending_startups: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        logger.error(f"Error in get_trending_startups: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
 
 @app.route('/api/recommendations/metrics', methods=['GET'])

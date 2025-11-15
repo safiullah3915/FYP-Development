@@ -6,6 +6,7 @@ import styles from './StartupsWithApplications.module.css';
 import { userAPI } from '../../utils/apiServices';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { getStartupDetailPath, normalizeId } from '../../utils/idUtils';
 
 const StartupsWithApplications = () => {
   const navigate = useNavigate();
@@ -77,8 +78,10 @@ const StartupsWithApplications = () => {
             </div>
           ) : (
             <div className={styles.startupsList}>
-              {startups.map((startup) => (
-                <div key={startup.id} className={styles.startupCard}>
+              {startups.map((startup) => {
+                const normalizedStartupId = normalizeId(startup.id);
+                return (
+                  <div key={startup.id} className={styles.startupCard}>
                   <div className={styles.cardHeader}>
                     <div className={styles.startupInfo}>
                       <h3>{startup.title}</h3>
@@ -100,7 +103,7 @@ const StartupsWithApplications = () => {
 
                   <div className={styles.cardActions}>
                     <Link
-                      to={`/startups/${startup.id}/applications`}
+                      to={`/startups/${normalizedStartupId}/applications`}
                       className={styles.viewButton}
                       onClick={(e) => {
                         if (!startup.id) {
@@ -113,14 +116,15 @@ const StartupsWithApplications = () => {
                       View Applications
                     </Link>
                     <Link
-                      to={`/startupdetail/${startup.id}`}
+                      to={getStartupDetailPath(normalizedStartupId)}
                       className={styles.detailsButton}
                     >
                       View Startup Details
                     </Link>
                   </div>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

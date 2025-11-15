@@ -48,7 +48,7 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 7px;
-  height: 14rem;
+  min-height: 14rem;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(106, 106, 106, 0.04);
   transition: box-shadow 0.3s ease;
@@ -85,7 +85,7 @@
 .description {
   font-size: 0.95rem;
   color: #555;
-   margin: 2.5rem 0rem 2.5rem 0rem;
+  margin: 1rem 0 1.5rem 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -133,4 +133,192 @@
     transform: translateX(-150%);
     /* transform: translateY(50%); */
     /* background-color: blue; */
+}
+
+/* New styles for enhanced card */
+.cardWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.matchBadge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.matchReasons {
+  background: #f0f9ff;
+  border-left: 3px solid #3b82f6;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+}
+
+.matchReasons strong {
+  color: #1e40af;
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.matchReasons ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+  color: #374151;
+}
+
+.matchReasons li {
+  margin: 0.2rem 0;
+}
+
+.primaryPosition {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+  background: #f5f7ff;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.primaryPositionInfo {
+  flex: 1;
+}
+
+.primaryPositionInfo h4 {
+  margin: 0.2rem 0;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.primaryPositionInfo p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.positionLabel {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.primaryPositionCta {
+  background: #4f46e5;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.primaryPositionCta:hover {
+  background: #4338ca;
+}
+
+.positionsSection {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 7px 7px;
+  padding: 0.75rem 1.5rem;
+}
+
+.positionsToggle {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  width: 100%;
+  text-align: left;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.positionsToggle:hover {
+  color: #4338ca;
+}
+
+.positionsList {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.positionItem {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.positionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.positionHeader strong {
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
+.positionDesc {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.appliedBadge {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.applyButton {
+  display: inline-block;
+  background: #4f46e5;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+
+.applyButton:hover {
+  background: #4338ca;
 }

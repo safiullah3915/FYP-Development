@@ -68,14 +68,32 @@ class Command(BaseCommand):
             f'Density: {sparse_matrix.nnz / (sparse_matrix.shape[0] * sparse_matrix.shape[1]) * 100:.4f}%'
         ))
 
-        # Step 4: Save outputs
+        # Step 4: Build reverse sparse matrix (Startups × Users)
+        self.stdout.write('Building reverse interaction matrix (Startups × Users)...')
+        sparse_matrix_reverse = self.build_reverse_sparse_matrix(
+            interactions, user_mapping, item_mapping
+        )
+        
+        self.stdout.write(self.style.SUCCESS(
+            f'Reverse matrix shape: {sparse_matrix_reverse.shape}, '
+            f'Non-zero entries: {sparse_matrix_reverse.nnz}, '
+            f'Density: {sparse_matrix_reverse.nnz / (sparse_matrix_reverse.shape[0] * sparse_matrix_reverse.shape[1]) * 100:.4f}%'
+        ))
+
+        # Step 5: Save outputs
         self.stdout.write('Saving dataset files...')
         self.save_dataset(sparse_matrix, user_mapping, item_mapping, output_dir)
+        self.save_reverse_dataset(sparse_matrix_reverse, user_mapping, item_mapping, output_dir)
         
         self.stdout.write(self.style.SUCCESS('\n=== Dataset Generation Complete! ===\n'))
-        self.stdout.write(f'Matrix: {os.path.join(output_dir, "als_interactions.npz")}')
-        self.stdout.write(f'User mapping: {os.path.join(output_dir, "als_user_mapping.json")}')
-        self.stdout.write(f'Item mapping: {os.path.join(output_dir, "als_item_mapping.json")}')
+        self.stdout.write('\nForward Matrix (Users × Startups):')
+        self.stdout.write(f'  Matrix: {os.path.join(output_dir, "als_interactions.npz")}')
+        self.stdout.write(f'  User mapping: {os.path.join(output_dir, "als_user_mapping.json")}')
+        self.stdout.write(f'  Item mapping: {os.path.join(output_dir, "als_item_mapping.json")}')
+        self.stdout.write('\nReverse Matrix (Startups × Users):')
+        self.stdout.write(f'  Matrix: {os.path.join(output_dir, "als_interactions_reverse.npz")}')
+        self.stdout.write(f'  User mapping: {os.path.join(output_dir, "als_reverse_user_mapping.json")}')
+        self.stdout.write(f'  Item mapping: {os.path.join(output_dir, "als_reverse_item_mapping.json")}')
 
     def load_interactions(self, min_interactions):
         """Load interactions with minimum threshold filter"""
@@ -149,6 +167,30 @@ class Command(BaseCommand):
 
         return sparse_matrix
 
+    def build_reverse_sparse_matrix(self, interactions, user_mapping, item_mapping):
+        """Build reverse sparse CSR matrix (Startups × Users) - just transpose!"""
+        # Map UUIDs to indices (SWAP row and col for reverse)
+        row_indices = interactions['startup_id'].map(lambda x: item_mapping.get(x, -1))
+        col_indices = interactions['user_id'].map(lambda x: user_mapping.get(x, -1))
+        
+        # Filter out any unmapped entries
+        valid_mask = (row_indices != -1) & (col_indices != -1)
+        row_indices = row_indices[valid_mask].values
+        col_indices = col_indices[valid_mask].values
+        weights = interactions.loc[valid_mask, 'weight'].values
+
+        # Create sparse matrix (Startups × Users)
+        n_items = len([k for k in item_mapping.keys() if k != '_reverse'])
+        n_users = len([k for k in user_mapping.keys() if k != '_reverse'])
+
+        sparse_matrix_reverse = csr_matrix(
+            (weights, (row_indices, col_indices)),
+            shape=(n_items, n_users),
+            dtype=np.float32
+        )
+
+        return sparse_matrix_reverse
+
     def save_dataset(self, sparse_matrix, user_mapping, item_mapping, output_dir):
         """Save sparse matrix and mappings to disk"""
         # Save sparse matrix
@@ -167,8 +209,33 @@ class Command(BaseCommand):
         with open(item_mapping_path, 'w') as f:
             json.dump(item_mapping_clean, f, indent=2)
 
-        self.stdout.write(self.style.SUCCESS(f'Saved sparse matrix: {matrix_path}'))
-        self.stdout.write(self.style.SUCCESS(f'Saved user mapping: {user_mapping_path}'))
-        self.stdout.write(self.style.SUCCESS(f'Saved item mapping: {item_mapping_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Saved forward sparse matrix: {matrix_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Saved forward user mapping: {user_mapping_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Saved forward item mapping: {item_mapping_path}'))
+
+    def save_reverse_dataset(self, sparse_matrix_reverse, user_mapping, item_mapping, output_dir):
+        """Save reverse sparse matrix and mappings to disk"""
+        # Save reverse sparse matrix
+        matrix_path = os.path.join(output_dir, 'als_interactions_reverse.npz')
+        save_npz(matrix_path, sparse_matrix_reverse)
+
+        # For reverse mappings, startup becomes "user" and user becomes "item"
+        # Reverse user mapping: startup_id -> index
+        reverse_user_mapping_clean = {k: v for k, v in item_mapping.items() if k != '_reverse'}
+        
+        # Reverse item mapping: user_id -> index
+        reverse_item_mapping_clean = {k: v for k, v in user_mapping.items() if k != '_reverse'}
+
+        reverse_user_mapping_path = os.path.join(output_dir, 'als_reverse_user_mapping.json')
+        with open(reverse_user_mapping_path, 'w') as f:
+            json.dump(reverse_user_mapping_clean, f, indent=2)
+
+        reverse_item_mapping_path = os.path.join(output_dir, 'als_reverse_item_mapping.json')
+        with open(reverse_item_mapping_path, 'w') as f:
+            json.dump(reverse_item_mapping_clean, f, indent=2)
+
+        self.stdout.write(self.style.SUCCESS(f'Saved reverse sparse matrix: {matrix_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Saved reverse user mapping (startups): {reverse_user_mapping_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Saved reverse item mapping (users): {reverse_item_mapping_path}'))
 
 

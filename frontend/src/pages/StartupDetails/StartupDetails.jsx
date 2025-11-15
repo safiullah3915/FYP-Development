@@ -66,7 +66,14 @@ const StartupDetails = () => {
       // Only redirect on 404 (not found) - startup doesn't exist
       if (status === 404) {
         toast.error('Startup not found');
-        navigate('/marketplace');
+        // Navigate back to previous page instead of marketplace
+        // This preserves the back button functionality
+        if (window.history.length > 2) {
+          navigate(-1);
+        } else {
+          // Fallback to trending-startups if no history
+          navigate('/trending-startups');
+        }
       } else if (status === 500) {
         // Server error - might be a serialization issue with older startups
         toast.error('Error loading startup details. The startup may have incomplete data.');

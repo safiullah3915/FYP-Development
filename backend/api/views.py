@@ -2555,6 +2555,14 @@ class TrendingStartupsView(generics.ListAPIView):
 			print(f"✅ Django: Flask returned {len(flask_data.get('startups', []))} startups")
 			print(f"📊 Django: Flask response keys: {list(flask_data.keys())}")
 			
+			# Verify ID is present in first startup
+			if flask_data.get('startups') and len(flask_data['startups']) > 0:
+				first_startup = flask_data['startups'][0]
+				print(f"📊 Django: Sample startup data: {first_startup}")
+				print(f"📊 Django: Sample startup ID: {first_startup.get('id')}")
+				if not first_startup.get('id'):
+					print(f"⚠️ Django: WARNING - Startup missing ID!")
+			
 			# Return Flask service response
 			return Response(flask_data, status=status.HTTP_200_OK)
 			
@@ -2584,9 +2592,18 @@ def get_personalized_startup_recommendations(request):
 			status=status.HTTP_401_UNAUTHORIZED
 		)
 	
+	# Get query parameters first
+	params = {}
+	
 	# Determine Flask endpoint based on user role
 	if user.role == 'student' or user.role == 'developer':
 		endpoint = f'/api/recommendations/startups/for-developer/{user.id}'
+	elif user.role == 'entrepreneur':
+		# Entrepreneurs seeking collaboration use the developer endpoint
+		endpoint = f'/api/recommendations/startups/for-developer/{user.id}'
+		# Force collaboration type for entrepreneurs if not specified
+		if 'type' not in request.query_params:
+			params['type'] = 'collaboration'
 	elif user.role == 'investor':
 		endpoint = f'/api/recommendations/startups/for-investor/{user.id}'
 	else:
@@ -2594,6 +2611,13 @@ def get_personalized_startup_recommendations(request):
 			{'error': f'Personalized recommendations not available for role: {user.role}'},
 			status=status.HTTP_400_BAD_REQUEST
 		)
+	
+	require_open_positions_param = request.query_params.get('require_open_positions')
+	require_open_positions = False
+	if require_open_positions_param is not None:
+		require_open_positions = str(require_open_positions_param).lower() in ['1', 'true', 'yes']
+	elif user.role == 'entrepreneur':
+		require_open_positions = True
 	
 	# Get Flask service base URL
 	flask_base_url = os.getenv('FLASK_RECOMMENDATION_SERVICE_URL', 'http://localhost:5000')
@@ -2603,8 +2627,7 @@ def get_personalized_startup_recommendations(request):
 	
 	flask_url = f'{flask_base_url}{endpoint}'
 	
-	# Get query parameters
-	params = {}
+	# Add additional query parameters
 	if 'limit' in request.query_params:
 		params['limit'] = request.query_params.get('limit')
 	if 'type' in request.query_params:
@@ -2617,6 +2640,10 @@ def get_personalized_startup_recommendations(request):
 		params['category'] = request.query_params.get('category')
 	if 'stage' in request.query_params:
 		params['stage'] = request.query_params.get('stage')
+	if 'offset' in request.query_params:
+		params['offset'] = request.query_params.get('offset')
+	if require_open_positions:
+		params['require_open_positions'] = 'true'
 	
 	try:
 		print(f"📡 Django: Calling Flask personalized endpoint: {flask_url} with params: {params}")
@@ -2628,7 +2655,78 @@ def get_personalized_startup_recommendations(request):
 		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} recommendations")
 		print(f"📊 Django: Flask response keys: {list(flask_data.keys())}")
 		
-		# Return Flask service response with additional user context
+		# Hydrate startup_ids into full startup objects with active positions
+		if 'startup_ids' in flask_data:
+			startup_ids = [str(sid) for sid in flask_data.get('startup_ids', [])]
+			startups = []
+			filtered_scores = {}
+			filtered_match_reasons = {}
+			
+			if startup_ids:
+				startups_dict = {
+					str(s.id): s
+					for s in Startup.objects.filter(id__in=startup_ids, status='active')
+				}
+				
+				positions_map = {}
+				active_positions = Position.objects.filter(
+					startup_id__in=startup_ids,
+					is_active=True
+				).order_by('-created_at')
+				
+				for position in active_positions:
+					sid = str(position.startup_id)
+					positions_map.setdefault(sid, []).append({
+						'id': str(position.id),
+						'title': position.title,
+						'description': position.description,
+						'requirements': position.requirements,
+						'created_at': position.created_at.isoformat() if position.created_at else None
+					})
+				
+				scores_map = flask_data.get('scores', {})
+				reasons_map = flask_data.get('match_reasons', {})
+				
+				for startup_id in startup_ids:
+					startup_obj = startups_dict.get(startup_id)
+					open_positions = positions_map.get(startup_id, [])
+					
+					if not startup_obj:
+						continue
+					
+					if require_open_positions and not open_positions:
+						continue
+					
+					primary_position = open_positions[0] if open_positions else None
+					
+					startups.append({
+						'id': str(startup_obj.id),
+						'title': startup_obj.title,
+						'description': startup_obj.description,
+						'category': startup_obj.category,
+						'phase': startup_obj.phase,
+						'team_size': startup_obj.team_size,
+						'earn_through': startup_obj.earn_through,
+						'positions': open_positions,
+						'open_positions': open_positions,
+						'open_positions_count': len(open_positions),
+						'has_open_positions': bool(open_positions),
+						'primary_position': primary_position,
+						'top_position': primary_position
+					})
+					
+					sid = str(startup_obj.id)
+					if sid in scores_map:
+						filtered_scores[sid] = scores_map[sid]
+					if sid in reasons_map:
+						filtered_match_reasons[sid] = reasons_map[sid]
+			
+			flask_data['startups'] = startups
+			flask_data['scores'] = filtered_scores or flask_data.get('scores', {})
+			flask_data['match_reasons'] = filtered_match_reasons or flask_data.get('match_reasons', {})
+			flask_data['total'] = len(startups)
+		
+		# Return Flask service response with additional user context (for other roles)
 		flask_data['user_id'] = str(user.id)
 		flask_data['user_role'] = user.role
 		
@@ -2699,16 +2797,52 @@ def get_personalized_developer_recommendations(request, startup_id):
 		
 		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} developer recommendations")
 		
-		# Return Flask service response
-		flask_data['startup_id'] = str(startup_id)
+		# Hydrate user_ids into full user objects
+		user_ids = flask_data.get('user_ids', [])
+		developers = []
 		
-		return Response(flask_data, status=status.HTTP_200_OK)
+		if user_ids:
+			# Query users and preserve order from recommendations
+			users_dict = {str(u.id): u for u in User.objects.filter(id__in=user_ids)}
+			
+			for user_id in user_ids:
+				user_obj = users_dict.get(str(user_id))
+				if user_obj:
+					# Get user profile for additional info
+					try:
+						profile = UserProfile.objects.get(user=user_obj)
+						skills = profile.skills or []
+						bio = profile.bio or ''
+					except UserProfile.DoesNotExist:
+						skills = []
+						bio = ''
+					
+					developers.append({
+						'id': str(user_obj.id),
+						'username': user_obj.username,
+						'email': user_obj.email,
+						'role': user_obj.role,
+						'bio': bio,
+						'skills': skills,
+						'score': flask_data.get('scores', {}).get(str(user_id), 0.0),
+						'match_reasons': flask_data.get('match_reasons', {}).get(str(user_id), [])
+					})
+		
+		# Return formatted response
+		return Response({
+			'developers': developers,
+			'total': flask_data.get('total', 0),
+			'startup_id': str(startup_id),
+			'recommendation_session_id': flask_data.get('recommendation_session_id'),
+			'method': flask_data.get('method'),
+			'model_version': flask_data.get('model_version')
+		}, status=status.HTTP_200_OK)
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error
 		print(f"❌ Django: Flask service error for developer recommendations: {str(e)}")
 		return Response({
-			'user_ids': [],
+			'developers': [],
 			'total': 0,
 			'startup_id': str(startup_id),
 			'error': 'Recommendation service temporarily unavailable',
@@ -2768,16 +2902,49 @@ def get_personalized_investor_recommendations(request, startup_id):
 		
 		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} investor recommendations")
 		
-		# Return Flask service response
-		flask_data['startup_id'] = str(startup_id)
+		# Hydrate user_ids into full user objects
+		user_ids = flask_data.get('user_ids', [])
+		investors = []
 		
-		return Response(flask_data, status=status.HTTP_200_OK)
+		if user_ids:
+			# Query users and preserve order from recommendations
+			users_dict = {str(u.id): u for u in User.objects.filter(id__in=user_ids)}
+			
+			for user_id in user_ids:
+				user_obj = users_dict.get(str(user_id))
+				if user_obj:
+					# Get user profile for additional info
+					try:
+						profile = UserProfile.objects.get(user=user_obj)
+						bio = profile.bio or ''
+					except UserProfile.DoesNotExist:
+						bio = ''
+					
+					investors.append({
+						'id': str(user_obj.id),
+						'username': user_obj.username,
+						'email': user_obj.email,
+						'role': user_obj.role,
+						'bio': bio,
+						'score': flask_data.get('scores', {}).get(str(user_id), 0.0),
+						'match_reasons': flask_data.get('match_reasons', {}).get(str(user_id), [])
+					})
+		
+		# Return formatted response
+		return Response({
+			'investors': investors,
+			'total': flask_data.get('total', 0),
+			'startup_id': str(startup_id),
+			'recommendation_session_id': flask_data.get('recommendation_session_id'),
+			'method': flask_data.get('method'),
+			'model_version': flask_data.get('model_version')
+		}, status=status.HTTP_200_OK)
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error
 		print(f"❌ Django: Flask service error for investor recommendations: {str(e)}")
 		return Response({
-			'user_ids': [],
+			'investors': [],
 			'total': 0,
 			'startup_id': str(startup_id),
 			'error': 'Recommendation service temporarily unavailable',

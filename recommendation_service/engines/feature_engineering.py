@@ -216,9 +216,18 @@ class FeatureEncoder:
     
     def save(self, filepath: str):
         """Save encoder to file"""
-        with open(filepath, 'wb') as f:
-            pickle.dump(self, f)
-        logger.info(f"Encoder saved to {filepath}")
+        try:
+            import sys
+            import engines.feature_engineering
+            # Register module for pickle
+            sys.modules['feature_engineering'] = engines.feature_engineering
+            
+            with open(filepath, 'wb') as f:
+                pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+            logger.info(f"Encoder saved to {filepath}")
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"Could not save encoder (circular import): {e}")
+            logger.info("Encoder not saved - model will still work for inference")
     
     @staticmethod
     def load(filepath: str) -> 'FeatureEncoder':

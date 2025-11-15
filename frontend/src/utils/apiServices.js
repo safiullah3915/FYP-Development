@@ -1,4 +1,7 @@
 import apiClient from './axiosConfig';
+import { normalizeId } from './idUtils';
+
+const withStartupId = (id) => normalizeId(id);
 
 // Authentication endpoints
 export const authAPI = {
@@ -32,18 +35,18 @@ export const userAPI = {
 // Startup management endpoints
 export const startupAPI = {
   createStartup: (startupData) => apiClient.post('/api/startups', startupData),
-  getStartup: (id) => apiClient.get(`/api/startups/${id}`),
-  updateStartup: (id, data) => apiClient.put(`/api/startups/${id}`, data),
-  patchStartup: (id, data) => apiClient.patch(`/api/startups/${id}`, data),
-  deleteStartup: (id) => apiClient.delete(`/api/startups/${id}`),
-  getStartupApplications: (id) => apiClient.get(`/api/startups/${id}/applications`),
-  getStartupPositions: (id) => apiClient.get(`/api/startups/${id}/positions`),
-  createStartupPosition: (id, positionData) => apiClient.post(`/api/startups/${id}/positions`, positionData),
-  getStartupInterests: (id) => apiClient.get(`/api/startups/${id}/interests`),
-  expressInterest: (id, data = {}) => apiClient.post(`/api/startups/${id}/interest`, data),
-  toggleFavorite: (id) => apiClient.post(`/api/startups/${id}/favorite`),
-  deleteFavorite: (id) => apiClient.delete(`/api/startups/${id}/favorite`),
-  convertToMarketplace: (id, data) => apiClient.post(`/api/startups/${id}/convert-to-marketplace`, data),
+  getStartup: (id) => apiClient.get(`/api/startups/${withStartupId(id)}`),
+  updateStartup: (id, data) => apiClient.put(`/api/startups/${withStartupId(id)}`, data),
+  patchStartup: (id, data) => apiClient.patch(`/api/startups/${withStartupId(id)}`, data),
+  deleteStartup: (id) => apiClient.delete(`/api/startups/${withStartupId(id)}`),
+  getStartupApplications: (id) => apiClient.get(`/api/startups/${withStartupId(id)}/applications`),
+  getStartupPositions: (id) => apiClient.get(`/api/startups/${withStartupId(id)}/positions`),
+  createStartupPosition: (id, positionData) => apiClient.post(`/api/startups/${withStartupId(id)}/positions`, positionData),
+  getStartupInterests: (id) => apiClient.get(`/api/startups/${withStartupId(id)}/interests`),
+  expressInterest: (id, data = {}) => apiClient.post(`/api/startups/${withStartupId(id)}/interest`, data),
+  toggleFavorite: (id) => apiClient.post(`/api/startups/${withStartupId(id)}/favorite`),
+  deleteFavorite: (id) => apiClient.delete(`/api/startups/${withStartupId(id)}/favorite`),
+  convertToMarketplace: (id, data) => apiClient.post(`/api/startups/${withStartupId(id)}/convert-to-marketplace`, data),
 };
 
 // Position management endpoints
@@ -55,8 +58,8 @@ export const positionAPI = {
   deletePosition: (id) => apiClient.delete(`/api/positions/${id}`),
   closePosition: (id) => apiClient.post(`/api/positions/${id}/close`),
   openPosition: (id) => apiClient.post(`/api/positions/${id}/open`),
-  getStartupPositions: (startupId) => apiClient.get(`/api/startups/${startupId}/positions`),
-  createPosition: (startupId, positionData) => apiClient.post(`/api/startups/${startupId}/positions`, positionData),
+  getStartupPositions: (startupId) => apiClient.get(`/api/startups/${withStartupId(startupId)}/positions`),
+  createPosition: (startupId, positionData) => apiClient.post(`/api/startups/${withStartupId(startupId)}/positions`, positionData),
   getPositionApplications: (positionId) => apiClient.get(`/api/positions/${positionId}/applications`),
 };
 
@@ -149,45 +152,62 @@ export const recommendationAPI = {
   
   // Explicit feedback with recommendation context
   likeStartup: (startupId, recommendationContext = null) => {
+    const normalizedId = withStartupId(startupId);
     const data = {};
     if (recommendationContext) {
       data.recommendation_session_id = recommendationContext.sessionId;
       data.recommendation_rank = recommendationContext.rank;
     }
-    return apiClient.post(`/api/startups/${startupId}/like`, data);
+    return apiClient.post(`/api/startups/${normalizedId}/like`, data);
   },
   
   unlikeStartup: (startupId, recommendationContext = null) => {
+    const normalizedId = withStartupId(startupId);
     const params = {};
     if (recommendationContext) {
       params.recommendation_session_id = recommendationContext.sessionId;
       params.recommendation_rank = recommendationContext.rank;
     }
-    return apiClient.delete(`/api/startups/${startupId}/unlike`, { params });
+    return apiClient.delete(`/api/startups/${normalizedId}/unlike`, { params });
   },
   
   dislikeStartup: (startupId, recommendationContext = null) => {
+    const normalizedId = withStartupId(startupId);
     const data = {};
     if (recommendationContext) {
       data.recommendation_session_id = recommendationContext.sessionId;
       data.recommendation_rank = recommendationContext.rank;
     }
-    return apiClient.post(`/api/startups/${startupId}/dislike`, data);
+    return apiClient.post(`/api/startups/${normalizedId}/dislike`, data);
   },
   
   undislikeStartup: (startupId, recommendationContext = null) => {
+    const normalizedId = withStartupId(startupId);
     const params = {};
     if (recommendationContext) {
       params.recommendation_session_id = recommendationContext.sessionId;
       params.recommendation_rank = recommendationContext.rank;
     }
-    return apiClient.delete(`/api/startups/${startupId}/undislike`, { params });
+    return apiClient.delete(`/api/startups/${normalizedId}/undislike`, { params });
   },
   
-  getStartupInteractionStatus: (startupId) => apiClient.get(`/api/startups/${startupId}/interaction-status`),
+  getStartupInteractionStatus: (startupId) => apiClient.get(`/api/startups/${withStartupId(startupId)}/interaction-status`),
   
   // Trending startups
   getTrendingStartups: (params) => apiClient.get('/api/recommendations/trending/startups', { params }),
+  
+  // Personalized recommendations for entrepreneurs
+  getPersonalizedDevelopers: (startupId, params) => 
+    apiClient.get(`/api/recommendations/personalized/developers/${withStartupId(startupId)}`, { params }),
+  
+  getPersonalizedInvestors: (startupId, params) => 
+    apiClient.get(`/api/recommendations/personalized/investors/${withStartupId(startupId)}`, { params }),
+  
+  // Personalized collaboration startups for entrepreneurs
+  getPersonalizedCollaborationStartups: (params) => 
+    apiClient.get('/api/recommendations/personalized/startups', { 
+      params: { ...params, type: 'collaboration' } 
+    }),
 };
 
 // Export the configured axios client for custom requests

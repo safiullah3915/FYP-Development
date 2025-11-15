@@ -45,6 +45,28 @@ def create_interest_interaction(sender, instance, created, **kwargs):
         )
 
 
+@receiver(post_save, sender=UserInteraction)
+def update_trending_metrics_realtime(sender, instance, created, **kwargs):
+    """Update trending metrics in real-time when UserInteraction is created"""
+    if created:
+        try:
+            from api.services.trending_metrics_service import TrendingMetricsService
+            
+            # Update metrics asynchronously (or synchronously for now)
+            service = TrendingMetricsService()
+            service.increment_interaction(
+                startup_id=str(instance.startup.id),
+                interaction_type=instance.interaction_type
+            )
+            
+            print(f"✅ [Signal] Updated trending metrics for startup {instance.startup.id} - {instance.interaction_type}")
+        except Exception as e:
+            # Don't let metrics update failure break the interaction creation
+            print(f"⚠️ [Signal] Failed to update trending metrics: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+
 # Embedding update signals
 # Store old role value before save to detect changes
 _user_old_roles = {}

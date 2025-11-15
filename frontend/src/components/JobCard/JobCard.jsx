@@ -2,16 +2,18 @@ import React from "react";
 import styles from "./JobCard.module.css";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { getStartupDetailPath, normalizeId } from "../../utils/idUtils";
 
 const JobCard = ({ id, title, description, requirements, startup, applications_count, isApplied = false, hasAppliedToSpecificPosition = false, hasAppliedToStartup = false }) => {
   const { isStudent, isEntrepreneur } = useAuth();
+  const normalizedStartupId = normalizeId(startup?.id);
   
   // For students and entrepreneurs, link to application page. For others (investors), show startup details
   const getLinkDestination = () => {
     if (isStudent() || isEntrepreneur()) {
-      return `/apply-for-collaboration/${startup?.id}?position=${id}`;
+      return `/apply-for-collaboration/${normalizedStartupId}?position=${id}`;
     } else {
-      return `/startupdetail/${startup?.id}`;
+      return getStartupDetailPath(normalizedStartupId);
     }
   };
 
