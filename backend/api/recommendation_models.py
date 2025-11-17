@@ -34,6 +34,27 @@ class UserInteraction(models.Model):
     
     # Precomputed weight for training (calculated on save)
     weight = models.FloatField(default=1.0)
+    value_score = models.FloatField(default=0.0, db_index=True)
+    
+    # Recommendation context (extracted from metadata for analytics/perf)
+    recommendation_session = models.ForeignKey(
+        'api.RecommendationSession',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='recommendation_session_id',
+        related_name='interaction_events'
+    )
+    recommendation_source = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        choices=[('organic', 'Organic'), ('recommendation', 'Recommendation')],
+        db_index=True
+    )
+    recommendation_rank = models.IntegerField(null=True, blank=True)
+    recommendation_score = models.FloatField(null=True, blank=True)
+    recommendation_method = models.CharField(max_length=50, null=True, blank=True)
     
     # Additional context
     metadata = models.JSONField(default=dict, blank=True)  # session_id, device, etc.
@@ -49,6 +70,9 @@ class UserInteraction(models.Model):
             models.Index(fields=['position']),
             # ETL-optimized index for date-range queries
             models.Index(fields=['created_at', 'interaction_type']),
+            models.Index(fields=['recommendation_session', 'created_at'], name='idx_interaction_session_time'),
+            models.Index(fields=['recommendation_source', 'created_at'], name='idx_interaction_source_time'),
+            models.Index(fields=['user', 'interaction_type', 'created_at'], name='idx_interaction_user_type_time'),
         ]
         # Unique constraint to prevent duplicate interactions of same type
         # Allows multiple interactions of different types, but only one per type per user-startup pair
@@ -117,6 +141,9 @@ class UserOnboardingPreferences(models.Model):
     
     # Preferred skills (for developers - skills they want to work with)
     preferred_skills = models.JSONField(default=list, blank=True)  # e.g., ['Python', 'React', 'Machine Learning']
+    
+    # Investor specific structured payload (mirrors serializer schema)
+    investor_profile = models.JSONField(default=dict, blank=True)
     
     onboarding_completed = models.BooleanField(default=False)
     

@@ -137,6 +137,7 @@ class UserOnboardingPreferences(Base):
     preferred_startup_stages = Column(Text, nullable=True)  # JSON string
     preferred_engagement_types = Column(Text, nullable=True)  # JSON string
     preferred_skills = Column(Text, nullable=True)  # JSON string
+    investor_profile = Column(Text, nullable=True)  # JSON string
     onboarding_completed = Column(Boolean, default=False)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
@@ -151,6 +152,10 @@ class UserOnboardingPreferences(Base):
     def get_selected_tags(self) -> List[str]:
         """Parse selected_tags JSON field"""
         return parse_json_field(self.selected_tags) or []
+    
+    def get_investor_profile(self) -> Dict[str, Any]:
+        """Parse investor_profile JSON field"""
+        return parse_json_field(self.investor_profile) or {}
 
 
 # ============================================================================
@@ -457,6 +462,9 @@ class UserInteraction(Base):
         Index('idx_inter_startup_created', 'startup_id', 'created_at'),
         Index('idx_inter_type', 'interaction_type'),
         Index('idx_inter_position', 'position_id'),
+        Index('idx_interaction_session_time', 'recommendation_session_id', 'created_at'),
+        Index('idx_interaction_source_time', 'recommendation_source', 'created_at'),
+        Index('idx_interaction_user_type_time', 'user_id', 'interaction_type', 'created_at'),
     )
     
     id = Column(String, primary_key=True)  # UUID
@@ -465,6 +473,12 @@ class UserInteraction(Base):
     interaction_type = Column(String(30), nullable=False)  # view, click, like, dislike, favorite, apply, interest
     position_id = Column(String, ForeignKey('positions.id', ondelete='SET NULL'), nullable=True)
     weight = Column(Float, default=1.0)
+    value_score = Column(Float, default=0.0)
+    recommendation_session_id = Column(String, nullable=True)
+    recommendation_source = Column(String(50), nullable=True)
+    recommendation_rank = Column(Integer, nullable=True)
+    recommendation_score = Column(Float, nullable=True)
+    recommendation_method = Column(String(50), nullable=True)
     interaction_metadata = Column('metadata', Text, nullable=True)  # JSON string - using db_column to keep DB name as 'metadata'
     created_at = Column(DateTime, nullable=False)
     

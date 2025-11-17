@@ -198,6 +198,22 @@ class ContentBasedRecommender(BaseRecommender):
             )
             
             candidate_users = query.all()
+
+            # Fallbacks: if no candidates for strict role, broaden to common developer buckets
+            if not candidate_users:
+                logger.info(f"No candidates for role '{target_role}'. Broadening role filter...")
+                query_any_dev = self.db.query(User).filter(
+                    User.is_active == True,
+                    User.role.in_(['student', 'developer'])
+                )
+                candidate_users = query_any_dev.all()
+
+            # Final fallback: any active users (avoid empty screen in very fresh DBs)
+            if not candidate_users:
+                logger.info("Still no candidates. Using any active users as final fallback.")
+                candidate_users = self.db.query(User).filter(
+                    User.is_active == True
+                ).all()
             
             if not candidate_users:
                 logger.warning(f"No candidate users found for role {target_role}")

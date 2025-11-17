@@ -208,6 +208,12 @@ export const recommendationAPI = {
     apiClient.get('/api/recommendations/personalized/startups', { 
       params: { ...params, type: 'collaboration' } 
     }),
+  
+  // Personalized startup recommendations for investors
+  getPersonalizedStartups: (params) => 
+    apiClient.get('/api/recommendations/personalized/startups', { 
+      params 
+    }),
 };
 
 // Export the configured axios client for custom requests

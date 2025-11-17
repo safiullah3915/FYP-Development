@@ -1,14 +1,14 @@
 """
-ALS Inference Module
-Standalone module for loading and running ALS recommendations
-Similar to inference_two_tower.py but for collaborative filtering
+SVD-based ALS Inference Module
+Loads precomputed embeddings produced by train_als.py and serves recommendations.
 """
-import os
 import json
-import pickle
-import numpy as np
+import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
+
+import numpy as np
+
 from database.connection import SessionLocal
 from database.models import Startup
 from utils.logger import get_logger
@@ -18,76 +18,91 @@ logger = get_logger(__name__)
 
 class ALSInference:
     """
-    Standalone ALS inference for recommendation
-    Loads model once and provides fast recommendations
+    Standalone inference for collaborative filtering embeddings
     """
-    
+
     def __init__(self, model_path: str):
         """
-        Initialize ALS inference
-        
+        Initialize ALS/SVD inference
+
         Args:
-            model_path: Path to trained ALS model (e.g., models/als_v1.pkl)
+            model_path: Path to config JSON or legacy model prefix (e.g., models/als_v1_config.json)
         """
-        self.model = None
         self.user_factors = None
         self.item_factors = None
         self.user_mapping = None
         self.item_mapping = None
         self.user_reverse = None
         self.item_reverse = None
-        
+        self.config = {}
+
         self._load_model(model_path)
     
+    def _resolve_prefix(self, model_path: str) -> Path:
+        """
+        Derive the artifact prefix (without suffix) from whichever path was provided.
+        Supports:
+            - .../als_v1_config.json
+            - .../als_v1.pkl (legacy)
+            - .../als_v1 (prefix directly)
+        """
+        path = Path(model_path)
+        if path.is_dir():
+            raise ValueError(f"Provided model path '{model_path}' is a directory; please pass a config file or prefix.")
+
+        if path.suffix == '.json' and path.stem.endswith('_config'):
+            return path.with_name(path.stem.replace('_config', ''))
+
+        if path.suffix == '.pkl':
+            # Legacy pointer: simply drop the extension and use the prefix
+            return path.with_suffix('')
+
+        return path
+
     def _load_model(self, model_path: str):
-        """Load trained model and mappings"""
+        """Load embeddings, mappings, and config metadata"""
         try:
-            logger.info(f"Loading ALS model from {model_path}")
-            
-            if not os.path.exists(model_path):
-                raise FileNotFoundError(f"Model file not found: {model_path}")
-            
-            # Load model
-            with open(model_path, 'rb') as f:
-                self.model = pickle.load(f)
-            
-            # Get model directory and name
-            model_dir = os.path.dirname(model_path)
-            model_name = os.path.basename(model_path).replace('.pkl', '')
-            
-            # Load user and item factors
-            user_factors_path = os.path.join(model_dir, f"{model_name}_user_factors.npy")
-            item_factors_path = os.path.join(model_dir, f"{model_name}_item_factors.npy")
-            
-            if not os.path.exists(user_factors_path):
-                raise FileNotFoundError(f"User factors not found: {user_factors_path}")
-            if not os.path.exists(item_factors_path):
-                raise FileNotFoundError(f"Item factors not found: {item_factors_path}")
-            
+            prefix = self._resolve_prefix(model_path)
+            logger.info(f"Loading ALS/SVD artifacts using prefix {prefix}")
+
+            user_factors_path = f"{prefix}_user_factors.npy"
+            item_factors_path = f"{prefix}_item_factors.npy"
+            user_mapping_path = f"{prefix}_user_mapping.json"
+            item_mapping_path = f"{prefix}_item_mapping.json"
+            config_path = f"{prefix}_config.json"
+
+            for path in [user_factors_path, item_factors_path, user_mapping_path, item_mapping_path]:
+                if not os.path.exists(path):
+                    raise FileNotFoundError(f"Missing artifact: {path}")
+
             self.user_factors = np.load(user_factors_path)
             self.item_factors = np.load(item_factors_path)
-            
-            # Load mappings
-            user_mapping_path = os.path.join(model_dir, f"{model_name}_user_mapping.json")
-            item_mapping_path = os.path.join(model_dir, f"{model_name}_item_mapping.json")
-            
+
             with open(user_mapping_path, 'r') as f:
-                self.user_mapping = json.load(f)
-            
+                raw_user_mapping = json.load(f)
+                self.user_mapping = {str(k): int(v) for k, v in raw_user_mapping.items()}
+
             with open(item_mapping_path, 'r') as f:
-                self.item_mapping = json.load(f)
-            
-            # Create reverse mappings
-            self.user_reverse = {int(v): k for k, v in self.user_mapping.items()}
-            self.item_reverse = {int(v): k for k, v in self.item_mapping.items()}
-            
-            logger.info(f"ALS model loaded successfully:")
+                raw_item_mapping = json.load(f)
+                self.item_mapping = {str(k): int(v) for k, v in raw_item_mapping.items()}
+
+            config_exists = os.path.exists(config_path)
+            if config_exists:
+                with open(config_path, 'r') as f:
+                    self.config = json.load(f)
+            else:
+                logger.warning(f"Config file not found at {config_path}; continuing with defaults.")
+
+            self.user_reverse = {idx: user_id for user_id, idx in self.user_mapping.items()}
+            self.item_reverse = {idx: item_id for item_id, idx in self.item_mapping.items()}
+
+            logger.info("ALS/SVD embeddings loaded successfully:")
             logger.info(f"  Users: {len(self.user_mapping)}")
             logger.info(f"  Items: {len(self.item_mapping)}")
             logger.info(f"  Factors: {self.user_factors.shape[1]}")
-            
+
         except Exception as e:
-            logger.error(f"Failed to load ALS model: {e}")
+            logger.error(f"Failed to load ALS/SVD artifacts: {e}")
             raise
     
     def recommend(self, user_id: str, limit: int = 10, filters: Optional[Dict] = None, fetch_multiplier: int = 1) -> Dict:

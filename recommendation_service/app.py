@@ -29,11 +29,33 @@ CORS(app, origins=CORS_ORIGINS)
 two_tower_model = None
 als_model = None
 ensemble_model = None
+MODELS_DIR = Path(__file__).parent / "models"
+ALS_MODEL_NAME = "als_v1"
+ALS_REVERSE_MODEL_NAME = "als_reverse_v1"
+TWO_TOWER_MODEL_PATH = MODELS_DIR / "two_tower_v1_best.pth"
+
+
+def resolve_model_artifact(base_name: str, prefer_config: bool = True) -> Path:
+    """
+    Locate the best available artifact pointer for a model prefix.
+    Preference order:
+      1. <base_name>_config.json
+      2. <base_name>.pkl (legacy)
+    """
+    candidates = []
+    if prefer_config:
+        candidates.append(MODELS_DIR / f"{base_name}_config.json")
+    candidates.append(MODELS_DIR / f"{base_name}.pkl")
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 # Load Two-Tower Model
 try:
     from inference_two_tower import TwoTowerInference
-    model_path = Path(__file__).parent / "models" / "two_tower_v1_best.pth"
+    model_path = TWO_TOWER_MODEL_PATH
     
     if model_path.exists():
         two_tower_model = TwoTowerInference(str(model_path))
@@ -46,13 +68,13 @@ except Exception as e:
 # Load ALS Model (Forward: User → Startup)
 try:
     from inference_als import ALSInference
-    als_path = Path(__file__).parent / "models" / "als_v1.pkl"
+    als_pointer = resolve_model_artifact(ALS_MODEL_NAME)
     
-    if als_path.exists():
-        als_model = ALSInference(str(als_path))
-        logger.info("✓ ALS Forward model loaded successfully!")
+    if als_pointer.exists():
+        als_model = ALSInference(str(als_pointer))
+        logger.info("✓ ALS Forward (SVD) model loaded successfully!")
     else:
-        logger.warning(f"ALS Forward model not found at {als_path}")
+        logger.warning(f"ALS Forward artifacts not found (expected {als_pointer})")
 except Exception as e:
     logger.error(f"Failed to load ALS Forward model: {e}")
 
@@ -60,14 +82,14 @@ except Exception as e:
 als_reverse_model = None
 try:
     from inference_als_reverse import ALSReverseInference
-    als_reverse_path = Path(__file__).parent / "models" / "als_reverse_v1.pkl"
+    als_reverse_pointer = resolve_model_artifact(ALS_REVERSE_MODEL_NAME)
     
-    if als_reverse_path.exists():
-        als_reverse_model = ALSReverseInference(str(als_reverse_path))
-        logger.info("✓ ALS Reverse model loaded successfully!")
+    if als_reverse_pointer.exists():
+        als_reverse_model = ALSReverseInference(str(als_reverse_pointer))
+        logger.info("✓ ALS Reverse (SVD) model loaded successfully!")
         logger.info("  -> Will be used for Founder → Developer/Investor recommendations")
     else:
-        logger.warning(f"ALS Reverse model not found at {als_reverse_path}")
+        logger.warning(f"ALS Reverse artifacts not found (expected {als_reverse_pointer})")
         logger.info("  -> Founder use cases will use content-based only")
 except Exception as e:
     logger.error(f"Failed to load ALS Reverse model: {e}")
@@ -77,8 +99,8 @@ try:
     if two_tower_model and als_model:
         from inference_ensemble import EnsembleInference
         ensemble_model = EnsembleInference(
-            als_model_path=str(Path(__file__).parent / "models" / "als_v1.pkl"),
-            two_tower_model_path=str(Path(__file__).parent / "models" / "two_tower_v1_best.pth"),
+            als_model_path=str(resolve_model_artifact(ALS_MODEL_NAME)),
+            two_tower_model_path=str(TWO_TOWER_MODEL_PATH),
             als_weight=0.6
         )
         logger.info("✓ Ensemble model initialized successfully!")
@@ -339,8 +361,9 @@ def get_startups_for_developer(user_id):
             limit = int(request.args.get('limit', 10))
             if limit < 1:
                 limit = 10
-            elif limit > 100:
-                limit = 100  # Cap at 100 for performance
+            # Hard cap at 10 for frontend expectations
+            if limit > 10:
+                limit = 10
         except (ValueError, TypeError):
             limit = 10
         
@@ -353,15 +376,9 @@ def get_startups_for_developer(user_id):
         if startup_type:
             filters['type'] = startup_type
         
-        # Determine if we should force open positions only (default for collaboration)
+        # Allow backend (Django) to enforce open positions; only respect explicit param
         require_open_positions_param = request.args.get('require_open_positions')
-        require_open_positions = False
-        if require_open_positions_param is not None:
-            require_open_positions = require_open_positions_param.lower() in ['1', 'true', 'yes']
-        elif startup_type == 'collaboration':
-            require_open_positions = True
-        
-        if require_open_positions:
+        if require_open_positions_param is not None and require_open_positions_param.lower() in ['1', 'true', 'yes']:
             filters['require_open_positions'] = True
         
         # Check interaction count for routing
@@ -369,12 +386,12 @@ def get_startups_for_developer(user_id):
             UserInteraction.user_id == user_id
         ).count()
         
-        logger.info(f"User {user_id} has {interaction_count} interactions")
+        logger.info(f"[for-developer] user_id={user_id} interaction_count={interaction_count} type={startup_type} filters={filters}")
         
         # Smart routing based on interaction count
         if interaction_count < 5:
             # Cold start: content-based
-            logger.info(f"-> Using Content-Based (cold start: {interaction_count} interactions)")
+            logger.info(f"[for-developer] routing=content_based (cold start: {interaction_count})")
             from services.recommendation_service import RecommendationService
             rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
@@ -387,7 +404,7 @@ def get_startups_for_developer(user_id):
             model_version = 'content_based_v1.0'
         elif interaction_count < 20:
             # Warm users: ALS
-            logger.info(f"-> Using ALS (warm user: {interaction_count} interactions)")
+            logger.info(f"[for-developer] routing=als (warm user: {interaction_count})")
             if als_model:
                 results = als_model.recommend(user_id, limit, filters)
                 method_used = 'als'
@@ -411,7 +428,7 @@ def get_startups_for_developer(user_id):
                 model_version = 'content_based_v1.0'
         else:
             # Hot users: Ensemble
-            logger.info(f"-> Using Ensemble (hot user: {interaction_count} interactions)")
+            logger.info(f"[for-developer] routing=ensemble (hot user: {interaction_count})")
             if ensemble_model:
                 results = ensemble_model.recommend(user_id, limit, filters)
                 method_used = 'ensemble'
@@ -635,9 +652,23 @@ def get_developers_for_startup(startup_id):
         
         position_id = request.args.get('position_id', None)
         
-        # Get startup owner as user_id for routing
-        startup = db.query(Startup).filter(Startup.id == startup_id).first()
+        # Get startup owner as user_id for routing (robust to UUID format)
+        sid = str(startup_id)
+        candidates = [sid]
+        try:
+            import uuid as _uuid
+            if '-' in sid:
+                candidates.append(sid.replace('-', ''))
+            elif len(sid) == 32:
+                try:
+                    candidates.append(str(_uuid.UUID(sid)))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        startup = db.query(Startup).filter(Startup.id.in_(candidates)).first()
         if not startup:
+            logger.info(f"Developer route: Startup not found for any id variants: {candidates}")
             return jsonify({'error': 'Startup not found'}), 404
         
         founder_id = str(startup.owner_id)
@@ -661,7 +692,7 @@ def get_developers_for_startup(startup_id):
             from services.recommendation_service import RecommendationService
             rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
-                user_id=founder_id,
+                user_id=startup_id,  # Pass startup_id as per service API (founder_* expects startup_id)
                 use_case='founder_developer',
                 limit=limit,
                 filters=filters
@@ -680,7 +711,7 @@ def get_developers_for_startup(startup_id):
                 from services.recommendation_service import RecommendationService
                 rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
                 results = rec_service.get_recommendations(
-                    user_id=founder_id,
+                    user_id=startup_id,  # Pass startup_id
                     use_case='founder_developer',
                     limit=limit,
                     filters=filters
@@ -744,9 +775,25 @@ def get_investors_for_startup(startup_id):
         except (ValueError, TypeError):
             limit = 10
         
-        # Get startup owner as user_id for routing
-        startup = db.query(Startup).filter(Startup.id == startup_id).first()
+        # Get startup owner as user_id for routing (robust to UUID format)
+        sid = str(startup_id)
+        candidates = [sid]
+        # If hyphenated, also try without hyphens; if 32-hex, also try hyphenated UUID form
+        try:
+            import uuid as _uuid
+            if '-' in sid:
+                candidates.append(sid.replace('-', ''))
+            elif len(sid) == 32:
+                try:
+                    candidates.append(str(_uuid.UUID(sid)))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        
+        startup = db.query(Startup).filter(Startup.id.in_(candidates)).first()
         if not startup:
+            logger.info(f"Investor route: Startup not found for any id variants: {candidates}")
             return jsonify({'error': 'Startup not found'}), 404
         
         founder_id = str(startup.owner_id)
@@ -768,7 +815,7 @@ def get_investors_for_startup(startup_id):
             from services.recommendation_service import RecommendationService
             rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
-                user_id=founder_id,
+                user_id=startup_id,  # Pass startup_id as per service API (founder_* expects startup_id)
                 use_case='founder_investor',
                 limit=limit,
                 filters=filters
@@ -787,7 +834,7 @@ def get_investors_for_startup(startup_id):
                 from services.recommendation_service import RecommendationService
                 rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
                 results = rec_service.get_recommendations(
-                    user_id=founder_id,
+                    user_id=startup_id,  # Pass startup_id
                     use_case='founder_investor',
                     limit=limit,
                     filters=filters

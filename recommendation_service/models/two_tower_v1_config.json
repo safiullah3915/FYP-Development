@@ -1,0 +1,34 @@
+{
+  "user_feature_dim": 502,
+  "startup_feature_dim": 471,
+  "embedding_dim": 128,
+  "hidden_dims": [
+    512,
+    256
+  ],
+  "dropout_rate": 0.3,
+  "dropout_rate_middle": 0.2,
+  "learning_rate": 0.001,
+  "weight_decay": 0.01,
+  "batch_size": 256,
+  "num_epochs": 10,
+  "early_stopping_patience": 5,
+  "loss_type": "weighted_bce",
+  "use_lr_scheduler": true,
+  "lr_scheduler_type": "cosine",
+  "lr_warmup_epochs": 5,
+  "eval_every_n_epochs": 1,
+  "metrics_k": [
+    10,
+    20,
+    50
+  ],
+  "gradient_clip_val": 1.0,
+  "use_mixed_precision": false,
+  "train_ratio": 0.7,
+  "val_ratio": 0.15,
+  "test_ratio": 0.15,
+  "random_seed": 42,
+  "model_save_dir": "models",
+  "model_name": "two_tower_v1"
+}

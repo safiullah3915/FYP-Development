@@ -6,13 +6,15 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q, Prefetch
 from api.models import User, Startup, StartupTag, Position
 from api.messaging_models import UserProfile
-from api.recommendation_models import UserInteraction, UserOnboardingPreferences
+from api.recommendation_models import UserInteraction, UserOnboardingPreferences, RecommendationSession
 import json
 import random
 import csv
 from collections import defaultdict
 from datetime import datetime
 import os
+import math
+from typing import Optional
 
 
 class Command(BaseCommand):
@@ -135,6 +137,9 @@ class Command(BaseCommand):
                 'weight': interaction.weight,
                 'timestamp': interaction.created_at,
                 'position_id': str(interaction.position_id) if interaction.position_id else None,
+                'recommendation_rank': interaction.recommendation_rank,
+                'recommendation_score': interaction.recommendation_score,
+                'recommendation_method': interaction.recommendation_method,
             })
         
         return interactions_data
@@ -169,18 +174,42 @@ class Command(BaseCommand):
             if not non_interacted:
                 continue
             
+            # Hard negative candidates from recent recommendation sessions
+            recommendation_candidates = self.get_high_score_recommendation_candidates(user_id, interacted_startups)
+            
             # Sample negative examples
             n_samples = min(num_samples, len(non_interacted))
-            sampled_startups = random.sample(non_interacted, n_samples)
+            selected = []
             
-            for startup_id in sampled_startups:
+            if recommendation_candidates:
+                hard_negative_pool = [cand for cand in recommendation_candidates if cand['startup_id'] in non_interacted]
+                hard_negative_count = min(len(hard_negative_pool), n_samples)
+                selected.extend(hard_negative_pool[:hard_negative_count])
+            
+            remaining = n_samples - len(selected)
+            if remaining > 0:
+                fallback_ids = [sid for sid in non_interacted if sid not in {cand['startup_id'] for cand in selected}]
+                if fallback_ids:
+                    sampled_startups = random.sample(fallback_ids, min(remaining, len(fallback_ids)))
+                    for startup_id in sampled_startups:
+                        selected.append({
+                            'startup_id': startup_id,
+                            'rank': None,
+                            'score': None,
+                            'method': None,
+                        })
+            
+            for candidate in selected:
                 negative_samples.append({
                     'user_id': user_id,
-                    'startup_id': startup_id,
+                    'startup_id': candidate['startup_id'],
                     'interaction_type': 'negative_sample',
                     'weight': 1.0,
                     'timestamp': datetime.now(),
                     'position_id': None,
+                    'recommendation_rank': candidate.get('rank'),
+                    'recommendation_score': candidate.get('score'),
+                    'recommendation_method': candidate.get('method'),
                 })
         
         return negative_samples
@@ -218,14 +247,20 @@ class Command(BaseCommand):
             
             # Get label
             label = self.label_mapping.get(sample['interaction_type'], 0.0)
+            rank_weight = self.compute_rank_weight(sample.get('recommendation_rank'))
+            weighted_label = sample['weight'] * rank_weight
             
             dataset.append({
                 'user_id': user_id,
                 'startup_id': startup_id,
                 'label': label,
-                'weight': sample['weight'],
+                'weight': weighted_label,
                 'interaction_type': sample['interaction_type'],
                 'timestamp': sample['timestamp'].isoformat() if hasattr(sample['timestamp'], 'isoformat') else str(sample['timestamp']),
+                'recommendation_rank': sample.get('recommendation_rank'),
+                'recommendation_score': sample.get('recommendation_score'),
+                'rank_weight': rank_weight,
+                'recommendation_method': sample.get('recommendation_method'),
                 **user_features[user_id],
                 **startup_features[startup_id],
             })
@@ -358,6 +393,7 @@ class Command(BaseCommand):
         # Define CSV columns
         columns = [
             'user_id', 'startup_id', 'label', 'weight', 'interaction_type', 'timestamp',
+            'recommendation_rank', 'recommendation_score', 'rank_weight', 'recommendation_method',
             'user_role', 'user_embedding', 'user_categories', 'user_fields', 
             'user_tags', 'user_stages', 'user_engagement', 'user_skills',
             'startup_type', 'startup_category', 'startup_field', 'startup_phase',
@@ -430,4 +466,35 @@ class Command(BaseCommand):
         self.stdout.write(f'  Startups with embeddings: {total_samples - missing_startup_emb} / {total_samples} ({((total_samples - missing_startup_emb) / total_samples * 100):.1f}%)')
         
         self.stdout.write('\n' + '='*60 + '\n')
+
+    def get_high_score_recommendation_candidates(self, user_id, interacted_startups, session_limit=5):
+        """Return recommendation exposures with high scores for hard negative mining"""
+        sessions = RecommendationSession.objects.filter(
+            user_id=user_id
+        ).order_by('-created_at')[:session_limit]
+        
+        candidates = []
+        seen = set(interacted_startups)
+        for session in sessions:
+            for rec in session.recommendations_shown or []:
+                startup_id = rec.get('startup_id')
+                if not startup_id:
+                    continue
+                sid = str(startup_id)
+                if sid in seen:
+                    continue
+                candidates.append({
+                    'startup_id': sid,
+                    'rank': rec.get('rank'),
+                    'score': rec.get('score'),
+                    'method': rec.get('method') or session.recommendation_method,
+                })
+        candidates.sort(key=lambda c: (c['score'] is not None, c['score']), reverse=True)
+        return candidates
+
+    def compute_rank_weight(self, rank: Optional[int]) -> float:
+        """Weight interactions based on their original rank exposure"""
+        if rank and rank > 0:
+            return 1.0 / math.log2(rank + 1)
+        return 1.0
 

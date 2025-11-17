@@ -54,6 +54,10 @@ class FeatureExtractor:
                         'preferred_engagement_types': self._parse_json_field(prefs.preferred_engagement_types),
                         'preferred_skills': self._parse_json_field(prefs.preferred_skills),
                     }
+                    investor_profile = self._parse_json_object(getattr(prefs, 'investor_profile', None))
+                    if investor_profile:
+                        preferences['investor_profile'] = investor_profile
+                        preferences['investor_tokens'] = self._build_investor_tokens(investor_profile)
             except Exception as e:
                 logger.warning(f"Error extracting preferences for user {user_id}: {e}")
             
@@ -112,7 +116,8 @@ class FeatureExtractor:
                 tags = []
                 try:
                     if hasattr(startup, 'tags'):
-                        tags = [tag.tag for tag in startup.tags.all()]
+                        # SQLAlchemy relationship collections are iterable; no .all() on InstrumentedList
+                        tags = [tag.tag for tag in startup.tags]
                 except Exception as e:
                     logger.warning(f"Error extracting tags for startup {startup_id}: {e}")
                 
@@ -121,7 +126,8 @@ class FeatureExtractor:
                 position_requirements = []
                 try:
                     if hasattr(startup, 'positions'):
-                        for pos in startup.positions.all():
+                        # Iterate relationship collection directly
+                        for pos in startup.positions:
                             if pos.is_active:
                                 positions.append({
                                     'id': str(pos.id),
@@ -198,6 +204,70 @@ class FeatureExtractor:
             except (json.JSONDecodeError, TypeError):
                 return []
         return []
+    
+    def _parse_json_object(self, field):
+        """Parse JSON field that should return a dict"""
+        if field is None:
+            return {}
+        if isinstance(field, dict):
+            return field
+        if isinstance(field, str):
+            try:
+                parsed = json.loads(field)
+                return parsed if isinstance(parsed, dict) else {}
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return {}
+    
+    def _build_investor_tokens(self, investor_profile):
+        """Flatten investor profile into tags for embedding/similarity"""
+        tokens = []
+        list_fields = {
+            'sectors': '',
+            'stages': '',
+            'round_types': 'round',
+            'instruments': 'instr',
+            'business_models': 'bm',
+            'geographies': 'geo',
+            'support_preferences': 'support',
+            'co_investor_profile': 'coinvest',
+        }
+        for field, prefix in list_fields.items():
+            values = investor_profile.get(field) or []
+            for value in values:
+                slug = str(value).strip().lower()
+                if not slug:
+                    continue
+                tag = f"{prefix}:{slug}" if prefix else slug
+                tokens.append(tag)
+        
+        for scoped_field, template in [
+            ('check_size', lambda k, v: f"{k}:{v}"),
+            ('target_ownership', lambda k, v: f"{k}:{v}"),
+            ('valuation_caps', lambda k, v: f"valcap_{k}:{v}"),
+            ('traction', lambda k, v: f"tr_{k}:{v}")
+        ]:
+            payload = investor_profile.get(scoped_field) or {}
+            if isinstance(payload, dict):
+                for key, value in payload.items():
+                    if value in (None, ''):
+                        continue
+                    tokens.append(template(key, value))
+        
+        for single_field, prefix in [
+            ('collaboration_style', 'collab'),
+            ('lead_preference', 'leadpref'),
+            ('decision_speed', 'decision'),
+        ]:
+            value = investor_profile.get(single_field)
+            if value:
+                tokens.append(f"{prefix}:{value}")
+        
+        thesis = investor_profile.get('thesis_summary')
+        if thesis:
+            tokens.append(f"thesis:{thesis[:80].lower()}")
+        
+        return tokens
     
     def _empty_user_features(self, user_id):
         """Return empty user features structure"""

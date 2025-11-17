@@ -100,6 +100,11 @@
   border-color: #667eea;
 }
 
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
 .addButton {
   padding: 0.75rem 1.5rem;
   background-color: #667eea;
@@ -159,6 +164,32 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.inlineGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.inlineGroupColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.inlineField {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 140px;
+}
+
+.inlineLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
 }
 
 .chipGrid {

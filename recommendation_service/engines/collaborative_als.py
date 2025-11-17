@@ -4,8 +4,10 @@ Uses Alternating Least Squares for implicit feedback recommendation
 """
 import os
 import json
-import pickle
+from pathlib import Path
+
 import numpy as np
+
 from .base_recommender import BaseRecommender
 from utils.logger import get_logger
 from database.models import Startup, Position
@@ -15,10 +17,7 @@ logger = get_logger(__name__)
 
 class ALSRecommender(BaseRecommender):
     """
-    ALS-based collaborative filtering recommender
-    
-    Uses implicit feedback signals (views, clicks, likes) to learn
-    user and item latent factors via matrix factorization
+    ALS-based collaborative filtering recommender powered by SVD embeddings
     """
     
     def __init__(self, db_session=None, model_path=None):
@@ -27,65 +26,74 @@ class ALSRecommender(BaseRecommender):
         
         Args:
             db_session: Database session for querying startup data
-            model_path: Path to trained ALS model file
+            model_path: Path to trained ALS config or legacy prefix
         """
         self.db = db_session
-        self.model = None
         self.user_factors = None
         self.item_factors = None
         self.user_mapping = None
         self.item_mapping = None
         self.user_reverse = None
         self.item_reverse = None
+        self.config = {}
         
         if model_path and os.path.exists(model_path):
             self.load_model(model_path)
     
+    def _resolve_prefix(self, model_path: str) -> Path:
+        path = Path(model_path)
+        if path.is_dir():
+            raise ValueError("ALS model path cannot be a directory.")
+        
+        if path.suffix == '.json' and path.stem.endswith('_config'):
+            return path.with_name(path.stem.replace('_config', ''))
+        
+        if path.suffix == '.pkl':
+            return path.with_suffix('')
+        
+        return path
+    
     def load_model(self, model_path):
         """
-        Load trained ALS model and mappings
-        
-        Args:
-            filepath: Path to model file (e.g., models/als_v1.pkl)
+        Load trained embeddings and mappings
         """
         try:
-            logger.info(f"Loading ALS model from {model_path}")
+            prefix = self._resolve_prefix(model_path)
+            logger.info(f"Loading ALS embeddings using prefix {prefix}")
             
-            # Load model
-            with open(model_path, 'rb') as f:
-                self.model = pickle.load(f)
+            user_factors_path = f"{prefix}_user_factors.npy"
+            item_factors_path = f"{prefix}_item_factors.npy"
+            user_mapping_path = f"{prefix}_user_mapping.json"
+            item_mapping_path = f"{prefix}_item_mapping.json"
+            config_path = f"{prefix}_config.json"
             
-            # Load factors
-            model_dir = os.path.dirname(model_path)
-            model_name = os.path.basename(model_path).replace('.pkl', '')
-            
-            user_factors_path = os.path.join(model_dir, f"{model_name}_user_factors.npy")
-            item_factors_path = os.path.join(model_dir, f"{model_name}_item_factors.npy")
+            for path in [user_factors_path, item_factors_path, user_mapping_path, item_mapping_path]:
+                if not os.path.exists(path):
+                    raise FileNotFoundError(f"Missing ALS artifact: {path}")
             
             self.user_factors = np.load(user_factors_path)
             self.item_factors = np.load(item_factors_path)
             
-            # Load mappings
-            user_mapping_path = os.path.join(model_dir, f"{model_name}_user_mapping.json")
-            item_mapping_path = os.path.join(model_dir, f"{model_name}_item_mapping.json")
-            
             with open(user_mapping_path, 'r') as f:
-                self.user_mapping = json.load(f)
+                self.user_mapping = {str(k): int(v) for k, v in json.load(f).items()}
             
             with open(item_mapping_path, 'r') as f:
-                self.item_mapping = json.load(f)
+                self.item_mapping = {str(k): int(v) for k, v in json.load(f).items()}
             
-            # Create reverse mappings (index -> UUID)
-            self.user_reverse = {int(v): k for k, v in self.user_mapping.items()}
-            self.item_reverse = {int(v): k for k, v in self.item_mapping.items()}
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    self.config = json.load(f)
             
-            logger.info(f"ALS model loaded successfully")
+            self.user_reverse = {idx: user_id for user_id, idx in self.user_mapping.items()}
+            self.item_reverse = {idx: item_id for item_id, idx in self.item_mapping.items()}
+            
+            logger.info("ALS embeddings loaded successfully")
             logger.info(f"  Users: {len(self.user_mapping)}")
             logger.info(f"  Items: {len(self.item_mapping)}")
             logger.info(f"  Factors: {self.user_factors.shape[1]}")
             
         except Exception as e:
-            logger.error(f"Error loading ALS model: {e}")
+            logger.error(f"Error loading ALS embeddings: {e}")
             raise
     
     def recommend(self, user_id, use_case, limit, filters=None):
@@ -107,7 +115,7 @@ class ALSRecommender(BaseRecommender):
         try:
             logger.info(f"ALS recommend for user {user_id}, use_case {use_case}, limit {limit}")
             
-            if not self.model or not self.user_factors:
+            if self.user_factors is None or self.item_factors is None:
                 logger.warning("ALS model not loaded")
                 return self._fallback_recommendations(limit, filters)
             
@@ -253,7 +261,9 @@ class ALSRecommender(BaseRecommender):
         reasons = []
         
         try:
-            if not self.model or user_id not in self.user_mapping or item_id not in self.item_mapping:
+            if self.user_factors is None or self.item_factors is None:
+                return ["Recommended based on collaborative filtering"]
+            if user_id not in self.user_mapping or item_id not in self.item_mapping:
                 return ["Recommended based on collaborative filtering"]
             
             # Get user and item indices
@@ -295,21 +305,7 @@ class ALSRecommender(BaseRecommender):
         Args:
             filepath: Path to save model
         """
-        if not self.model:
-            logger.warning("No model to save")
-            return
-        
-        try:
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            
-            with open(filepath, 'wb') as f:
-                pickle.dump(self.model, f)
-            
-            logger.info(f"ALS model saved to {filepath}")
-            
-        except Exception as e:
-            logger.error(f"Error saving ALS model: {e}")
-            raise
+        logger.warning("ALSRecommender.save_model is not supported with SVD artifacts; use train_als.py instead.")
     
     def train(self, interactions_df):
         """

@@ -7,6 +7,8 @@ import json
 import bcrypt
 from .models import Startup, StartupTag, Position, Application
 from .messaging_models import Conversation
+from .recommendation_models import UserOnboardingPreferences
+from .serializers import UserOnboardingPreferencesSerializer
 
 User = get_user_model()
 
@@ -223,6 +225,59 @@ class SearchTestCase(BcryptUserMixin, APITestCase):
         response = self.client.get(url, {'q': 'AI'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('results', response.data)
+
+
+class OnboardingPreferencesSerializerTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='investor',
+            email='investor@example.com',
+            password='complexpass123',
+            role='investor'
+        )
+        self.prefs = UserOnboardingPreferences.objects.create(user=self.user)
+    
+    def test_investor_payload_persists_and_maps(self):
+        payload = {
+            'sectors': ['AI', 'Climate'],
+            'stages': ['Seed'],
+            'round_types': ['Equity'],
+            'instruments': ['SAFE'],
+            'business_models': ['B2B SaaS'],
+            'geographies': ['US'],
+            'check_size': {'min': '100k', 'max': '500k', 'currency': 'usd'},
+            'target_ownership': {'min_pct': 5, 'max_pct': 10},
+            'valuation_caps': {'post_money_max': '50M'},
+            'traction': {'arr_min': '1M'},
+            'support_preferences': ['Go-to-market'],
+            'collaboration_style': 'hands-on',
+            'lead_preference': 'lead',
+            'decision_speed': 'fast',
+        }
+        serializer = UserOnboardingPreferencesSerializer(
+            instance=self.prefs,
+            data={'investor_preferences': payload, 'onboarding_completed': True},
+            partial=True
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer.save()
+        
+        self.prefs.refresh_from_db()
+        investor_profile = self.prefs.investor_profile
+        self.assertEqual(investor_profile['sectors'], ['ai', 'climate'])
+        self.assertIn('ai', self.prefs.selected_categories)
+        self.assertIn('seed', self.prefs.preferred_startup_stages)
+        self.assertIn('round:equity', self.prefs.preferred_engagement_types)
+        self.assertIn('instr:safe', self.prefs.preferred_engagement_types)
+        self.assertIn('geo:us', self.prefs.selected_tags)
+        self.assertIn('check_min:100k', self.prefs.selected_tags)
+        self.assertIn('leadpref:lead', self.prefs.selected_tags)
+        self.assertTrue(self.prefs.onboarding_completed)
+        
+        # Representation should include investor_profile
+        data = UserOnboardingPreferencesSerializer(instance=self.prefs).data
+        self.assertIn('investor_profile', data)
+        self.assertEqual(data['investor_profile']['decision_speed'], 'fast')
         self.assertIn('count', response.data)
     
     def test_search_with_filters(self):

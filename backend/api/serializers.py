@@ -549,16 +549,192 @@ class FileUploadCreateSerializer(serializers.ModelSerializer):
 
 # Recommendation System Serializers
 class UserOnboardingPreferencesSerializer(serializers.ModelSerializer):
-    """Serializer for user onboarding preferences"""
+    """Serializer for user onboarding preferences with investor profile support"""
+    
+    investor_preferences = serializers.DictField(write_only=True, required=False)
+    investor_profile = serializers.DictField(read_only=True)
     
     class Meta:
         model = UserOnboardingPreferences
         fields = (
             'id', 'selected_categories', 'selected_fields', 'selected_tags',
             'preferred_startup_stages', 'preferred_engagement_types',
-            'preferred_skills', 'onboarding_completed', 'created_at', 'updated_at'
+            'preferred_skills', 'onboarding_completed', 'created_at', 'updated_at',
+            'investor_profile', 'investor_preferences'
         )
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'investor_profile')
+    
+    def _as_list(self, value):
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple, set)):
+            return [self._normalize_string(v) for v in value if v not in (None, '')]
+        return [self._normalize_string(value)]
+    
+    def _normalize_string(self, value):
+        if value is None:
+            return ''
+        return str(value).strip()
+    
+    def _normalize_slug(self, value):
+        return self._normalize_string(value).lower().replace(' ', '-')
+    
+    def _dedup(self, seq):
+        seen = set()
+        result = []
+        for item in seq:
+            if not item or item in seen:
+                continue
+            seen.add(item)
+            result.append(item)
+        return result
+    
+    def _sanitize_investor_payload(self, payload):
+        if not isinstance(payload, dict):
+            return {}
+        
+        sanitized = {}
+        sanitized['thesis_summary'] = self._normalize_string(payload.get('thesis_summary'))
+        sanitized['sectors'] = [self._normalize_slug(v) for v in self._as_list(payload.get('sectors'))]
+        sanitized['stages'] = [self._normalize_slug(v) for v in self._as_list(payload.get('stages'))]
+        sanitized['round_types'] = [self._normalize_slug(v) for v in self._as_list(payload.get('round_types'))]
+        sanitized['instruments'] = [self._normalize_slug(v) for v in self._as_list(payload.get('instruments'))]
+        sanitized['business_models'] = [self._normalize_slug(v) for v in self._as_list(payload.get('business_models'))]
+        sanitized['geographies'] = [self._normalize_slug(v) for v in self._as_list(payload.get('geographies'))]
+        sanitized['support_preferences'] = [self._normalize_slug(v) for v in self._as_list(payload.get('support_preferences'))]
+        sanitized['co_investor_profile'] = [self._normalize_slug(v) for v in self._as_list(payload.get('co_investor_profile'))]
+        
+        sanitized['collaboration_style'] = self._normalize_slug(payload.get('collaboration_style'))
+        sanitized['lead_preference'] = self._normalize_slug(payload.get('lead_preference'))
+        sanitized['decision_speed'] = self._normalize_slug(payload.get('decision_speed') or 'standard')
+        
+        def clamp_numeric(value):
+            if value in (None, ''):
+                return ''
+            return str(value).strip()
+        
+        check = payload.get('check_size') or {}
+        sanitized['check_size'] = {
+            'min': clamp_numeric(check.get('min')),
+            'max': clamp_numeric(check.get('max')),
+            'currency': (check.get('currency') or 'USD').upper()
+        }
+        
+        ownership = payload.get('target_ownership') or {}
+        sanitized['target_ownership'] = {
+            'min_pct': clamp_numeric(ownership.get('min_pct')),
+            'max_pct': clamp_numeric(ownership.get('max_pct')),
+        }
+        
+        valuation = payload.get('valuation_caps') or {}
+        sanitized['valuation_caps'] = {
+            key: clamp_numeric(val)
+            for key, val in valuation.items()
+            if val not in (None, '')
+        }
+        
+        traction = payload.get('traction') or {}
+        sanitized['traction'] = {
+            key: clamp_numeric(val)
+            for key, val in traction.items()
+            if val not in (None, '')
+        }
+        
+        sanitized['instruments'] = self._dedup(sanitized['instruments'])
+        sanitized['round_types'] = self._dedup(sanitized['round_types'])
+        sanitized['sectors'] = self._dedup(sanitized['sectors'])
+        sanitized['stages'] = self._dedup(sanitized['stages'])
+        sanitized['business_models'] = self._dedup(sanitized['business_models'])
+        sanitized['geographies'] = self._dedup(sanitized['geographies'])
+        sanitized['support_preferences'] = self._dedup(sanitized['support_preferences'])
+        sanitized['co_investor_profile'] = self._dedup(sanitized['co_investor_profile'])
+        
+        return sanitized
+    
+    def _merge_investor_preferences(self, attrs, investor_payload):
+        if not investor_payload:
+            return attrs
+        
+        selected_categories = list(attrs.get('selected_categories') or [])
+        selected_fields = list(attrs.get('selected_fields') or [])
+        selected_tags = list(attrs.get('selected_tags') or [])
+        preferred_startup_stages = list(attrs.get('preferred_startup_stages') or [])
+        preferred_engagement_types = list(attrs.get('preferred_engagement_types') or [])
+        
+        selected_categories.extend(investor_payload.get('sectors', []))
+        preferred_startup_stages.extend(investor_payload.get('stages', []))
+        
+        for bm in investor_payload.get('business_models', []):
+            selected_tags.append(f"bm:{bm}")
+        
+        for geo in investor_payload.get('geographies', []):
+            selected_tags.append(f"geo:{geo}")
+        
+        for support in investor_payload.get('support_preferences', []):
+            selected_tags.append(f"support:{support}")
+        
+        collaboration_style = investor_payload.get('collaboration_style')
+        if collaboration_style:
+            selected_tags.append(f"collab:{collaboration_style}")
+        
+        decision_speed = investor_payload.get('decision_speed')
+        if decision_speed:
+            selected_tags.append(f"decision:{decision_speed}")
+        
+        for r in investor_payload.get('round_types', []):
+            preferred_engagement_types.append(f"round:{r}")
+        for instr in investor_payload.get('instruments', []):
+            preferred_engagement_types.append(f"instr:{instr}")
+        
+        lead_pref = investor_payload.get('lead_preference')
+        if lead_pref:
+            selected_tags.append(f"leadpref:{lead_pref}")
+        
+        coinvest = investor_payload.get('co_investor_profile', [])
+        for partner in coinvest:
+            selected_tags.append(f"coinvest:{partner}")
+        
+        check = investor_payload.get('check_size') or {}
+        if check.get('min'):
+            selected_tags.append(f"check_min:{check['min']}")
+        if check.get('max'):
+            selected_tags.append(f"check_max:{check['max']}")
+        if check.get('currency'):
+            selected_tags.append(f"ccy:{check['currency']}")
+        
+        ownership = investor_payload.get('target_ownership') or {}
+        if ownership.get('min_pct'):
+            selected_tags.append(f"own_min:{ownership['min_pct']}")
+        if ownership.get('max_pct'):
+            selected_tags.append(f"own_max:{ownership['max_pct']}")
+        
+        val_caps = investor_payload.get('valuation_caps') or {}
+        for key, value in val_caps.items():
+            selected_tags.append(f"valcap_{key}:{value}")
+        
+        traction = investor_payload.get('traction') or {}
+        for key, value in traction.items():
+            selected_tags.append(f"tr_{key}:{value}")
+        
+        attrs['selected_categories'] = self._dedup([c for c in selected_categories if c])
+        attrs['selected_fields'] = self._dedup([f for f in selected_fields if f])
+        attrs['selected_tags'] = self._dedup([t for t in selected_tags if t])
+        attrs['preferred_startup_stages'] = self._dedup([s for s in preferred_startup_stages if s])
+        attrs['preferred_engagement_types'] = self._dedup([e for e in preferred_engagement_types if e])
+        
+        return attrs
+    
+    def validate(self, attrs):
+        attrs = dict(attrs)
+        investor_payload = attrs.pop('investor_preferences', None) or attrs.get('investor_profile')
+        if investor_payload:
+            sanitized = self._sanitize_investor_payload(investor_payload)
+            attrs['investor_profile'] = sanitized
+            attrs = self._merge_investor_preferences(attrs, sanitized)
+        return attrs
+    
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
 
 
 class UserInteractionSerializer(serializers.ModelSerializer):

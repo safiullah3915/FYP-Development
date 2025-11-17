@@ -2242,7 +2242,7 @@ def like_startup(request, pk):
 	recommendation_rank = request.data.get('recommendation_rank') or request.GET.get('recommendation_rank')
 	
 	# Build metadata using service
-	metadata = InteractionService.build_interaction_metadata(
+	metadata, recommendation_context = InteractionService.build_interaction_metadata(
 		recommendation_session_id=recommendation_session_id,
 		recommendation_rank=recommendation_rank,
 		user_id=str(user.id)
@@ -2260,7 +2260,8 @@ def like_startup(request, pk):
 		user=user,
 		startup=startup,
 		interaction_type='like',
-		metadata=metadata
+		metadata=metadata,
+		recommendation_context=recommendation_context
 	)
 	
 	print(f"✅ [like_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
@@ -2340,7 +2341,7 @@ def dislike_startup(request, pk):
 	recommendation_rank = request.data.get('recommendation_rank') or request.GET.get('recommendation_rank')
 	
 	# Build metadata using service
-	metadata = InteractionService.build_interaction_metadata(
+	metadata, recommendation_context = InteractionService.build_interaction_metadata(
 		recommendation_session_id=recommendation_session_id,
 		recommendation_rank=recommendation_rank,
 		user_id=str(user.id)
@@ -2358,7 +2359,8 @@ def dislike_startup(request, pk):
 		user=user,
 		startup=startup,
 		interaction_type='dislike',
-		metadata=metadata
+		metadata=metadata,
+		recommendation_context=recommendation_context
 	)
 	
 	print(f"✅ [dislike_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
@@ -2493,6 +2495,30 @@ def store_recommendation_session(request):
 	# Use service to create/update session
 	try:
 		from .recommendation_models import RecommendationSession
+		normalized_recommendations = []
+		for idx, recommendation in enumerate(recommendations, start=1):
+			if isinstance(recommendation, dict):
+				startup_id = recommendation.get('startup_id') or recommendation.get('id')
+				if not startup_id:
+					continue
+				normalized_recommendations.append({
+					'startup_id': str(startup_id),
+					'rank': recommendation.get('rank') or idx,
+					'score': recommendation.get('score'),
+					'method': recommendation.get('method') or method,
+					'match_reasons': recommendation.get('match_reasons', []),
+					'context': recommendation.get('context', {}),
+				})
+			else:
+				normalized_recommendations.append({
+					'startup_id': str(recommendation),
+					'rank': idx,
+					'score': None,
+					'method': method,
+					'match_reasons': [],
+					'context': {},
+				})
+		
 		session, created = RecommendationSession.objects.update_or_create(
 			id=session_id,
 			defaults={
@@ -2500,7 +2526,7 @@ def store_recommendation_session(request):
 				'use_case': use_case,
 				'recommendation_method': method,
 				'model_version': model_version,
-				'recommendations_shown': recommendations,
+				'recommendations_shown': normalized_recommendations,
 				'expires_at': timezone.now() + timedelta(hours=24)
 			}
 		)
@@ -2583,6 +2609,7 @@ def get_personalized_startup_recommendations(request):
 	"""Get personalized startup recommendations from Flask (uses Two-Tower model for warm users)"""
 	import requests
 	import os
+	import uuid
 	
 	# Get authenticated user
 	user = get_session_user(request)
@@ -2627,7 +2654,7 @@ def get_personalized_startup_recommendations(request):
 	
 	flask_url = f'{flask_base_url}{endpoint}'
 	
-	# Add additional query parameters
+	# Add additional query parameters (do NOT push require_open_positions to Flask; enforce here)
 	if 'limit' in request.query_params:
 		params['limit'] = request.query_params.get('limit')
 	if 'type' in request.query_params:
@@ -2642,8 +2669,7 @@ def get_personalized_startup_recommendations(request):
 		params['stage'] = request.query_params.get('stage')
 	if 'offset' in request.query_params:
 		params['offset'] = request.query_params.get('offset')
-	if require_open_positions:
-		params['require_open_positions'] = 'true'
+	# Intentionally skip forwarding 'require_open_positions' to Flask
 	
 	try:
 		print(f"📡 Django: Calling Flask personalized endpoint: {flask_url} with params: {params}")
@@ -2655,24 +2681,39 @@ def get_personalized_startup_recommendations(request):
 		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} recommendations")
 		print(f"📊 Django: Flask response keys: {list(flask_data.keys())}")
 		
-		# Hydrate startup_ids into full startup objects with active positions
+		# Hydrate startup_ids into full startup objects with active positions (enforce open positions here)
 		if 'startup_ids' in flask_data:
 			startup_ids = [str(sid) for sid in flask_data.get('startup_ids', [])]
+			# Normalize possible 32-hex IDs (no hyphens) into UUID string format for Django ORM
+			normalized_ids = []
+			for sid in startup_ids:
+				s = str(sid)
+				if len(s) == 32 and '-' not in s:
+					try:
+						s = str(uuid.UUID(s))
+					except Exception:
+						# Keep original if it can't be parsed; logging below will help diagnose
+						pass
+				normalized_ids.append(s)
+			
+			print(f"🧩 Django: Hydration - input_ids={len(startup_ids)} normalized_ids={len(normalized_ids)} require_open_positions={require_open_positions}")
 			startups = []
 			filtered_scores = {}
 			filtered_match_reasons = {}
 			
-			if startup_ids:
+			if normalized_ids:
 				startups_dict = {
 					str(s.id): s
-					for s in Startup.objects.filter(id__in=startup_ids, status='active')
+					for s in Startup.objects.filter(id__in=normalized_ids, status='active')
 				}
+				print(f"🧩 Django: Hydration - matched_startups={len(startups_dict)} (status='active')")
 				
 				positions_map = {}
 				active_positions = Position.objects.filter(
-					startup_id__in=startup_ids,
+					startup_id__in=normalized_ids,
 					is_active=True
 				).order_by('-created_at')
+				print(f"🧩 Django: Hydration - active_positions_found={active_positions.count()}")
 				
 				for position in active_positions:
 					sid = str(position.startup_id)
@@ -2687,14 +2728,17 @@ def get_personalized_startup_recommendations(request):
 				scores_map = flask_data.get('scores', {})
 				reasons_map = flask_data.get('match_reasons', {})
 				
-				for startup_id in startup_ids:
+				for startup_id in normalized_ids:
 					startup_obj = startups_dict.get(startup_id)
 					open_positions = positions_map.get(startup_id, [])
 					
 					if not startup_obj:
+						# Debug when Django can't find a startup for given ID
+						print(f"⚠️ Django: Hydration - startup not found for id={startup_id}")
 						continue
 					
 					if require_open_positions and not open_positions:
+						# Skipped due to no open positions
 						continue
 					
 					primary_position = open_positions[0] if open_positions else None
@@ -2721,10 +2765,100 @@ def get_personalized_startup_recommendations(request):
 					if sid in reasons_map:
 						filtered_match_reasons[sid] = reasons_map[sid]
 			
+			print(f"🧩 Django: Hydration - startups_after_filter={len(startups)} (require_open_positions={require_open_positions})")
+			
+			# Optional fallback: if nothing survived and we required open positions, try once without that enforcement
+			if require_open_positions and not startups and normalized_ids:
+				print("🔁 Django: Hydration fallback - retrying without require_open_positions")
+				startups = []
+				filtered_scores = {}
+				filtered_match_reasons = {}
+				
+				# Reuse startups_dict and positions_map from above if present; recompute minimally if needed
+				if not locals().get('startups_dict'):
+					startups_dict = {
+						str(s.id): s
+						for s in Startup.objects.filter(id__in=normalized_ids, status='active')
+					}
+				if not locals().get('positions_map'):
+					positions_map = {}
+					active_positions = Position.objects.filter(
+						startup_id__in=normalized_ids,
+						is_active=True
+					).order_by('-created_at')
+					for position in active_positions:
+						sid = str(position.startup_id)
+						positions_map.setdefault(sid, []).append({
+							'id': str(position.id),
+							'title': position.title,
+							'description': position.description,
+							'requirements': position.requirements,
+							'created_at': position.created_at.isoformat() if position.created_at else None
+						})
+				
+				scores_map = flask_data.get('scores', {})
+				reasons_map = flask_data.get('match_reasons', {})
+				
+				for startup_id in normalized_ids:
+					startup_obj = startups_dict.get(startup_id)
+					open_positions = positions_map.get(startup_id, [])
+					if not startup_obj:
+						print(f"⚠️ Django: Hydration fallback - startup not found for id={startup_id}")
+						continue
+					
+					primary_position = open_positions[0] if open_positions else None
+					
+					startups.append({
+						'id': str(startup_obj.id),
+						'title': startup_obj.title,
+						'description': startup_obj.description,
+						'category': startup_obj.category,
+						'phase': startup_obj.phase,
+						'team_size': startup_obj.team_size,
+						'earn_through': startup_obj.earn_through,
+						'positions': open_positions,
+						'open_positions': open_positions,
+						'open_positions_count': len(open_positions),
+						'has_open_positions': bool(open_positions),
+						'primary_position': primary_position,
+						'top_position': primary_position
+					})
+					
+					sid = str(startup_obj.id)
+					if sid in scores_map:
+						filtered_scores[sid] = scores_map[sid]
+					if sid in reasons_map:
+						filtered_match_reasons[sid] = reasons_map[sid]
+				
+				flask_data['enforced_open_positions'] = False
+			
+			# Enforce a hard cap (max 10)
+			if len(startups) > 10:
+				startups = startups[:10]
+
 			flask_data['startups'] = startups
 			flask_data['scores'] = filtered_scores or flask_data.get('scores', {})
 			flask_data['match_reasons'] = filtered_match_reasons or flask_data.get('match_reasons', {})
 			flask_data['total'] = len(startups)
+			
+			# Build normalized recommendation records with rank & score for session logging
+			method_hint = flask_data.get('method') or flask_data.get('method_used') or flask_data.get('recommendation_method') or 'unknown'
+			recommendations_payload = []
+			for idx, startup in enumerate(startups, start=1):
+				startup_id = startup.get('id')
+				if not startup_id:
+					continue
+				startup_id_str = str(startup_id)
+				recommendations_payload.append({
+					'startup_id': startup_id_str,
+					'rank': idx,
+					'score': (flask_data['scores'].get(startup_id_str)
+					          if isinstance(flask_data['scores'], dict) else None),
+					'method': method_hint,
+					'match_reasons': flask_data['match_reasons'].get(startup_id_str, [])
+						if isinstance(flask_data['match_reasons'], dict) else []
+				})
+			flask_data['recommendations'] = recommendations_payload
 		
 		# Return Flask service response with additional user context (for other roles)
 		flask_data['user_id'] = str(user.id)
@@ -2751,6 +2885,7 @@ def get_personalized_developer_recommendations(request, startup_id):
 	"""Get personalized developer recommendations for a startup from Flask"""
 	import requests
 	import os
+	import uuid
 	
 	# Get authenticated user (startup owner)
 	user = get_session_user(request)
@@ -2763,7 +2898,7 @@ def get_personalized_developer_recommendations(request, startup_id):
 	# Verify user owns the startup or has permission
 	try:
 		startup = Startup.objects.get(id=startup_id)
-		if startup.user_id != user.id:
+		if startup.owner_id != user.id:
 			return Response(
 				{'error': 'You do not have permission to get recommendations for this startup'},
 				status=status.HTTP_403_FORBIDDEN
@@ -2785,6 +2920,8 @@ def get_personalized_developer_recommendations(request, startup_id):
 	params = {}
 	if 'limit' in request.query_params:
 		params['limit'] = request.query_params.get('limit')
+	if 'offset' in request.query_params:
+		params['offset'] = request.query_params.get('offset')
 	if 'skills' in request.query_params:
 		params['skills'] = request.query_params.get('skills')
 	
@@ -2798,15 +2935,32 @@ def get_personalized_developer_recommendations(request, startup_id):
 		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} developer recommendations")
 		
 		# Hydrate user_ids into full user objects
-		user_ids = flask_data.get('user_ids', [])
+		raw_user_ids = [str(uid) for uid in flask_data.get('user_ids', [])]
 		developers = []
 		
-		if user_ids:
-			# Query users and preserve order from recommendations
-			users_dict = {str(u.id): u for u in User.objects.filter(id__in=user_ids)}
+		if raw_user_ids:
+			# Normalize possible 32-hex IDs to UUID strings for Django ORM
+			normalized_ids = []
+			orig_to_norm = {}
+			for uid in raw_user_ids:
+				u = uid
+				if len(u) == 32 and '-' not in u:
+					try:
+						u = str(uuid.UUID(u))
+					except Exception:
+						pass
+				normalized_ids.append(u)
+				orig_to_norm[uid] = u
 			
-			for user_id in user_ids:
-				user_obj = users_dict.get(str(user_id))
+			print(f"🧩 Django: Developer Hydration - input_user_ids={len(raw_user_ids)} normalized_user_ids={len(normalized_ids)}")
+			
+			# Query users and preserve order from recommendations
+			users_dict = {str(u.id): u for u in User.objects.filter(id__in=normalized_ids)}
+			print(f"🧩 Django: Developer Hydration - matched_users={len(users_dict)}")
+			
+			for original_id in raw_user_ids:
+				norm_id = orig_to_norm.get(original_id, original_id)
+				user_obj = users_dict.get(str(norm_id))
 				if user_obj:
 					# Get user profile for additional info
 					try:
@@ -2824,8 +2978,9 @@ def get_personalized_developer_recommendations(request, startup_id):
 						'role': user_obj.role,
 						'bio': bio,
 						'skills': skills,
-						'score': flask_data.get('scores', {}).get(str(user_id), 0.0),
-						'match_reasons': flask_data.get('match_reasons', {}).get(str(user_id), [])
+						# Try score/match_reasons by original id, then normalized id
+						'score': flask_data.get('scores', {}).get(str(original_id), flask_data.get('scores', {}).get(str(norm_id), 0.0)),
+						'match_reasons': flask_data.get('match_reasons', {}).get(str(original_id), flask_data.get('match_reasons', {}).get(str(norm_id), []))
 					})
 		
 		# Return formatted response
@@ -2856,6 +3011,7 @@ def get_personalized_investor_recommendations(request, startup_id):
 	"""Get personalized investor recommendations for a startup from Flask"""
 	import requests
 	import os
+	import uuid
 	
 	# Get authenticated user (startup owner)
 	user = get_session_user(request)
@@ -2868,7 +3024,7 @@ def get_personalized_investor_recommendations(request, startup_id):
 	# Verify user owns the startup or has permission
 	try:
 		startup = Startup.objects.get(id=startup_id)
-		if startup.user_id != user.id:
+		if startup.owner_id != user.id:
 			return Response(
 				{'error': 'You do not have permission to get recommendations for this startup'},
 				status=status.HTTP_403_FORBIDDEN
@@ -2903,15 +3059,32 @@ def get_personalized_investor_recommendations(request, startup_id):
 		print(f"✅ Django: Flask returned {flask_data.get('total', 0)} investor recommendations")
 		
 		# Hydrate user_ids into full user objects
-		user_ids = flask_data.get('user_ids', [])
+		raw_user_ids = [str(uid) for uid in flask_data.get('user_ids', [])]
 		investors = []
 		
-		if user_ids:
-			# Query users and preserve order from recommendations
-			users_dict = {str(u.id): u for u in User.objects.filter(id__in=user_ids)}
+		if raw_user_ids:
+			# Normalize possible 32-hex IDs to UUID strings for Django ORM
+			normalized_ids = []
+			orig_to_norm = {}
+			for uid in raw_user_ids:
+				u = uid
+				if len(u) == 32 and '-' not in u:
+					try:
+						u = str(uuid.UUID(u))
+					except Exception:
+						pass
+				normalized_ids.append(u)
+				orig_to_norm[uid] = u
 			
-			for user_id in user_ids:
-				user_obj = users_dict.get(str(user_id))
+			print(f"🧩 Django: Investor Hydration - input_user_ids={len(raw_user_ids)} normalized_user_ids={len(normalized_ids)}")
+			
+			# Query users and preserve order from recommendations
+			users_dict = {str(u.id): u for u in User.objects.filter(id__in=normalized_ids)}
+			print(f"🧩 Django: Investor Hydration - matched_users={len(users_dict)}")
+			
+			for original_id in raw_user_ids:
+				norm_id = orig_to_norm.get(original_id, original_id)
+				user_obj = users_dict.get(str(norm_id))
 				if user_obj:
 					# Get user profile for additional info
 					try:
@@ -2926,9 +3099,12 @@ def get_personalized_investor_recommendations(request, startup_id):
 						'email': user_obj.email,
 						'role': user_obj.role,
 						'bio': bio,
-						'score': flask_data.get('scores', {}).get(str(user_id), 0.0),
-						'match_reasons': flask_data.get('match_reasons', {}).get(str(user_id), [])
+						# Try score/match_reasons by original id, then normalized id
+						'score': flask_data.get('scores', {}).get(str(original_id), flask_data.get('scores', {}).get(str(norm_id), 0.0)),
+						'match_reasons': flask_data.get('match_reasons', {}).get(str(original_id), flask_data.get('match_reasons', {}).get(str(norm_id), []))
 					})
+			
+			print(f"🧩 Django: Investor Hydration - investors_after_hydration={len(investors)}")
 		
 		# Return formatted response
 		return Response({

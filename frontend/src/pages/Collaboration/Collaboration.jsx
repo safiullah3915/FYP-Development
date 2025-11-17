@@ -149,6 +149,27 @@ const Collaboration = () => {
         return;
       }
       
+      // Optional UI fallback: if we received IDs but zero hydrated startups, retry once without open-position requirement
+      if ((!response.data.startups || response.data.startups.length === 0) && Array.isArray(response.data.startup_ids) && response.data.startup_ids.length > 0 && params.require_open_positions) {
+        console.log('[Collaboration] Empty hydrated startups with non-empty startup_ids, retrying without require_open_positions');
+        const fallbackResp = await recommendationAPI.getPersonalizedCollaborationStartups({
+          ...params,
+          require_open_positions: false
+        });
+        if (!fallbackResp.data.error) {
+          const fbStartups = fallbackResp.data.startups || [];
+          setRecommendedStartups(fbStartups);
+          setTotalRecommended(
+            typeof fallbackResp.data.total === 'number'
+              ? fallbackResp.data.total
+              : fbStartups.length
+          );
+          setRecommendationScores(fallbackResp.data.scores || {});
+          setRecommendationReasons(fallbackResp.data.match_reasons || {});
+          return;
+        }
+      }
+      
       const startupsResponse = response.data.startups || [];
       setRecommendedStartups(startupsResponse);
       setTotalRecommended(

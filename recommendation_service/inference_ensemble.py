@@ -26,7 +26,7 @@ class EnsembleInference:
         Initialize ensemble inference
         
         Args:
-            als_model_path: Path to ALS model (e.g., models/als_v1.pkl)
+            als_model_path: Path to ALS config/prefix (e.g., models/als_v1_config.json)
             two_tower_model_path: Path to Two-Tower model (e.g., models/two_tower_v1_best.pth)
             als_weight: Weight for ALS (default: 0.6)
         """
