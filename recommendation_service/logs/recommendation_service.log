@@ -196,3 +196,75 @@
 2025-11-17 16:27:47 - engines.content_based - INFO - Generated 20 recommendations
 2025-11-17 16:27:47 - services.recommendation_service - INFO - Generated 20 recommendations
 2025-11-17 16:27:47 - services.session_service - INFO - Created session a38dfa00-1006-4fcf-aaab-a511ea52b54a for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 22:42:14 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:14 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:14 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:14 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:14 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:14 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:14 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:14 - inference_als_reverse - INFO - Loading ALS Reverse artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_reverse_v1
+2025-11-17 22:42:14 - inference_als_reverse - INFO - ALS Reverse embeddings loaded successfully
+2025-11-17 22:42:14 - inference_als_reverse - INFO -   Startups: 250
+2025-11-17 22:42:14 - inference_als_reverse - INFO -   Users: 351
+2025-11-17 22:42:14 - inference_als_reverse - INFO -   Factors: 128
+2025-11-17 22:42:14 - inference_ensemble - INFO - Loading ensemble models...
+2025-11-17 22:42:14 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:14 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:14 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:14 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:14 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:14 - inference_ensemble - INFO -   ALS model loaded
+2025-11-17 22:42:14 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:14 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:14 - inference_ensemble - INFO -   Two-Tower model loaded
+2025-11-17 22:42:14 - inference_ensemble - INFO - Ensemble initialized with weights: ALS=0.60, Two-Tower=0.40
+2025-11-17 22:42:14 - __main__ - INFO -   -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble
+2025-11-17 22:42:14 - ranker_module - ERROR - Error loading ranker model: Error(s) in loading state_dict for RankerMLP:
+	size mismatch for fc1.weight: copying a param with shape torch.Size([32, 4]) from checkpoint, the shape in current model is torch.Size([32, 5]).
+2025-11-17 22:42:14 - ranker_module - INFO - Falling back to rule-based ranker
+2025-11-17 22:42:14 - __main__ - INFO -   -> Will rerank all personalized recommendations
+2025-11-17 22:42:14 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-17 22:42:14 - __main__ - INFO - Debug mode: True
+2025-11-17 22:42:15 - database.connection - INFO - Database connection successful: E:\StartLnk\FYP-Development\backend\db.sqlite3
+2025-11-17 22:42:15 - __main__ - INFO - Database connection successful
+2025-11-17 22:42:18 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:18 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:18 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:18 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:18 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:18 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:18 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:18 - inference_als_reverse - INFO - Loading ALS Reverse artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_reverse_v1
+2025-11-17 22:42:18 - inference_als_reverse - INFO - ALS Reverse embeddings loaded successfully
+2025-11-17 22:42:18 - inference_als_reverse - INFO -   Startups: 250
+2025-11-17 22:42:18 - inference_als_reverse - INFO -   Users: 351
+2025-11-17 22:42:18 - inference_als_reverse - INFO -   Factors: 128
+2025-11-17 22:42:18 - inference_ensemble - INFO - Loading ensemble models...
+2025-11-17 22:42:18 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:18 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:18 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:18 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:18 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:18 - inference_ensemble - INFO -   ALS model loaded
+2025-11-17 22:42:18 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:18 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:18 - inference_ensemble - INFO -   Two-Tower model loaded
+2025-11-17 22:42:18 - inference_ensemble - INFO - Ensemble initialized with weights: ALS=0.60, Two-Tower=0.40
+2025-11-17 22:42:18 - __main__ - INFO -   -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble
+2025-11-17 22:42:18 - ranker_module - ERROR - Error loading ranker model: Error(s) in loading state_dict for RankerMLP:
+	size mismatch for fc1.weight: copying a param with shape torch.Size([32, 4]) from checkpoint, the shape in current model is torch.Size([32, 5]).
+2025-11-17 22:42:18 - ranker_module - INFO - Falling back to rule-based ranker
+2025-11-17 22:42:18 - __main__ - INFO -   -> Will rerank all personalized recommendations
+2025-11-17 22:42:18 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-17 22:42:18 - __main__ - INFO - Debug mode: True
+2025-11-17 22:42:18 - database.connection - INFO - Database connection successful: E:\StartLnk\FYP-Development\backend\db.sqlite3
+2025-11-17 22:42:18 - __main__ - INFO - Database connection successful

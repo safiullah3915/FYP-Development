@@ -2,21 +2,29 @@ export const normalizeId = (id) => {
   if (!id) return id;
   if (typeof id !== 'string') return id;
 
+  // Trim and normalize casing
   const trimmed = id.trim();
-  if (trimmed.includes('-')) {
-    return trimmed;
+  const lower = trimmed.toLowerCase();
+
+  // If already hyphenated UUID (any case), return lowercased form
+  if (lower.includes('-')) {
+    return lower;
   }
 
-  const hex32Regex = /^[0-9a-fA-F]{32}$/;
-  if (hex32Regex.test(trimmed)) {
-    return `${trimmed.slice(0, 8)}-${trimmed.slice(8, 12)}-${trimmed.slice(12, 16)}-${trimmed.slice(16, 20)}-${trimmed.slice(20)}`;
+  // If it's a 32-hex string without hyphens, insert hyphens in UUID positions
+  const hex32Regex = /^[0-9a-f]{32}$/;
+  if (hex32Regex.test(lower)) {
+    return `${lower.slice(0, 8)}-${lower.slice(8, 12)}-${lower.slice(12, 16)}-${lower.slice(16, 20)}-${lower.slice(20)}`;
   }
 
-  return trimmed;
+  // Fallback: return lowercased trimmed string
+  return lower;
 };
 
 export const getStartupDetailPath = (id) => {
   const normalizedId = normalizeId(id);
-  return `/startupdetail/${normalizedId}`;
+  // Ensure the id is URL-safe
+  const encoded = encodeURIComponent(normalizedId);
+  return `/startupdetail/${encoded}`;
 };
 

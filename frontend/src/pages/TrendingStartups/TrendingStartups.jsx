@@ -36,7 +36,7 @@ const TrendingStartups = () => {
       setLoading(true);
       setError(null);
       const response = await recommendationAPI.getTrendingStartups({
-        limit: 100,
+        limit: 10,
         sort_by: 'trending_score'
       });
       
