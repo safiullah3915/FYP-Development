@@ -6,11 +6,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import apiClient from '../../utils/axiosConfig';
+import { getStartupDetailPath, normalizeId } from '../../utils/idUtils';
 
 const ApplyJob = () => {
   const { startupId } = useParams();
   const navigate = useNavigate();
   const { user, isStudent, isEntrepreneur } = useAuth();
+  const normalizedStartupId = normalizeId(startupId);
   const [startup, setStartup] = useState(null);
   const [positions, setPositions] = useState([]);
   const [selectedPosition, setSelectedPosition] = useState(null);
@@ -45,14 +47,14 @@ const ApplyJob = () => {
 
   const loadStartupDetails = async () => {
     try {
-      const response = await apiClient.get(`/api/startups/${startupId}`);
+      const response = await apiClient.get(`/api/startups/${normalizedStartupId}`);
       const startupData = response.data;
       setStartup(startupData);
       
       // Check if entrepreneur is trying to apply to their own startup
       if (isEntrepreneur() && user?.id === startupData?.owner?.id) {
         toast.error('You cannot apply to positions in your own startup');
-        navigate(`/startupdetail/${startupId}`);
+        navigate(getStartupDetailPath(normalizedStartupId));
         return;
       }
       
@@ -67,7 +69,7 @@ const ApplyJob = () => {
             );
             if (hasAppliedToStartup) {
               toast.error(`You have already applied to a position at ${startupData.title}. You can only apply to one position per startup.`);
-              navigate(`/startupdetail/${startupId}`);
+              navigate(getStartupDetailPath(normalizedStartupId));
               return;
             }
           }
@@ -86,7 +88,7 @@ const ApplyJob = () => {
 
   const loadPositions = async () => {
     try {
-      const response = await apiClient.get(`/api/startups/${startupId}/positions`);
+      const response = await apiClient.get(`/api/startups/${normalizedStartupId}/positions`);
       const positionData = response.data.positions || response.data;
       setPositions(positionData);
       
@@ -189,7 +191,7 @@ const ApplyJob = () => {
 
       payload.resume_url = resumeUrl;
 
-      await apiClient.post(`/api/collaborations/${startupId}/apply`, payload);
+      await apiClient.post(`/api/collaborations/${normalizedStartupId}/apply`, payload);
       
       toast.success('Application submitted successfully! You can track the status from your dashboard.');
       setFormData({

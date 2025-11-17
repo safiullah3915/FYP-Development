@@ -90,6 +90,44 @@ class RecommendationRouter:
             # Fallback to content_based on error
             return 'content_based', 0
     
+    def route_reverse(self, startup_id, use_case):
+        """
+        Determine which engine to use for reverse recommendations (Startup → User)
+        Based on how many unique users have interacted with the startup
+        
+        Routing logic:
+        - Cold start (< 5 unique users): content_based
+        - Warm/Hot startups (>= 5 unique users): als_reverse
+        
+        Args:
+            startup_id: Startup ID (UUID string)
+            use_case: Type of recommendation ('founder_developer' or 'founder_investor')
+            
+        Returns:
+            tuple: (method_name, interaction_count)
+                - method_name: 'content_based' or 'als_reverse'
+                - interaction_count: number of unique users who interacted with startup
+        """
+        try:
+            interaction_count = self._get_startup_interaction_count(startup_id)
+            
+            logger.info(f"Startup {startup_id} has {interaction_count} unique user interactions")
+            
+            # Cold start startups: use content-based
+            if interaction_count < self.cold_start_threshold:
+                logger.info(f"Routing to content_based (cold start startup)")
+                return 'content_based', interaction_count
+            
+            # Warm/Hot startups: use ALS reverse
+            else:
+                logger.info(f"Routing to ALS Reverse (warm/hot startup: {interaction_count} interactions)")
+                return 'als_reverse', interaction_count
+                
+        except Exception as e:
+            logger.error(f"Error in reverse routing: {e}")
+            # Fallback to content_based on error
+            return 'content_based', 0
+    
     def _get_interaction_count(self, user_id):
         """
         Get total interaction count for user
@@ -108,6 +146,29 @@ class RecommendationRouter:
             return count
         except Exception as e:
             logger.error(f"Error getting interaction count: {e}")
+            return 0
+        finally:
+            db.close()
+    
+    def _get_startup_interaction_count(self, startup_id):
+        """
+        Get count of unique users who have interacted with a startup
+        
+        Args:
+            startup_id: Startup ID (UUID string)
+            
+        Returns:
+            int: Number of unique users who interacted
+        """
+        db = SessionLocal()
+        try:
+            # Count distinct users who interacted with this startup
+            count = db.query(UserInteraction).filter(
+                UserInteraction.startup_id == startup_id
+            ).distinct(UserInteraction.user_id).count()
+            return count
+        except Exception as e:
+            logger.error(f"Error getting startup interaction count: {e}")
             return 0
         finally:
             db.close()

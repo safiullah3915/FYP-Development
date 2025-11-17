@@ -36,11 +36,19 @@ const TrendingStartups = () => {
       setLoading(true);
       setError(null);
       const response = await recommendationAPI.getTrendingStartups({
-        limit: 100,
+        limit: 10,
         sort_by: 'trending_score'
       });
       
+      console.log('📊 [TrendingStartups] API Response:', response.data);
+      console.log('📊 [TrendingStartups] Startups received:', response.data.startups?.length || 0);
+      
       if (response.data.startups) {
+        // Log first startup to verify ID is present
+        if (response.data.startups.length > 0) {
+          console.log('📊 [TrendingStartups] Sample startup:', response.data.startups[0]);
+          console.log('📊 [TrendingStartups] Sample startup ID:', response.data.startups[0].id);
+        }
         setStartups(response.data.startups);
       } else {
         setStartups([]);
@@ -50,7 +58,7 @@ const TrendingStartups = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to load trending startups:', error);
+      console.error('❌ [TrendingStartups] Failed to load trending startups:', error);
       setError('Failed to load trending startups');
       setStartups([]);
       toast.error('Failed to load trending startups');

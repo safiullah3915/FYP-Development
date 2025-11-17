@@ -27,11 +27,19 @@ class RankerDataset(Dataset):
         self.data = pd.read_csv(data_path)
         
         # Features
-        feature_cols = ['model_score', 'recency_score', 'popularity_score', 'diversity_score']
+        if 'original_score' not in self.data.columns:
+            self.data['original_score'] = self.data['model_score']
+        self.data['original_score'] = self.data['original_score'].fillna(self.data['model_score'])
+        if 'exposure_weight' not in self.data.columns:
+            self.data['exposure_weight'] = 1.0
+        self.data['exposure_weight'] = self.data['exposure_weight'].fillna(1.0)
+        
+        feature_cols = ['model_score', 'recency_score', 'popularity_score', 'diversity_score', 'original_score']
         self.features = self.data[feature_cols].values.astype(np.float32)
         
         # Labels (1 = positive, 0 = negative)
         self.labels = self.data['label'].values.astype(np.float32)
+        self.weights = self.data['exposure_weight'].values.astype(np.float32)
         
         print(f"Loaded {len(self.data)} samples")
         print(f"  Positive: {(self.labels == 1).sum()}")
@@ -43,7 +51,8 @@ class RankerDataset(Dataset):
     def __getitem__(self, idx):
         return {
             'features': torch.from_numpy(self.features[idx]),
-            'label': torch.tensor(self.labels[idx])
+            'label': torch.tensor(self.labels[idx]),
+            'exposure_weight': torch.tensor(self.weights[idx])
         }
 
 
@@ -60,6 +69,7 @@ def create_pairwise_batches(batch, device):
     """
     features = batch['features'].to(device)
     labels = batch['label'].to(device)
+    weights = batch['exposure_weight'].to(device)
     
     # Separate positive and negative examples
     pos_mask = labels == 1
@@ -67,8 +77,10 @@ def create_pairwise_batches(batch, device):
     
     pos_features = features[pos_mask]
     neg_features = features[neg_mask]
+    pos_weights = weights[pos_mask]
+    neg_weights = weights[neg_mask]
     
-    return pos_features, neg_features
+    return pos_features, neg_features, pos_weights, neg_weights
 
 
 def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001, output_dir='models'):
@@ -105,7 +117,7 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
     
     # Model
     print("Initializing model...")
-    model = RankerMLP(input_dim=4, hidden_dim1=32, hidden_dim2=16).to(device)
+    model = RankerMLP(input_dim=5, hidden_dim1=32, hidden_dim2=16).to(device)
     
     # Loss and optimizer
     criterion = PairwiseRankingLoss(margin=1.0)
@@ -129,7 +141,7 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
         start_time = time.time()
         
         for batch in train_loader:
-            pos_features, neg_features = create_pairwise_batches(batch, device)
+            pos_features, neg_features, pos_weights, neg_weights = create_pairwise_batches(batch, device)
             
             # Skip if no pairs
             if len(pos_features) == 0 or len(neg_features) == 0:
@@ -146,9 +158,13 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
             
             pos_scores = pos_scores[:min_len]
             neg_scores = neg_scores[:min_len]
+            pair_weight = torch.minimum(
+                pos_weights[:min_len], neg_weights[:min_len]
+            )
             
             # Loss
-            loss = criterion(pos_scores, neg_scores)
+            raw_loss = criterion(pos_scores, neg_scores)
+            loss = (raw_loss * pair_weight).mean()
             
             # Backward
             optimizer.zero_grad()
@@ -170,7 +186,7 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
             
             with torch.no_grad():
                 for batch in val_loader:
-                    pos_features, neg_features = create_pairwise_batches(batch, device)
+                    pos_features, neg_features, pos_weights, neg_weights = create_pairwise_batches(batch, device)
                     
                     if len(pos_features) == 0 or len(neg_features) == 0:
                         continue
@@ -184,9 +200,12 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
                     
                     pos_scores = pos_scores[:min_len]
                     neg_scores = neg_scores[:min_len]
+                    pair_weight = torch.minimum(
+                        pos_weights[:min_len], neg_weights[:min_len]
+                    )
                     
-                    loss = criterion(pos_scores, neg_scores)
-                    val_loss += loss.item()
+                    raw_loss = criterion(pos_scores, neg_scores)
+                    val_loss += (raw_loss * pair_weight).mean().item()
                     val_batches += 1
             
             avg_val_loss = val_loss / val_batches if val_batches > 0 else 0.0

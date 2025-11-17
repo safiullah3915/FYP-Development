@@ -2,6 +2,7 @@
 import React from "react";
 import styles from "./MarketPlaceCard.module.css";
 import { Link } from "react-router-dom";
+import { getStartupDetailPath } from "../../utils/idUtils";
 
 const MarketPlaceCard = ({ startup, id, title, description, revenue, profit, asking_price, category, type, field, ...rest }) => {
   // If startup object is passed, use it directly; otherwise construct from individual props
@@ -27,9 +28,7 @@ const MarketPlaceCard = ({ startup, id, title, description, revenue, profit, ask
   console.log('[MarketPlaceCard] Asking Price value:', startupData.asking_price);
   
   // Always navigate to startup detail page
-  const getLinkDestination = () => {
-    return `/startupdetail/${startupData.id}`;
-  };
+  const getLinkDestination = () => getStartupDetailPath(startupData.id);
 
   return (
     <Link to={getLinkDestination()} className={styles.linkWrapper}>

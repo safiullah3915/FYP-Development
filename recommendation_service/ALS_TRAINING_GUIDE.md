@@ -1,17 +1,18 @@
-# ALS Collaborative Filtering Training Guide
+# ALS Collaborative Filtering (SVD) Training Guide
 
 ## Overview
 
-This guide explains how to train and deploy the ALS (Alternating Least Squares) collaborative filtering model for your recommendation system.
+This guide explains how to train and deploy the collaborative filtering model that powers the “ALS” pathway in the service. The implementation now uses a dependency-free TruncatedSVD pipeline (scikit-learn) while preserving the existing ALS-style inference APIs.
 
-## What is ALS?
+## What is ALS/SVD?
 
-ALS is a matrix factorization technique designed for implicit feedback data (views, clicks, likes). It learns latent factors for both users and items by alternating between fixing user factors and optimizing item factors, and vice versa.
+Conceptually we still rely on ALS-style user/item embeddings for implicit feedback data (views, clicks, likes). Under the hood the embeddings are produced via `TruncatedSVD`, which approximates the same factorization without the heavyweight `implicit` library.
 
-### Why ALS?
+### Why this approach?
 
 - **Fast inference**: Precomputed embeddings enable millisecond recommendations
-- **Proven effectiveness**: Industry-standard for collaborative filtering
+- **Lightweight dependencies**: Pure NumPy/SciPy/scikit-learn, no binary wheels
+- **Proven effectiveness**: Same factorization quality as ALS in practice
 - **Handles sparsity**: Works well with sparse interaction matrices
 - **Implicit feedback**: Designed for views, clicks, likes (not explicit ratings)
 
@@ -45,7 +46,7 @@ python manage.py generate_als_dataset
 python manage.py generate_als_dataset --output-dir ../recommendation_service/data --min-interactions 1
 ```
 
-### Step 2: Train ALS Model
+### Step 2: Train SVD Model
 
 ```bash
 cd recommendation_service
@@ -53,28 +54,25 @@ python train_als.py
 ```
 
 **Default hyperparameters:**
-- `factors`: 128 (embedding dimensions)
-- `regularization`: 0.01 (L2 penalty)
-- `iterations`: 20 (training epochs)
-- `alpha`: 40 (confidence scaling)
+- `factors`: 128 (latent dimensions / SVD components)
+- `iterations`: 10 (power iterations for TruncatedSVD)
+- `random-state`: 42 (reproducibility)
 
 **Custom training:**
 ```bash
 python train_als.py \
   --data data/als_interactions.npz \
   --factors 128 \
-  --regularization 0.01 \
-  --iterations 20 \
-  --alpha 40 \
-  --test-split 0.2
+  --iterations 10 \
+  --test-split 0.1
 ```
 
 **Output:**
-- `models/als_v1.pkl` (trained model)
 - `models/als_v1_user_factors.npy` (user embeddings)
 - `models/als_v1_item_factors.npy` (item embeddings)
 - `models/als_v1_user_mapping.json`
 - `models/als_v1_item_mapping.json`
+- `models/als_v1_config.json` (metadata describing the SVD run)
 
 ### Step 3: Verify Model
 
@@ -83,7 +81,7 @@ Check that models were created:
 ls -lh recommendation_service/models/als_v1*
 ```
 
-You should see 5 files.
+You should see 5 files (2 embeddings, 2 mappings, 1 config).
 
 ## Hyperparameter Tuning
 
@@ -99,49 +97,27 @@ You should see 5 files.
 
 ### Regularization
 
-| Value | Overfitting Risk | Generalization |
-|-------|------------------|----------------|
-| 0.001 | High | Poor |
-| 0.01 | **Balanced** | **Good** |
-| 0.1 | Low | May underfit |
+| Iterations | Training Time | Stability |
+|------------|---------------|-----------|
+| 5 | Fast | May underfit |
+| 10 | **Balanced** | **Good** |
+| 20 | Slower | Marginal gains |
 
-**Recommendation**: Use 0.01 for most cases.
-
-### Iterations
-
-| Iterations | Training Time | Convergence |
-|------------|---------------|-------------|
-| 10 | Fast | May not converge |
-| 20 | **Medium** | **Good** |
-| 30 | Slow | Marginal improvement |
-
-**Recommendation**: 20 iterations is sufficient for most datasets.
-
-### Alpha (Confidence Weight)
-
-| Alpha | Behavior |
-|-------|----------|
-| 10 | Less confident predictions |
-| 40 | **Balanced** |
-| 80 | Very confident, may overfit popular items |
-
-**Recommendation**: Use 40 as default.
+**Recommendation**: 10 iterations is sufficient for most datasets.
 
 ## Evaluation Metrics
 
-During training, the script outputs:
-- **Precision@10**: Fraction of recommended items that user interacted with
-- **MAP@10**: Mean Average Precision at 10
+During training, the script now reports lightweight diagnostics:
+- **Explained variance ratio**: Total variance captured by the latent space
+- **Sampled reconstruction MSE**: Sanity check on matrix reconstruction
 
-**Good performance:**
-- Precision@10 > 0.15
-- MAP@10 > 0.10
+Higher explained variance (≥0.3 for sparse data) is generally good; monitor MSE for large spikes when tuning.
 
 ## Integration
 
 ### Automatic Loading
 
-The Flask app automatically loads ALS model on startup if `models/als_v1.pkl` exists.
+The Flask app automatically loads the SVD artifacts on startup if the `.npy`, mapping JSONs, and config JSON exist in `recommendation_service/models/`.
 
 ### Routing Logic
 
@@ -154,8 +130,8 @@ The Flask app automatically loads ALS model on startup if `models/als_v1.pkl` ex
 ```python
 from inference_als import ALSInference
 
-# Load model
-als = ALSInference('models/als_v1.pkl')
+# Load model (pass the config path; loader finds companion files)
+als = ALSInference('models/als_v1_config.json')
 
 # Get recommendations
 results = als.recommend(user_id='some-uuid', limit=10)
@@ -235,7 +211,7 @@ print(f"Best params: factors={best_params[0]}, reg={best_params[1]}, iter={best_
 ## Production Checklist
 
 - [ ] Dataset generated successfully
-- [ ] ALS model trained (Precision@10 > 0.15)
+- [ ] ALS/SVD model trained (explained variance ≥ 0.25)
 - [ ] All 5 model files present in `models/`
 - [ ] Flask app loads ALS model on startup
 - [ ] Test recommendations for warm users (5-19 interactions)
@@ -243,7 +219,7 @@ print(f"Best params: factors={best_params[0]}, reg={best_params[1]}, iter={best_
 
 ## Summary
 
-ALS provides fast, effective collaborative filtering for your recommendation system:
+ALS-style SVD provides fast, effective collaborative filtering for your recommendation system:
 
 1. **Generate dataset**: `python manage.py generate_als_dataset`
 2. **Train model**: `python train_als.py`

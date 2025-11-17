@@ -43,10 +43,25 @@ def load_startup_with_relations(db_session, startup_id):
         Startup object with relations loaded or None
     """
     try:
+        # Be robust to UUID representation (hyphenated vs 32-hex)
+        sid = str(startup_id)
+        candidates = [sid]
+        try:
+            import uuid as _uuid
+            if '-' in sid:
+                candidates.append(sid.replace('-', ''))
+            elif len(sid) == 32:
+                try:
+                    candidates.append(str(_uuid.UUID(sid)))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        
         startup = db_session.query(Startup).options(
             joinedload(Startup.tags),
             joinedload(Startup.positions)
-        ).filter(Startup.id == startup_id).first()
+        ).filter(Startup.id.in_(candidates)).first()
         
         return startup
     except Exception as e:

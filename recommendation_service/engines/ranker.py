@@ -19,10 +19,10 @@ logger = get_logger(__name__)
 class RankerMLP(nn.Module):
     """
     Simple 2-layer MLP for ranking
-    Input: [model_score, recency_score, popularity_score, diversity_penalty]
+    Input: [model_score, recency_score, popularity_score, diversity_penalty, original_score]
     Output: ranking score
     """
-    def __init__(self, input_dim=4, hidden_dim1=32, hidden_dim2=16):
+    def __init__(self, input_dim=5, hidden_dim1=32, hidden_dim2=16):
         super(RankerMLP, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim1)
         self.fc2 = nn.Linear(hidden_dim1, hidden_dim2)
@@ -178,14 +178,15 @@ class NeuralRanker:
             'model_score': model_score,
             'recency': recency_score,
             'popularity': popularity_score,
-            'diversity': diversity_penalty
+            'diversity': diversity_penalty,
+            'original_score': candidate.get('score', 0.0)
         }
     
     def _neural_score(self, features_list: List[Dict]) -> np.ndarray:
         """Score using neural network"""
         # Convert features to tensor
         features_array = np.array([
-            [f['model_score'], f['recency'], f['popularity'], f['diversity']]
+            [f['model_score'], f['recency'], f['popularity'], f['diversity'], f['original_score']]
             for f in features_list
         ], dtype=np.float32)
         
@@ -230,5 +231,5 @@ class PairwiseRankingLoss(nn.Module):
         # Want: pos_scores > neg_scores + margin
         # Loss: max(0, margin - (pos_scores - neg_scores))
         loss = torch.clamp(self.margin - (pos_scores - neg_scores), min=0)
-        return loss.mean()
+        return loss
 

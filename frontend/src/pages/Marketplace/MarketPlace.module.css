@@ -24,6 +24,40 @@
   margin-bottom: 2rem;
 }
 
+/* Tab System Styles */
+.tabContainer {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #6b7280;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  bottom: -2px;
+}
+
+.tab:hover {
+  color: #4f46e5;
+  background: #f9fafb;
+}
+
+.activeTab {
+  color: #4f46e5;
+  border-bottom-color: #4f46e5;
+  background: #f9fafb;
+}
+
 .filterToggle {
   display: none;
   padding: 0.6rem 1rem;
@@ -221,6 +255,30 @@
 .stats p {
   font-weight: bold;
   color: #434343;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+.noResults {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.noResults h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #374151;
+}
+
+.noResults p {
+  font-size: 1rem;
+  color: #6b7280;
 }
 
 /* Mobile Styles */

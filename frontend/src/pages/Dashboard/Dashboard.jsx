@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { userAPI, positionAPI } from '../../utils/apiServices';
 import apiClient from '../../utils/axiosConfig';
+import { getStartupDetailPath } from '../../utils/idUtils';
 
 const Dashboard = () => {
   const { user, isEntrepreneur, isStudent, isInvestor, loading: authLoading, isAuthenticated } = useAuth();
@@ -344,7 +345,7 @@ const Dashboard = () => {
                 )}
                 
                 <div className={styles.cardActions}>
-                  <Link to={`/startupdetail/${startup.id}`} className={styles.viewButton}>
+                  <Link to={getStartupDetailPath(startup.id)} className={styles.viewButton}>
                     View Details
                   </Link>
                   <button 
@@ -528,7 +529,7 @@ const Dashboard = () => {
                   <div>{formatDate(application.created_at)}</div>
                   <div>
                     {application.startup?.id && (
-                      <Link to={`/startupdetail/${application.startup.id}`} className={styles.statAction}>
+                      <Link to={getStartupDetailPath(application.startup.id)} className={styles.statAction}>
                         View Startup
                       </Link>
                     )}

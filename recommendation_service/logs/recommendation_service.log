@@ -1,305 +1,270 @@
-2025-11-12 12:16:48 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-12 12:16:48 - __main__ - INFO - Debug mode: True
-2025-11-12 12:17:25 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-12 12:17:25 - __main__ - INFO - Debug mode: True
-2025-11-12 12:17:25 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-12 12:17:25 - __main__ - INFO - Database connection successful
-2025-11-12 12:17:26 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-12 12:17:26 - __main__ - INFO - Debug mode: True
-2025-11-12 12:17:26 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-12 12:17:26 - __main__ - INFO - Database connection successful
-2025-11-12 12:19:11 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-12 12:19:11 - __main__ - INFO - Debug mode: True
-2025-11-12 12:19:11 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-12 12:19:11 - __main__ - INFO - Database connection successful
-2025-11-13 03:01:08 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:01:08 - __main__ - INFO - Debug mode: True
-2025-11-13 03:01:09 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:01:09 - __main__ - INFO - Database connection successful
-2025-11-13 03:01:11 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:01:11 - __main__ - INFO - Debug mode: True
-2025-11-13 03:01:11 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:01:11 - __main__ - INFO - Database connection successful
-2025-11-13 03:02:07 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:02:07 - __main__ - INFO - Debug mode: True
-2025-11-13 03:02:07 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:02:07 - __main__ - INFO - Database connection successful
-2025-11-13 03:03:13 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:03:13 - __main__ - INFO - Debug mode: True
-2025-11-13 03:03:13 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:03:13 - __main__ - INFO - Database connection successful
-2025-11-13 03:03:15 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:03:15 - __main__ - INFO - Debug mode: True
-2025-11-13 03:03:15 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:03:15 - __main__ - INFO - Database connection successful
-2025-11-13 03:03:28 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:03:28 - __main__ - INFO - Debug mode: True
-2025-11-13 03:03:28 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:03:28 - __main__ - INFO - Database connection successful
-2025-11-13 03:17:04 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:17:04 - __main__ - INFO - Debug mode: True
-2025-11-13 03:17:04 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:17:04 - __main__ - INFO - Database connection successful
-2025-11-13 03:17:26 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:17:26 - __main__ - INFO - Debug mode: True
-2025-11-13 03:17:26 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:17:26 - __main__ - INFO - Database connection successful
-2025-11-13 03:53:46 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:53:46 - __main__ - INFO - Debug mode: True
-2025-11-13 03:53:46 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:53:46 - __main__ - INFO - Database connection successful
-2025-11-13 03:53:50 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:53:50 - __main__ - INFO - Debug mode: True
-2025-11-13 03:53:50 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:53:50 - __main__ - INFO - Database connection successful
-2025-11-13 03:53:53 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:53:53 - __main__ - INFO - Debug mode: True
-2025-11-13 03:53:53 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:53:53 - __main__ - INFO - Database connection successful
-2025-11-13 03:53:55 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:53:55 - __main__ - INFO - Debug mode: True
-2025-11-13 03:53:55 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:53:55 - __main__ - INFO - Database connection successful
-2025-11-13 03:53:58 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:53:58 - __main__ - INFO - Debug mode: True
-2025-11-13 03:53:58 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:53:58 - __main__ - INFO - Database connection successful
-2025-11-13 03:56:20 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 03:56:20 - __main__ - INFO - Debug mode: True
-2025-11-13 03:56:20 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 03:56:20 - __main__ - INFO - Database connection successful
-2025-11-13 06:50:39 - __main__ - INFO - Using device: cpu
-2025-11-13 06:50:39 - __main__ - INFO - Loading dataset from data/two_tower_train.csv
-2025-11-13 06:50:39 - feature_engineering - INFO - Loading dataset from data/two_tower_train.csv...
-2025-11-13 06:50:39 - feature_engineering - INFO - Loaded 3360 samples
-2025-11-13 06:50:39 - __main__ - INFO - Loaded 3360 samples
-2025-11-13 06:50:39 - __main__ - INFO - Processing dataset...
-2025-11-13 06:50:39 - feature_engineering - INFO - Preparing dataset with 3360 samples...
-2025-11-13 06:50:39 - feature_engineering - INFO - Fitting feature encoders...
-2025-11-13 06:50:39 - feature_engineering - INFO - Encoders fitted:
-2025-11-13 06:50:39 - feature_engineering - INFO -   Roles: 1
-2025-11-13 06:50:39 - feature_engineering - INFO -   Types: 2
-2025-11-13 06:50:39 - feature_engineering - INFO -   Categories: 13
-2025-11-13 06:50:39 - feature_engineering - INFO -   Fields: 20
-2025-11-13 06:50:39 - feature_engineering - INFO -   User Categories Dim: 13
-2025-11-13 06:50:39 - feature_engineering - INFO -   User Tags Dim: 29
-2025-11-13 06:50:39 - feature_engineering - INFO -   User Skills Dim: 48
-2025-11-13 06:50:39 - feature_engineering - INFO -   Startup Tags Dim: 44
-2025-11-13 06:50:39 - feature_engineering - INFO - Split: train=2352, val=504, test=504
-2025-11-13 06:50:39 - feature_engineering - INFO - Processing train split...
-2025-11-13 06:50:41 - feature_engineering - INFO -   User features shape: (2352, 502)
-2025-11-13 06:50:41 - feature_engineering - INFO -   Startup features shape: (2352, 471)
-2025-11-13 06:50:41 - feature_engineering - INFO -   Labels shape: (2352,)
-2025-11-13 06:50:41 - feature_engineering - INFO - Processing val split...
-2025-11-13 06:50:41 - feature_engineering - INFO -   User features shape: (504, 502)
-2025-11-13 06:50:41 - feature_engineering - INFO -   Startup features shape: (504, 471)
-2025-11-13 06:50:41 - feature_engineering - INFO -   Labels shape: (504,)
-2025-11-13 06:50:41 - feature_engineering - INFO - Processing test split...
-2025-11-13 06:50:42 - feature_engineering - INFO -   User features shape: (504, 502)
-2025-11-13 06:50:42 - feature_engineering - INFO -   Startup features shape: (504, 471)
-2025-11-13 06:50:42 - feature_engineering - INFO -   Labels shape: (504,)
-2025-11-13 06:50:42 - __main__ - INFO - Feature dimensions:
-2025-11-13 06:50:42 - __main__ - INFO -   User: 502
-2025-11-13 06:50:42 - __main__ - INFO -   Startup: 471
-2025-11-13 06:58:35 - __main__ - INFO - Testing Two-Tower inference...
-2025-11-13 06:58:35 - __main__ - INFO - Loading model from models/two_tower_v1_best.pth
-2025-11-13 06:58:36 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 06:58:36 - __main__ - INFO - Debug mode: True
-2025-11-13 06:58:36 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 06:58:36 - __main__ - INFO - Database connection successful
-2025-11-13 06:58:38 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 06:58:38 - __main__ - INFO - Debug mode: True
-2025-11-13 06:58:38 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 06:58:38 - __main__ - INFO - Database connection successful
-2025-11-13 07:00:17 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:00:17 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:00:17 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:00:17 - __main__ - INFO - Debug mode: True
-2025-11-13 07:00:17 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:00:17 - __main__ - INFO - Database connection successful
-2025-11-13 07:00:40 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:00:40 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:00:40 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:00:40 - __main__ - INFO - Debug mode: True
-2025-11-13 07:00:40 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:00:40 - __main__ - INFO - Database connection successful
-2025-11-13 07:01:00 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:01:00 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:01:00 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:01:00 - __main__ - INFO - Debug mode: True
-2025-11-13 07:01:00 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:01:00 - __main__ - INFO - Database connection successful
-2025-11-13 07:01:46 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:01:46 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:01:46 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:01:46 - __main__ - INFO - Debug mode: True
-2025-11-13 07:01:46 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:01:46 - __main__ - INFO - Database connection successful
-2025-11-13 07:02:32 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:02:32 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:02:32 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:02:32 - __main__ - INFO - Debug mode: True
-2025-11-13 07:02:32 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:02:32 - __main__ - INFO - Database connection successful
-2025-11-13 07:02:37 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:02:37 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:02:37 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:02:37 - __main__ - INFO - Debug mode: True
-2025-11-13 07:02:37 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:02:37 - __main__ - INFO - Database connection successful
-2025-11-13 07:34:17 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:34:17 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:34:17 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:34:17 - __main__ - INFO - Debug mode: True
-2025-11-13 07:34:17 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:34:17 - __main__ - INFO - Database connection successful
-2025-11-13 07:35:33 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:35:33 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:35:33 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:35:33 - __main__ - INFO - Debug mode: True
-2025-11-13 07:35:33 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:35:33 - __main__ - INFO - Database connection successful
-2025-11-13 07:36:39 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:36:39 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:36:39 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:36:39 - __main__ - INFO - Debug mode: True
-2025-11-13 07:36:39 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:36:39 - __main__ - INFO - Database connection successful
-2025-11-13 07:37:00 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:37:00 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:37:00 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:37:00 - __main__ - INFO - Debug mode: True
-2025-11-13 07:37:00 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:37:00 - __main__ - INFO - Database connection successful
-2025-11-13 07:37:05 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:37:05 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:37:05 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:37:05 - __main__ - INFO - Debug mode: True
-2025-11-13 07:37:05 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:37:05 - __main__ - INFO - Database connection successful
-2025-11-13 07:37:20 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:37:20 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:37:20 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:37:20 - __main__ - INFO - Debug mode: True
-2025-11-13 07:37:20 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:37:20 - __main__ - INFO - Database connection successful
-2025-11-13 07:37:24 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:37:24 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:37:24 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:37:24 - __main__ - INFO - Debug mode: True
-2025-11-13 07:37:24 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:37:24 - __main__ - INFO - Database connection successful
-2025-11-13 07:37:35 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:37:35 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:37:35 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:37:35 - __main__ - INFO - Debug mode: True
-2025-11-13 07:37:35 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:37:35 - __main__ - INFO - Database connection successful
-2025-11-13 07:37:41 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:37:41 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:37:41 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:37:41 - __main__ - INFO - Debug mode: True
-2025-11-13 07:37:41 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:37:41 - __main__ - INFO - Database connection successful
-2025-11-13 07:38:02 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:38:02 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:38:02 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
-2025-11-13 07:38:02 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
-2025-11-13 07:38:02 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:38:02 - __main__ - INFO - Debug mode: True
-2025-11-13 07:38:02 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:38:02 - __main__ - INFO - Database connection successful
-2025-11-13 07:38:17 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:38:17 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:38:17 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
-2025-11-13 07:38:17 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
-2025-11-13 07:38:17 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:38:17 - __main__ - INFO - Debug mode: True
-2025-11-13 07:38:17 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:38:17 - __main__ - INFO - Database connection successful
-2025-11-13 07:38:37 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:38:37 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:38:37 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
-2025-11-13 07:38:37 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
-2025-11-13 07:38:37 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:38:37 - __main__ - INFO - Debug mode: True
-2025-11-13 07:38:37 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:38:37 - __main__ - INFO - Database connection successful
-2025-11-13 07:39:01 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:39:01 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:39:01 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
-2025-11-13 07:39:01 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
-2025-11-13 07:39:01 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:39:01 - __main__ - INFO - Debug mode: True
-2025-11-13 07:39:01 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:39:01 - __main__ - INFO - Database connection successful
-2025-11-13 07:44:29 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 07:44:29 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 07:44:29 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
-2025-11-13 07:44:29 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
-2025-11-13 07:44:29 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 07:44:29 - __main__ - INFO - Debug mode: True
-2025-11-13 07:44:29 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 07:44:29 - __main__ - INFO - Database connection successful
-2025-11-13 16:54:52 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 16:54:52 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 16:54:52 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
-2025-11-13 16:54:52 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
-2025-11-13 16:54:53 - __main__ - ERROR - Failed to load ranker: cannot import name 'ContentBasedRecommender' from partially initialized module 'engines.content_based' (most likely due to a circular import) (C:\Users\serma\Downloads\FYP-Development\recommendation_service\engines\content_based.py)
-2025-11-13 16:54:53 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 16:54:53 - __main__ - INFO - Debug mode: True
-2025-11-13 16:54:53 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 16:54:53 - __main__ - INFO - Database connection successful
-2025-11-13 16:54:57 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
-2025-11-13 16:54:57 - __main__ - ERROR - Failed to load Two-Tower model: Error(s) in loading state_dict for TwoTowerModel:
-	size mismatch for user_tower.model.6.weight: copying a param with shape torch.Size([128, 256]) from checkpoint, the shape in current model is torch.Size([471, 256]).
-	size mismatch for user_tower.model.6.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([471]).
-2025-11-13 16:54:57 - __main__ - WARNING - ALS model not found at C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1.pkl
-2025-11-13 16:54:57 - __main__ - WARNING - Ensemble not initialized (requires both ALS and Two-Tower)
-2025-11-13 16:54:58 - __main__ - ERROR - Failed to load ranker: cannot import name 'ContentBasedRecommender' from partially initialized module 'engines.content_based' (most likely due to a circular import) (C:\Users\serma\Downloads\FYP-Development\recommendation_service\engines\content_based.py)
-2025-11-13 16:54:58 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
-2025-11-13 16:54:58 - __main__ - INFO - Debug mode: True
-2025-11-13 16:54:58 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
-2025-11-13 16:54:58 - __main__ - INFO - Database connection successful
+2025-11-17 15:58:49 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 15:58:49 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 15:58:49 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 15:58:49 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 15:58:50 - inference_als - INFO - Loading ALS/SVD artifacts using prefix C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 15:58:50 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 15:58:50 - inference_als - INFO -   Users: 351
+2025-11-17 15:58:50 - inference_als - INFO -   Items: 250
+2025-11-17 15:58:50 - inference_als - INFO -   Factors: 128
+2025-11-17 15:58:50 - inference_als_reverse - INFO - Loading ALS Reverse artifacts using prefix C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_reverse_v1
+2025-11-17 15:58:50 - inference_als_reverse - INFO - ALS Reverse embeddings loaded successfully
+2025-11-17 15:58:50 - inference_als_reverse - INFO -   Startups: 250
+2025-11-17 15:58:50 - inference_als_reverse - INFO -   Users: 351
+2025-11-17 15:58:50 - inference_als_reverse - INFO -   Factors: 128
+2025-11-17 15:58:50 - inference_ensemble - INFO - Loading ensemble models...
+2025-11-17 15:58:50 - inference_als - INFO - Loading ALS/SVD artifacts using prefix C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 15:58:50 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 15:58:50 - inference_als - INFO -   Users: 351
+2025-11-17 15:58:50 - inference_als - INFO -   Items: 250
+2025-11-17 15:58:50 - inference_als - INFO -   Factors: 128
+2025-11-17 15:58:50 - inference_ensemble - INFO -   ALS model loaded
+2025-11-17 15:58:50 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 15:58:50 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 15:58:50 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 15:58:50 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 15:58:50 - inference_ensemble - INFO -   Two-Tower model loaded
+2025-11-17 15:58:50 - inference_ensemble - INFO - Ensemble initialized with weights: ALS=0.60, Two-Tower=0.40
+2025-11-17 15:58:50 - __main__ - INFO -   -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble
+2025-11-17 15:58:50 - ranker_module - ERROR - Error loading ranker model: Error(s) in loading state_dict for RankerMLP:
+	size mismatch for fc1.weight: copying a param with shape torch.Size([32, 4]) from checkpoint, the shape in current model is torch.Size([32, 5]).
+2025-11-17 15:58:50 - ranker_module - INFO - Falling back to rule-based ranker
+2025-11-17 15:58:50 - __main__ - INFO -   -> Will rerank all personalized recommendations
+2025-11-17 15:58:50 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-17 15:58:50 - __main__ - INFO - Debug mode: True
+2025-11-17 15:58:50 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-17 15:58:50 - __main__ - INFO - Database connection successful
+2025-11-17 15:58:51 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 15:58:51 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 15:58:51 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 15:58:52 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 15:58:52 - inference_als - INFO - Loading ALS/SVD artifacts using prefix C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 15:58:52 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 15:58:52 - inference_als - INFO -   Users: 351
+2025-11-17 15:58:52 - inference_als - INFO -   Items: 250
+2025-11-17 15:58:52 - inference_als - INFO -   Factors: 128
+2025-11-17 15:58:52 - inference_als_reverse - INFO - Loading ALS Reverse artifacts using prefix C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_reverse_v1
+2025-11-17 15:58:52 - inference_als_reverse - INFO - ALS Reverse embeddings loaded successfully
+2025-11-17 15:58:52 - inference_als_reverse - INFO -   Startups: 250
+2025-11-17 15:58:52 - inference_als_reverse - INFO -   Users: 351
+2025-11-17 15:58:52 - inference_als_reverse - INFO -   Factors: 128
+2025-11-17 15:58:52 - inference_ensemble - INFO - Loading ensemble models...
+2025-11-17 15:58:52 - inference_als - INFO - Loading ALS/SVD artifacts using prefix C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 15:58:52 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 15:58:52 - inference_als - INFO -   Users: 351
+2025-11-17 15:58:52 - inference_als - INFO -   Items: 250
+2025-11-17 15:58:52 - inference_als - INFO -   Factors: 128
+2025-11-17 15:58:52 - inference_ensemble - INFO -   ALS model loaded
+2025-11-17 15:58:52 - inference_two_tower - INFO - Loading model from C:\Users\serma\Downloads\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 15:58:52 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 15:58:52 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 15:58:52 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 15:58:52 - inference_ensemble - INFO -   Two-Tower model loaded
+2025-11-17 15:58:52 - inference_ensemble - INFO - Ensemble initialized with weights: ALS=0.60, Two-Tower=0.40
+2025-11-17 15:58:52 - __main__ - INFO -   -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble
+2025-11-17 15:58:52 - ranker_module - ERROR - Error loading ranker model: Error(s) in loading state_dict for RankerMLP:
+	size mismatch for fc1.weight: copying a param with shape torch.Size([32, 4]) from checkpoint, the shape in current model is torch.Size([32, 5]).
+2025-11-17 15:58:52 - ranker_module - INFO - Falling back to rule-based ranker
+2025-11-17 15:58:52 - __main__ - INFO -   -> Will rerank all personalized recommendations
+2025-11-17 15:58:52 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-17 15:58:52 - __main__ - INFO - Debug mode: True
+2025-11-17 15:58:52 - database.connection - INFO - Database connection successful: C:\Users\serma\Downloads\FYP-Development\backend\db.sqlite3
+2025-11-17 15:58:52 - __main__ - INFO - Database connection successful
+2025-11-17 16:20:45 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:20:45 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:20:46 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:20:46 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:20:46 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:20:46 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:20:46 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:20:46 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:20:46 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:20:46 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:20:46 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:20:47 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:20:47 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:20:47 - services.session_service - INFO - Created session d6ca4551-507c-4449-8a2d-ac47ececa3c0 for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:20:49 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:20:49 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:20:49 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:20:49 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:20:49 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:20:49 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:20:49 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:20:49 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:20:49 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:20:49 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:20:49 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:20:49 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:20:49 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:20:49 - services.session_service - INFO - Created session d03ff2fe-1100-4dd9-8024-b44e63ebea63 for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:21:29 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:21:29 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:21:29 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:21:29 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:21:29 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:21:29 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:21:29 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:21:29 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:21:29 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:21:29 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:21:29 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:21:30 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:21:30 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:21:30 - services.session_service - INFO - Created session 04bd9e29-999d-468b-a454-493510e5702a for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:21:41 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:21:41 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:21:41 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:21:41 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:21:41 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:21:41 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:21:41 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:21:41 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:21:41 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:21:41 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:21:41 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:21:41 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:21:41 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:21:41 - services.session_service - INFO - Created session 0c660cf6-0dfd-45b7-a1dd-52aa74cc3fc7 for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:23:43 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:23:43 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:23:43 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:23:43 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:23:43 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:23:43 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:23:43 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:23:43 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:23:43 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:23:43 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:23:43 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:23:44 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:23:44 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:23:44 - services.session_service - INFO - Created session 6fb3ceff-961c-49a0-a1d4-666e64691101 for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:23:46 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:23:46 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:23:46 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:23:46 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:23:46 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:23:46 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:23:46 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:23:46 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:23:46 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:23:46 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:23:46 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:23:46 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:23:46 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:23:46 - services.session_service - INFO - Created session 82b219a7-bcb0-49b4-a301-ba80266e885d for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:24:04 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:24:04 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:24:04 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:24:04 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:24:04 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:24:04 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:24:04 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:24:04 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:24:04 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:24:04 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:24:04 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:24:04 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:24:04 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:24:04 - services.session_service - INFO - Created session b9569a98-a002-4b77-805f-7e35fa92ab9b for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:27:44 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:27:44 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:27:44 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:27:44 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:27:44 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:27:44 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:27:44 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:27:44 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:27:44 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:27:44 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:27:44 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:27:45 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:27:45 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:27:45 - services.session_service - INFO - Created session f0e60088-a52f-4f3f-aad2-c0d753ea5cb0 for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:27:47 - __main__ - INFO - Investor 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:27:47 - __main__ - INFO - -> Using Content-Based (cold start: 0 interactions)
+2025-11-17 16:27:47 - services.recommendation_service - INFO - Getting recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup, limit 20
+2025-11-17 16:27:47 - engines.router - INFO - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 has 0 interactions
+2025-11-17 16:27:47 - engines.router - INFO - Routing to content_based (cold start)
+2025-11-17 16:27:47 - services.recommendation_service - INFO - Routed to content_based (interaction_count: 0)
+2025-11-17 16:27:47 - engines.content_based - INFO - Generating recommendations for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 16:27:47 - engines.feature_extractor - WARNING - User 5438af59-b1ad-408b-8789-cb0cf7ffb919 not found
+2025-11-17 16:27:47 - engines.content_based - INFO - User role: unknown
+2025-11-17 16:27:47 - services.filter_service - INFO - Filtered to 90 startups for user 5438af59-b1ad-408b-8789-cb0cf7ffb919
+2025-11-17 16:27:47 - engines.content_based - INFO - Found 90 candidate startups
+2025-11-17 16:27:47 - engines.content_based - INFO - Generated 20 recommendations
+2025-11-17 16:27:47 - services.recommendation_service - INFO - Generated 20 recommendations
+2025-11-17 16:27:47 - services.session_service - INFO - Created session a38dfa00-1006-4fcf-aaab-a511ea52b54a for user 5438af59-b1ad-408b-8789-cb0cf7ffb919, use_case investor_startup
+2025-11-17 22:42:14 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:14 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:14 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:14 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:14 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:14 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:14 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:14 - inference_als_reverse - INFO - Loading ALS Reverse artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_reverse_v1
+2025-11-17 22:42:14 - inference_als_reverse - INFO - ALS Reverse embeddings loaded successfully
+2025-11-17 22:42:14 - inference_als_reverse - INFO -   Startups: 250
+2025-11-17 22:42:14 - inference_als_reverse - INFO -   Users: 351
+2025-11-17 22:42:14 - inference_als_reverse - INFO -   Factors: 128
+2025-11-17 22:42:14 - inference_ensemble - INFO - Loading ensemble models...
+2025-11-17 22:42:14 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:14 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:14 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:14 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:14 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:14 - inference_ensemble - INFO -   ALS model loaded
+2025-11-17 22:42:14 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:14 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:14 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:14 - inference_ensemble - INFO -   Two-Tower model loaded
+2025-11-17 22:42:14 - inference_ensemble - INFO - Ensemble initialized with weights: ALS=0.60, Two-Tower=0.40
+2025-11-17 22:42:14 - __main__ - INFO -   -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble
+2025-11-17 22:42:14 - ranker_module - ERROR - Error loading ranker model: Error(s) in loading state_dict for RankerMLP:
+	size mismatch for fc1.weight: copying a param with shape torch.Size([32, 4]) from checkpoint, the shape in current model is torch.Size([32, 5]).
+2025-11-17 22:42:14 - ranker_module - INFO - Falling back to rule-based ranker
+2025-11-17 22:42:14 - __main__ - INFO -   -> Will rerank all personalized recommendations
+2025-11-17 22:42:14 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-17 22:42:14 - __main__ - INFO - Debug mode: True
+2025-11-17 22:42:15 - database.connection - INFO - Database connection successful: E:\StartLnk\FYP-Development\backend\db.sqlite3
+2025-11-17 22:42:15 - __main__ - INFO - Database connection successful
+2025-11-17 22:42:18 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:18 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:18 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:18 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:18 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:18 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:18 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:18 - inference_als_reverse - INFO - Loading ALS Reverse artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_reverse_v1
+2025-11-17 22:42:18 - inference_als_reverse - INFO - ALS Reverse embeddings loaded successfully
+2025-11-17 22:42:18 - inference_als_reverse - INFO -   Startups: 250
+2025-11-17 22:42:18 - inference_als_reverse - INFO -   Users: 351
+2025-11-17 22:42:18 - inference_als_reverse - INFO -   Factors: 128
+2025-11-17 22:42:18 - inference_ensemble - INFO - Loading ensemble models...
+2025-11-17 22:42:18 - inference_als - INFO - Loading ALS/SVD artifacts using prefix E:\StartLnk\FYP-Development\recommendation_service\models\als_v1
+2025-11-17 22:42:18 - inference_als - INFO - ALS/SVD embeddings loaded successfully:
+2025-11-17 22:42:18 - inference_als - INFO -   Users: 351
+2025-11-17 22:42:18 - inference_als - INFO -   Items: 250
+2025-11-17 22:42:18 - inference_als - INFO -   Factors: 128
+2025-11-17 22:42:18 - inference_ensemble - INFO -   ALS model loaded
+2025-11-17 22:42:18 - inference_two_tower - INFO - Loading model from E:\StartLnk\FYP-Development\recommendation_service\models\two_tower_v1_best.pth
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected user_dim: 502
+2025-11-17 22:42:18 - inference_two_tower - INFO - Auto-detected startup_dim: 471
+2025-11-17 22:42:18 - inference_two_tower - INFO - Model loaded successfully on cpu
+2025-11-17 22:42:18 - inference_ensemble - INFO -   Two-Tower model loaded
+2025-11-17 22:42:18 - inference_ensemble - INFO - Ensemble initialized with weights: ALS=0.60, Two-Tower=0.40
+2025-11-17 22:42:18 - __main__ - INFO -   -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble
+2025-11-17 22:42:18 - ranker_module - ERROR - Error loading ranker model: Error(s) in loading state_dict for RankerMLP:
+	size mismatch for fc1.weight: copying a param with shape torch.Size([32, 4]) from checkpoint, the shape in current model is torch.Size([32, 5]).
+2025-11-17 22:42:18 - ranker_module - INFO - Falling back to rule-based ranker
+2025-11-17 22:42:18 - __main__ - INFO -   -> Will rerank all personalized recommendations
+2025-11-17 22:42:18 - __main__ - INFO - Starting Flask Recommendation Service on 0.0.0.0:5000
+2025-11-17 22:42:18 - __main__ - INFO - Debug mode: True
+2025-11-17 22:42:18 - database.connection - INFO - Database connection successful: E:\StartLnk\FYP-Development\backend\db.sqlite3
+2025-11-17 22:42:18 - __main__ - INFO - Database connection successful

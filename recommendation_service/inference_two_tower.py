@@ -48,7 +48,7 @@ class Tower(nn.Module):
 class TwoTowerModel(nn.Module):
     def __init__(self, user_dim, startup_dim, embedding_dim=128, hidden_dims=[512, 256], dropout_rate=0.3):
         super(TwoTowerModel, self).__init__()
-        self.user_tower = Tower(user_dim, startup_dim, hidden_dims, dropout_rate)
+        self.user_tower = Tower(user_dim, embedding_dim, hidden_dims, dropout_rate)
         self.startup_tower = Tower(startup_dim, embedding_dim, hidden_dims, dropout_rate)
     
     def forward(self, user_features, startup_features):
@@ -93,21 +93,54 @@ def parse_embedding(emb_str):
 class TwoTowerInference:
     """Simple inference wrapper for Two-Tower model"""
     
-    def __init__(self, model_path: str, user_dim: int = 502, startup_dim: int = 471):
+    def __init__(self, model_path: str, user_dim: int = None, startup_dim: int = None):
         """
         Initialize inference module
         
         Args:
             model_path: Path to trained model (.pth file)
-            user_dim: User feature dimension (default from training)
-            startup_dim: Startup feature dimension (default from training)
+            user_dim: User feature dimension (auto-detected if None)
+            startup_dim: Startup feature dimension (auto-detected if None)
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Load checkpoint first to detect dimensions
+        logger.info(f"Loading model from {model_path}")
+        checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
+        
+        # Handle different checkpoint formats
+        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+            # Checkpoint contains metadata
+            state_dict = checkpoint['model_state_dict']
+            # Try to get dimensions from config
+            if 'config' in checkpoint and user_dim is None:
+                user_dim = checkpoint['config'].get('user_dim', 502)
+                startup_dim = checkpoint['config'].get('startup_dim', 471)
+        else:
+            # Direct state dict
+            state_dict = checkpoint
+        
+        # Auto-detect dimensions from state_dict if not provided
+        if user_dim is None or startup_dim is None:
+            # Get dimensions from the first layer weights
+            if 'user_tower.model.0.weight' in state_dict:
+                user_dim = state_dict['user_tower.model.0.weight'].shape[1]
+                logger.info(f"Auto-detected user_dim: {user_dim}")
+            else:
+                user_dim = 502  # Default
+                logger.warning(f"Could not auto-detect user_dim, using default: {user_dim}")
+            
+            if 'startup_tower.model.0.weight' in state_dict:
+                startup_dim = state_dict['startup_tower.model.0.weight'].shape[1]
+                logger.info(f"Auto-detected startup_dim: {startup_dim}")
+            else:
+                startup_dim = 471  # Default
+                logger.warning(f"Could not auto-detect startup_dim, using default: {startup_dim}")
+        
+        # Initialize model with correct dimensions
         self.model = TwoTowerModel(user_dim, startup_dim).to(self.device)
         
-        # Load trained weights
-        logger.info(f"Loading model from {model_path}")
-        state_dict = torch.load(model_path, map_location=self.device)
+        # Load weights
         self.model.load_state_dict(state_dict)
         self.model.eval()
         

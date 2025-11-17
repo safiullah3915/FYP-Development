@@ -7,6 +7,7 @@ import styles from './InvestorDashboard.module.css';
 import { userAPI, startupAPI, marketplaceAPI } from '../../utils/apiServices';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { getStartupDetailPath } from '../../utils/idUtils';
 
 const InvestorDashboard = () => {
   const { user } = useAuth();
@@ -174,7 +175,7 @@ const InvestorDashboard = () => {
                         </div>
                       )}
                       <Link 
-                        to={`/startupdetail/${interest.startup.id}`}
+                        to={getStartupDetailPath(interest.startup.id)}
                         className={styles.viewButton}
                       >
                         View Details

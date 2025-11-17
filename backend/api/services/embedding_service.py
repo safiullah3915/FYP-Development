@@ -86,6 +86,40 @@ class EmbeddingService:
                 preferred_skills = prefs.preferred_skills if isinstance(prefs.preferred_skills, list) else json.loads(prefs.preferred_skills) if isinstance(prefs.preferred_skills, str) else []
                 if preferred_skills:
                     profile_text_parts.append(f"Preferred Skills: {', '.join(preferred_skills)}")
+            investor_profile = {}
+            raw_investor_profile = getattr(prefs, 'investor_profile', None)
+            if raw_investor_profile:
+                if isinstance(raw_investor_profile, dict):
+                    investor_profile = raw_investor_profile
+                elif isinstance(raw_investor_profile, str):
+                    try:
+                        investor_profile = json.loads(raw_investor_profile)
+                    except json.JSONDecodeError:
+                        investor_profile = {}
+            if investor_profile:
+                thesis = investor_profile.get('thesis_summary')
+                if thesis:
+                    profile_text_parts.append(f"Investor Thesis: {thesis}")
+                for field_name in ['sectors', 'stages', 'round_types', 'instruments', 'geographies', 'support_preferences']:
+                    values = investor_profile.get(field_name)
+                    if isinstance(values, list) and values:
+                        profile_text_parts.append(f"{field_name.replace('_', ' ').title()}: {', '.join(values)}")
+                check_size = investor_profile.get('check_size') or {}
+                if check_size.get('min') or check_size.get('max'):
+                    profile_text_parts.append(
+                        f"Check Size: {check_size.get('min', '')} - {check_size.get('max', '')} {check_size.get('currency', '')}".strip()
+                    )
+                ownership = investor_profile.get('target_ownership') or {}
+                if ownership.get('min_pct') or ownership.get('max_pct'):
+                    profile_text_parts.append(
+                        f"Ownership Target: {ownership.get('min_pct', '')}% - {ownership.get('max_pct', '')}%".strip()
+                    )
+                decision_speed = investor_profile.get('decision_speed')
+                if decision_speed:
+                    profile_text_parts.append(f"Decision Speed: {decision_speed}")
+                lead_pref = investor_profile.get('lead_preference')
+                if lead_pref:
+                    profile_text_parts.append(f"Lead Preference: {lead_pref}")
         except UserOnboardingPreferences.DoesNotExist:
             pass
         except (json.JSONDecodeError, TypeError) as e:

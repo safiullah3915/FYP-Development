@@ -65,7 +65,7 @@ python train_standalone.py --data data/two_tower_train.csv --epochs 10
 
 ### Automatic Initialization
 
-If both `als_v1.pkl` and `two_tower_v1_best.pth` exist in `models/`, the ensemble initializes automatically on Flask startup:
+If both `als_v1_config.json` (plus embeddings) and `two_tower_v1_best.pth` exist in `models/`, the ensemble initializes automatically on Flask startup:
 
 ```
 ✓ ALS model loaded successfully!
@@ -109,7 +109,7 @@ Rank and return top 10
 ```python
 # In inference_ensemble.py
 ensemble_model = EnsembleInference(
-    als_model_path='models/als_v1.pkl',
+    als_model_path='models/als_v1_config.json',
     two_tower_model_path='models/two_tower_v1_best.pth',
     als_weight=0.6  # Change this!
 )
@@ -269,7 +269,7 @@ ensemble_predictions = combine_batch(als_predictions, tt_predictions)
 **Fix**:
 ```bash
 ls -lh recommendation_service/models/
-# Should see both als_v1.pkl and two_tower_v1_best.pth
+# Should see als_v1_config.json (+ embeddings) and two_tower_v1_best.pth
 ```
 
 ### Poor Ensemble Performance

@@ -8,6 +8,8 @@ import { notificationAPI } from "../../utils/apiServices";
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMatchedDropdownOpen, setIsMatchedDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, isEntrepreneur, isStudent, isInvestor } = useAuth();
@@ -23,9 +25,11 @@ const Navbar = () => {
   //   return () => window.removeEventListener("scroll", handleScroll);
   // }, []);
 
-  // Close mobile menu on route change
+  // Close mobile menu and dropdowns on route change
   useEffect(() => {
     setIsMenuOpen(false);
+    setIsProfileOpen(false);
+    setIsMatchedDropdownOpen(false);
   }, [location]);
 
   // Prevent body scroll when menu is open
@@ -124,8 +128,7 @@ const Navbar = () => {
       baseLinks.push(
         { path: "/dashboard", label: "Dashboard" },
         { path: "/trending-startups", label: "Trending Startups" },
-        { path: "/message", label: "Messages" },
-        { path: "/account", label: "Account" }
+        { path: "/message", label: "Messages" }
       );
 
       if (isInvestor()) {
@@ -136,6 +139,10 @@ const Navbar = () => {
       if (isEntrepreneur()) {
         baseLinks.push(
           { path: "/collaboration", label: "Collaboration" },
+          { type: "dropdown", label: "Matched", dropdown: [
+            { path: "/matched-developers", label: "Developers" },
+            { path: "/potential-investors", label: "Investors" }
+          ]},
           { path: "/createstartup", label: "Create Startup" }
         );
       }
@@ -157,6 +164,16 @@ const Navbar = () => {
   };
 
   const navLinks = getNavLinks();
+  
+  const toggleProfileDropdown = () => {
+    setIsProfileOpen(!isProfileOpen);
+    setIsMatchedDropdownOpen(false);
+  };
+  
+  const toggleMatchedDropdown = () => {
+    setIsMatchedDropdownOpen(!isMatchedDropdownOpen);
+    setIsProfileOpen(false);
+  };
 
   return (
     <nav className={`${styles.navbar} ${isScrolled ? styles.scrolled : ""}`}>
@@ -171,7 +188,35 @@ const Navbar = () => {
       )}
 
       <div className={styles.navLinks}>
-        {navLinks.map((link) => {
+        {navLinks.map((link, index) => {
+          if (link.type === "dropdown") {
+            const isMatchedActive = link.dropdown.some(item => location.pathname === item.path);
+            return (
+              <div key={index} className={styles.dropdownContainer}>
+                <button
+                  onClick={toggleMatchedDropdown}
+                  className={`${styles.navLink} ${styles.dropdownToggle} ${isMatchedActive ? styles.active : ""}`}
+                >
+                  <span className={styles.navLinkLabel}>{link.label}</span>
+                  <span className={styles.dropdownArrow}>▼</span>
+                </button>
+                {isMatchedDropdownOpen && (
+                  <div className={styles.dropdownMenu}>
+                    {link.dropdown.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`${styles.dropdownItem} ${location.pathname === item.path ? styles.active : ""}`}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+          
           const isMessages = link.path === "/message";
           const isActive = location.pathname === link.path;
           return (
@@ -191,9 +236,27 @@ const Navbar = () => {
 
       {isAuthenticated && (
         <div className={styles.userMenu}>
-          <button onClick={handleLogout} className={styles.logoutBtn}>
-            Logout
-          </button>
+          <div className={styles.profileContainer}>
+            <button onClick={toggleProfileDropdown} className={styles.profileButton}>
+              <div className={styles.profileAvatar}>
+                {user?.username?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            </button>
+            {isProfileOpen && (
+              <div className={styles.profileDropdown}>
+                <div className={styles.profileInfo}>
+                  <div className={styles.profileName}>{user?.username}</div>
+                  <div className={styles.profileRole}>{user?.role}</div>
+                </div>
+                <Link to="/account" className={styles.profileMenuItem}>
+                  Profile Settings
+                </Link>
+                <button onClick={handleLogout} className={styles.profileMenuItem}>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -227,21 +290,52 @@ const Navbar = () => {
             <span></span>
           </button>
         </div>
-        {navLinks.map((link) => (
-          <Link
-            key={link.path}
-            to={link.path}
-            className={`${styles.navLink} ${
-              location.pathname === link.path ? styles.active : ""
-            }`}
-            onClick={closeMenu}
-          >
-            {link.label}
-          </Link>
-        ))}
+        {navLinks.map((link, index) => {
+          if (link.type === "dropdown") {
+            return (
+              <div key={index} className={styles.mobileDropdownSection}>
+                <div className={styles.mobileDropdownLabel}>{link.label}</div>
+                {link.dropdown.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`${styles.navLink} ${styles.mobileDropdownItem} ${
+                      location.pathname === item.path ? styles.active : ""
+                    }`}
+                    onClick={closeMenu}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            );
+          }
+          
+          return (
+            <Link
+              key={link.path}
+              to={link.path}
+              className={`${styles.navLink} ${
+                location.pathname === link.path ? styles.active : ""
+              }`}
+              onClick={closeMenu}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
         
         {isAuthenticated && (
           <div className={styles.mobileUserMenu}>
+            <Link to="/account" className={styles.mobileProfileLink} onClick={closeMenu}>
+              <div className={styles.mobileProfileAvatar}>
+                {user?.username?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className={styles.mobileProfileInfo}>
+                <div className={styles.mobileProfileName}>{user?.username}</div>
+                <div className={styles.mobileProfileRole}>{user?.role}</div>
+              </div>
+            </Link>
             <button onClick={() => { handleLogout(); closeMenu(); }} className={styles.mobileLogoutBtn}>
               Logout
             </button>

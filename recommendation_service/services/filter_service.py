@@ -169,6 +169,15 @@ class FilterService:
         query = self.filter_quality_content(query)
         query = self.filter_has_embeddings(query)
         return query
+
+    def apply_min_quality_filters(self, query):
+        """
+        Relaxed quality baseline (used as a fallback)
+        Skips embedding requirement to avoid empty results on cold datasets
+        """
+        query = self.filter_active_only(query)
+        query = self.filter_quality_content(query)
+        return query
     
     def apply_user_filters(self, query, user_id, user_role):
         """
@@ -226,6 +235,8 @@ class FilterService:
                     query = self.filter_by_field(query, filters_dict['field'])
                 if filters_dict.get('fresh_only', False):
                     query = self.filter_fresh_startups(query, max_age_days=90)
+                if filters_dict.get('require_open_positions'):
+                    query = self.filter_has_open_positions(query)
             
             return query
             
@@ -249,12 +260,52 @@ class FilterService:
         try:
             base_query = self.db.query(Startup.id)
             filtered_query = self.apply_all_filters(base_query, user_id, user_role, filters_dict)
-            
+
+            # First pass
             startup_ids = [str(row.id) for row in filtered_query.all()]
-            
-            logger.info(f"Filtered to {len(startup_ids)} startups for user {user_id}")
-            
-            return startup_ids
+            if startup_ids:
+                logger.info(f"Filtered to {len(startup_ids)} startups for user {user_id}")
+                return startup_ids
+
+            # Fallback 1: relax embedding requirement
+            logger.info("No candidates after strict filters; retrying without embedding requirement")
+            relaxed_query = self.apply_min_quality_filters(base_query)
+            # Re-apply user filters without embedding constraint
+            relaxed_query = self.filter_own_startups(relaxed_query, user_id)
+            relaxed_query = self.filter_already_applied(relaxed_query, user_id)
+            relaxed_query = self.filter_negative_interactions(relaxed_query, user_id)
+
+            if user_role == 'student':
+                relaxed_query = self.filter_has_open_positions(relaxed_query)
+            elif user_role == 'investor':
+                relaxed_query = self.filter_for_investors(relaxed_query)
+
+            # Optional filters
+            if filters_dict:
+                if 'type' in filters_dict and filters_dict['type']:
+                    relaxed_query = self.filter_by_type(relaxed_query, filters_dict['type'])
+                if 'category' in filters_dict and filters_dict['category']:
+                    relaxed_query = self.filter_by_category(relaxed_query, filters_dict['category'])
+                if 'field' in filters_dict and filters_dict['field']:
+                    relaxed_query = self.filter_by_field(relaxed_query, filters_dict['field'])
+
+            startup_ids = [str(row.id) for row in relaxed_query.all()]
+            if startup_ids:
+                logger.info(f"Relaxed filtering returned {len(startup_ids)} startups for user {user_id}")
+                return startup_ids
+
+            # Fallback 2: if explicitly requiring open positions, try once without it
+            if filters_dict and filters_dict.get('require_open_positions'):
+                logger.info("Still empty; final retry without open-positions constraint")
+                filters_clone = dict(filters_dict)
+                filters_clone.pop('require_open_positions', None)
+                final_query = self.apply_all_filters(base_query, user_id, user_role, filters_clone)
+                startup_ids = [str(row.id) for row in final_query.all()]
+                logger.info(f"Final relaxed filtering returned {len(startup_ids)} startups for user {user_id}")
+                return startup_ids
+
+            logger.info(f"No startups found for user {user_id} after all fallbacks")
+            return []
             
         except Exception as e:
             logger.error(f"Error getting filtered startup IDs: {e}")

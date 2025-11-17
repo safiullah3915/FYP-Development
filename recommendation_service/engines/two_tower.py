@@ -13,7 +13,7 @@ import json
 from .base_recommender import BaseRecommender
 from .training_config import TwoTowerConfig
 from .feature_engineering import FeatureEncoder
-from database.models import Startup, User
+from database.models import Startup, User, Position
 from database.connection import SessionLocal
 from utils.logger import get_logger
 
@@ -335,6 +335,10 @@ class TwoTowerRecommender(BaseRecommender):
                     query = query.filter(Startup.category.in_(filters['category']))
                 else:
                     query = query.filter(Startup.category == filters['category'])
+            if filters.get('require_open_positions'):
+                query = query.join(Position, Position.startup_id == Startup.id).filter(
+                    Position.is_active == True
+                ).distinct()
         
         return query.all()
     

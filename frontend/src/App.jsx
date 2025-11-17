@@ -26,6 +26,8 @@ import InvestorDashboard from './pages/InvestorDashboard/InvestorDashboard';
 import PitchIdea from './pages/PitchIdea/PitchIdea';
 import TrendingStartups from './pages/TrendingStartups/TrendingStartups';
 import OnboardingPreferences from './pages/OnboardingPreferences/OnboardingPreferences';
+import PotentialInvestors from './pages/PotentialInvestors/PotentialInvestors';
+import MatchedDevelopers from './pages/MatchedDevelopers/MatchedDevelopers';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import RoleBasedRoute from './components/RoleBasedRoute/RoleBasedRoute';
 
@@ -126,6 +128,18 @@ function AppRoutes() {
       <Route path="/pitch-idea" element={
         <RoleBasedRoute allowedRoles={['entrepreneur']}>
           <PitchIdea />
+        </RoleBasedRoute>
+      } />
+      
+      <Route path="/potential-investors" element={
+        <RoleBasedRoute allowedRoles={['entrepreneur']}>
+          <PotentialInvestors />
+        </RoleBasedRoute>
+      } />
+      
+      <Route path="/matched-developers" element={
+        <RoleBasedRoute allowedRoles={['entrepreneur']}>
+          <MatchedDevelopers />
         </RoleBasedRoute>
       } />
 
