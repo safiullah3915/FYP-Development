@@ -2690,9 +2690,11 @@ def get_personalized_startup_recommendations(request):
 				s = str(sid)
 				if len(s) == 32 and '-' not in s:
 					try:
-						s = str(uuid.UUID(s))
-					except Exception:
+						# Flask returns UUIDs without dashes (from SQLite), convert to UUID with dashes for Django
+						s = str(uuid.UUID(hex=s))
+					except Exception as e:
 						# Keep original if it can't be parsed; logging below will help diagnose
+						print(f"⚠️ Django: Failed to convert UUID {s}: {e}")
 						pass
 				normalized_ids.append(s)
 			
@@ -2728,6 +2730,18 @@ def get_personalized_startup_recommendations(request):
 				scores_map = flask_data.get('scores', {})
 				reasons_map = flask_data.get('match_reasons', {})
 				
+				# Create mapping from normalized (no-dash) IDs to original startup_ids for score lookup
+				normalized_to_original = {}
+				for orig_sid in startup_ids:
+					orig_str = str(orig_sid)
+					if len(orig_str) == 32 and '-' not in orig_str:
+						try:
+							normalized_to_original[orig_str] = str(uuid.UUID(hex=orig_str))
+						except:
+							normalized_to_original[orig_str] = orig_str
+					else:
+						normalized_to_original[orig_str] = orig_str
+				
 				for startup_id in normalized_ids:
 					startup_obj = startups_dict.get(startup_id)
 					open_positions = positions_map.get(startup_id, [])
@@ -2760,9 +2774,18 @@ def get_personalized_startup_recommendations(request):
 					})
 					
 					sid = str(startup_obj.id)
-					if sid in scores_map:
+					# Try both formats: with dashes (Django format) and without dashes (Flask format)
+					sid_normalized = sid.replace('-', '')
+					
+					# Look up score/match_reasons using normalized ID (Flask format)
+					if sid_normalized in scores_map:
+						filtered_scores[sid] = scores_map[sid_normalized]
+					elif sid in scores_map:
 						filtered_scores[sid] = scores_map[sid]
-					if sid in reasons_map:
+					
+					if sid_normalized in reasons_map:
+						filtered_match_reasons[sid] = reasons_map[sid_normalized]
+					elif sid in reasons_map:
 						filtered_match_reasons[sid] = reasons_map[sid]
 			
 			print(f"🧩 Django: Hydration - startups_after_filter={len(startups)} (require_open_positions={require_open_positions})")
@@ -2825,9 +2848,18 @@ def get_personalized_startup_recommendations(request):
 					})
 					
 					sid = str(startup_obj.id)
-					if sid in scores_map:
+					# Try both formats: with dashes (Django format) and without dashes (Flask format)
+					sid_normalized = sid.replace('-', '')
+					
+					# Look up score/match_reasons using normalized ID (Flask format)
+					if sid_normalized in scores_map:
+						filtered_scores[sid] = scores_map[sid_normalized]
+					elif sid in scores_map:
 						filtered_scores[sid] = scores_map[sid]
-					if sid in reasons_map:
+					
+					if sid_normalized in reasons_map:
+						filtered_match_reasons[sid] = reasons_map[sid_normalized]
+					elif sid in reasons_map:
 						filtered_match_reasons[sid] = reasons_map[sid]
 				
 				flask_data['enforced_open_positions'] = False
@@ -2849,16 +2881,120 @@ def get_personalized_startup_recommendations(request):
 				if not startup_id:
 					continue
 				startup_id_str = str(startup_id)
+				# Try both formats: with dashes (Django format) and without dashes (Flask format)
+				startup_id_normalized = startup_id_str.replace('-', '')
+				
+				# Look up score/match_reasons using normalized ID (Flask format)
+				score = None
+				if isinstance(flask_data.get('scores'), dict):
+					score = flask_data['scores'].get(startup_id_normalized) or flask_data['scores'].get(startup_id_str)
+				
+				match_reasons = []
+				if isinstance(flask_data.get('match_reasons'), dict):
+					match_reasons = flask_data['match_reasons'].get(startup_id_normalized, flask_data['match_reasons'].get(startup_id_str, []))
+				
 				recommendations_payload.append({
 					'startup_id': startup_id_str,
 					'rank': idx,
-					'score': (flask_data['scores'].get(startup_id_str)
-					          if isinstance(flask_data['scores'], dict) else None),
+					'score': score,
 					'method': method_hint,
-					'match_reasons': flask_data['match_reasons'].get(startup_id_str, [])
-						if isinstance(flask_data['match_reasons'], dict) else []
+					'match_reasons': match_reasons
 				})
 			flask_data['recommendations'] = recommendations_payload
+		
+		# Handle case where Flask returns 'startups' array directly (not 'startup_ids')
+		# This happens when ensemble returns startups with normalized IDs
+		if 'startups' in flask_data and flask_data.get('startups') and 'startup_ids' not in flask_data:
+			flask_startups = flask_data.get('startups', [])
+			print(f"🧩 Django: Flask returned {len(flask_startups)} startups directly (not startup_ids)")
+			
+			# Extract startup IDs from Flask startups array (may be normalized without dashes)
+			flask_startup_ids = []
+			for startup in flask_startups:
+				startup_id = startup.get('id')
+				if startup_id:
+					flask_startup_ids.append(str(startup_id))
+			
+			# Normalize IDs to Django format (with dashes)
+			normalized_ids = []
+			for sid in flask_startup_ids:
+				s = str(sid)
+				if len(s) == 32 and '-' not in s:
+					try:
+						s = str(uuid.UUID(hex=s))
+					except Exception as e:
+						print(f"⚠️ Django: Failed to convert UUID {s}: {e}")
+						pass
+				normalized_ids.append(s)
+			
+			# Query Django database for full startup details
+			if normalized_ids:
+				startups_dict = {
+					str(s.id): s
+					for s in Startup.objects.filter(id__in=normalized_ids, status='active')
+				}
+				print(f"🧩 Django: Found {len(startups_dict)} startups in database")
+				
+				# Build startups array with Django data, preserving Flask scores/match_reasons
+				startups = []
+				scores_map = flask_data.get('scores', {})
+				reasons_map = flask_data.get('match_reasons', {})
+				
+				for startup_id in normalized_ids:
+					startup_obj = startups_dict.get(startup_id)
+					if not startup_obj:
+						print(f"⚠️ Django: Startup not found for id={startup_id}")
+						continue
+					
+					# Get positions
+					active_positions = Position.objects.filter(
+						startup_id=startup_id,
+						is_active=True
+					).order_by('-created_at')
+					
+					if require_open_positions and not active_positions.exists():
+						continue
+					
+					positions_list = [{
+						'id': str(p.id),
+						'title': p.title,
+						'description': p.description,
+						'requirements': p.requirements,
+						'created_at': p.created_at.isoformat() if p.created_at else None
+					} for p in active_positions]
+					
+					sid = str(startup_obj.id)
+					sid_normalized = sid.replace('-', '')
+					
+					# Look up score/match_reasons using normalized ID (Flask format)
+					score = scores_map.get(sid_normalized) or scores_map.get(sid)
+					match_reasons = reasons_map.get(sid_normalized, reasons_map.get(sid, []))
+					
+					startups.append({
+						'id': sid,
+						'title': startup_obj.title,
+						'description': startup_obj.description,
+						'category': startup_obj.category,
+						'phase': startup_obj.phase,
+						'team_size': startup_obj.team_size,
+						'earn_through': startup_obj.earn_through,
+						'positions': positions_list,
+						'open_positions': positions_list,
+						'open_positions_count': len(positions_list),
+						'has_open_positions': bool(positions_list),
+						'primary_position': positions_list[0] if positions_list else None,
+						'top_position': positions_list[0] if positions_list else None
+					})
+					
+					# Update scores/match_reasons with Django-formatted IDs
+					if score is not None:
+						flask_data.setdefault('scores', {})[sid] = score
+					if match_reasons:
+						flask_data.setdefault('match_reasons', {})[sid] = match_reasons
+				
+				flask_data['startups'] = startups
+				flask_data['total'] = len(startups)
+				print(f"🧩 Django: Processed {len(startups)} startups from Flask startups array")
 		
 		# Return Flask service response with additional user context (for other roles)
 		flask_data['user_id'] = str(user.id)

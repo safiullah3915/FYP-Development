@@ -133,15 +133,18 @@ class RecommendationRouter:
         Get total interaction count for user
         
         Args:
-            user_id: User ID (UUID string)
+            user_id: User ID (UUID string, with or without dashes)
             
         Returns:
             int: Number of interactions
         """
         db = SessionLocal()
         try:
+            # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
+            normalized_user_id = str(user_id).replace('-', '')
+            
             count = db.query(UserInteraction).filter(
-                UserInteraction.user_id == user_id
+                UserInteraction.user_id == normalized_user_id
             ).count()
             return count
         except Exception as e:

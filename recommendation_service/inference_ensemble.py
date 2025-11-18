@@ -148,9 +148,56 @@ class EnsembleInference:
         try:
             # Note: limit is already multiplied by caller if needed
             results = self.two_tower_model.recommend(user_id, limit, filters)
-            return results
+            
+            # Two-Tower returns {'item_ids': [...], 'scores': {...}, 'match_reasons': {...}}
+            # Convert to same format as ALS: {'startups': [...], 'scores': {...}}
+            if 'item_ids' in results:
+                # Need to fetch startup details from database
+                from database.connection import SessionLocal
+                from database.models import Startup
+                
+                db = SessionLocal()
+                try:
+                    startup_ids = results['item_ids']
+                    # Startup IDs from two-tower are already normalized (from database)
+                    # Query database directly with these IDs
+                    startups = db.query(Startup).filter(
+                        Startup.id.in_(startup_ids)
+                    ).all()
+                    
+                    # Create mapping: normalized_id -> startup object
+                    startups_dict = {str(s.id): s for s in startups}
+                    match_reasons = results.get('match_reasons', {})
+                    
+                    recommendations = []
+                    for startup_id in startup_ids:
+                        # IDs are already normalized, use directly
+                        if startup_id in startups_dict:
+                            startup = startups_dict[startup_id]
+                            recommendations.append({
+                                'id': startup_id,
+                                'title': startup.title,
+                                'description': startup.description,
+                                'type': startup.type,
+                                'category': startup.category,
+                                'field': startup.field,
+                                'score': results['scores'].get(startup_id, 0.0),
+                                'match_reasons': match_reasons.get(startup_id, ["Two-Tower model prediction"])
+                            })
+                    
+                    return {
+                        'startups': recommendations,
+                        'total': len(recommendations),
+                        'scores': results.get('scores', {}),
+                        'method_used': 'two_tower'
+                    }
+                finally:
+                    db.close()
+            else:
+                # Already in correct format
+                return results
         except Exception as e:
-            logger.error(f"Error getting Two-Tower results: {e}")
+            logger.error(f"Error getting Two-Tower results: {e}", exc_info=True)
             return {'startups': [], 'total': 0, 'scores': {}}
     
     def _combine_results(self, als_results: Dict, two_tower_results: Dict, limit: int) -> Dict:

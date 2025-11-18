@@ -127,13 +127,17 @@ class ALSInference:
             actual_limit = limit * fetch_multiplier
             logger.info(f"ALS inference for user {user_id}, limit {limit} (fetching {actual_limit} candidates)")
             
+            # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
+            # and the ALS model was trained with normalized IDs
+            normalized_user_id = str(user_id).replace('-', '')
+            
             # Check if user exists in model
-            if user_id not in self.user_mapping:
-                logger.warning(f"User {user_id} not in ALS model, using fallback")
+            if normalized_user_id not in self.user_mapping:
+                logger.warning(f"User {user_id} (normalized: {normalized_user_id}) not in ALS model, using fallback")
                 return self._fallback_popular(limit, filters, db)
             
             # Get user embedding
-            user_idx = self.user_mapping[user_id]
+            user_idx = self.user_mapping[normalized_user_id]
             user_embedding = self.user_factors[user_idx]
             
             # Compute scores for all items
@@ -153,6 +157,7 @@ class ALSInference:
                     candidate_scores[startup_id] = float(scores[idx])
             
             # Query startups from database
+            # candidate_ids from ALS model are already normalized (without dashes)
             query = db.query(Startup).filter(
                 Startup.id.in_(candidate_ids),
                 Startup.status == 'active'

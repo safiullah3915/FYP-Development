@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).parent))
 
 from database.connection import SessionLocal
-from database.models import User, Startup, StartupTag, Position
+from database.models import User, Startup, StartupTag, Position, parse_json_field
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -157,23 +157,31 @@ class TwoTowerInference:
         embedding = parse_embedding(user.profile_embedding)
         user_emb = np.array(embedding, dtype=np.float32) if embedding else np.zeros(384, dtype=np.float32)
         
-        # Get preferences
+        # Get preferences (SQLAlchemy - use helper methods to parse JSON)
         try:
             prefs = user.onboarding_preferences
-            categories = prefs.selected_categories or []
-            fields = prefs.selected_fields or []
-            tags = prefs.selected_tags or []
-            stages = prefs.preferred_startup_stages or []
-            engagement = prefs.preferred_engagement_types or []
-            skills = prefs.preferred_skills or []
-        except:
+            if prefs:
+                categories = prefs.get_selected_categories() or []
+                fields = parse_json_field(prefs.selected_fields) or []
+                tags = prefs.get_selected_tags() or []
+                stages = parse_json_field(prefs.preferred_startup_stages) or []
+                engagement = parse_json_field(prefs.preferred_engagement_types) or []
+                skills = parse_json_field(prefs.preferred_skills) or []
+            else:
+                categories = fields = tags = stages = engagement = skills = []
+        except Exception as e:
+            logger.warning(f"Error parsing user preferences: {e}")
             categories = fields = tags = stages = engagement = skills = []
         
-        # Get profile skills
+        # Get profile skills (SQLAlchemy - parse JSON)
         try:
             profile = user.profile
-            profile_skills = profile.skills or []
-        except:
+            if profile:
+                profile_skills = profile.get_skills() or []
+            else:
+                profile_skills = []
+        except Exception as e:
+            logger.warning(f"Error parsing user profile: {e}")
             profile_skills = []
         
         # Combine skills
@@ -224,11 +232,11 @@ class TwoTowerInference:
         embedding = parse_embedding(startup.profile_embedding)
         startup_emb = np.array(embedding, dtype=np.float32) if embedding else np.zeros(384, dtype=np.float32)
         
-        # Get tags
-        tags = list(startup.tags.values_list('tag', flat=True))
+        # Get tags (SQLAlchemy relationship - iterate directly)
+        tags = [tag.tag for tag in startup.tags] if startup.tags else []
         
-        # Get positions
-        positions = startup.positions.filter(is_active=True)
+        # Get positions (SQLAlchemy relationship - filter in Python or use query)
+        positions = [p for p in startup.positions if p.is_active] if startup.positions else []
         position_titles = [p.title for p in positions]
         
         # Create simple one-hot features (simplified)
@@ -275,14 +283,20 @@ class TwoTowerInference:
             Dict mapping startup_id to score
         """
         try:
+            # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
+            normalized_user_id = str(user_id).replace('-', '')
+            
             # Get user
-            user = self.db.query(User).filter(User.id == user_id).first()
+            user = self.db.query(User).filter(User.id == normalized_user_id).first()
             if not user:
-                logger.warning(f"User {user_id} not found")
+                logger.warning(f"User {user_id} (normalized: {normalized_user_id}) not found")
                 return {}
             
+            # Normalize startup IDs (remove dashes) since SQLite stores UUIDs without dashes
+            normalized_startup_ids = [str(sid).replace('-', '') for sid in startup_ids]
+            
             # Get startups
-            startups = self.db.query(Startup).filter(Startup.id.in_(startup_ids)).all()
+            startups = self.db.query(Startup).filter(Startup.id.in_(normalized_startup_ids)).all()
             if not startups:
                 logger.warning("No startups found")
                 return {}
@@ -304,17 +318,22 @@ class TwoTowerInference:
                     startup_feat = self.extract_startup_features(startup)
                     startup_features_batch.append(startup_feat)
                 
-                # Prepare tensors
-                user_tensor = torch.tensor([user_features] * len(batch_startups), dtype=torch.float32).to(self.device)
-                startup_tensor = torch.tensor(startup_features_batch, dtype=torch.float32).to(self.device)
+                # Prepare tensors (convert to numpy array first to avoid warning)
+                user_features_array = np.array([user_features] * len(batch_startups), dtype=np.float32)
+                startup_features_array = np.array(startup_features_batch, dtype=np.float32)
+                user_tensor = torch.from_numpy(user_features_array).to(self.device)
+                startup_tensor = torch.from_numpy(startup_features_array).to(self.device)
                 
                 # Predict
                 with torch.no_grad():
                     batch_scores = self.model(user_tensor, startup_tensor).cpu().numpy()
                 
-                # Store scores
+                # Store scores - map back to original startup IDs (with dashes if they had them)
                 for startup, score in zip(batch_startups, batch_scores):
-                    scores[str(startup.id)] = float(score)
+                    # Find original ID from startup_ids list
+                    startup_id_normalized = str(startup.id)
+                    original_id = next((sid for sid in startup_ids if str(sid).replace('-', '') == startup_id_normalized), str(startup.id))
+                    scores[original_id] = float(score)
             
             return scores
             

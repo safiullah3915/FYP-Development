@@ -382,8 +382,10 @@ def get_startups_for_developer(user_id):
             filters['require_open_positions'] = True
         
         # Check interaction count for routing
+        # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
+        normalized_user_id = str(user_id).replace('-', '')
         interaction_count = db.query(UserInteraction).filter(
-            UserInteraction.user_id == user_id
+            UserInteraction.user_id == normalized_user_id
         ).count()
         
         logger.info(f"[for-developer] user_id={user_id} interaction_count={interaction_count} type={startup_type} filters={filters}")
@@ -459,6 +461,36 @@ def get_startups_for_developer(user_id):
         # Apply ranker to reorder recommendations
         results = apply_ranker(results, user_id, limit, method_used)
         
+        # Convert 'startups' array to 'item_ids' if needed (for session service compatibility)
+        # Session service expects 'item_ids' but ensemble returns 'startups'
+        if 'startups' in results and 'item_ids' not in results:
+            results['item_ids'] = [startup.get('id') for startup in results.get('startups', [])]
+            # Also ensure scores/match_reasons use item_ids as keys
+            if results.get('item_ids'):
+                new_scores = {}
+                new_match_reasons = {}
+                scores = results.get('scores', {})
+                match_reasons = results.get('match_reasons', {})
+                
+                for startup in results.get('startups', []):
+                    startup_id = startup.get('id')
+                    if startup_id:
+                        # Try both normalized and original format
+                        startup_id_str = str(startup_id)
+                        startup_id_normalized = startup_id_str.replace('-', '')
+                        
+                        # Look up score/match_reasons
+                        score = scores.get(startup_id_normalized) or scores.get(startup_id_str) or scores.get(startup_id)
+                        match_reason = match_reasons.get(startup_id_normalized) or match_reasons.get(startup_id_str) or match_reasons.get(startup_id)
+                        
+                        if score is not None:
+                            new_scores[startup_id] = score
+                        if match_reason:
+                            new_match_reasons[startup_id] = match_reason
+                
+                results['scores'] = new_scores if new_scores else scores
+                results['match_reasons'] = new_match_reasons if new_match_reasons else match_reasons
+        
         # Create session data
         from services.session_service import SessionService
         session_service = SessionService()
@@ -521,8 +553,10 @@ def get_startups_for_investor(user_id):
             filters['category'] = category
         
         # Check interaction count for routing
+        # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
+        normalized_user_id = str(user_id).replace('-', '')
         interaction_count = db.query(UserInteraction).filter(
-            UserInteraction.user_id == user_id
+            UserInteraction.user_id == normalized_user_id
         ).count()
         
         logger.info(f"Investor {user_id} has {interaction_count} interactions")
@@ -594,6 +628,36 @@ def get_startups_for_investor(user_id):
         
         # Apply ranker to reorder recommendations
         results = apply_ranker(results, user_id, limit, method_used)
+        
+        # Convert 'startups' array to 'item_ids' if needed (for session service compatibility)
+        # Session service expects 'item_ids' but ensemble returns 'startups'
+        if 'startups' in results and 'item_ids' not in results:
+            results['item_ids'] = [startup.get('id') for startup in results.get('startups', [])]
+            # Also ensure scores/match_reasons use item_ids as keys
+            if results.get('item_ids'):
+                new_scores = {}
+                new_match_reasons = {}
+                scores = results.get('scores', {})
+                match_reasons = results.get('match_reasons', {})
+                
+                for startup in results.get('startups', []):
+                    startup_id = startup.get('id')
+                    if startup_id:
+                        # Try both normalized and original format
+                        startup_id_str = str(startup_id)
+                        startup_id_normalized = startup_id_str.replace('-', '')
+                        
+                        # Look up score/match_reasons
+                        score = scores.get(startup_id_normalized) or scores.get(startup_id_str) or scores.get(startup_id)
+                        match_reason = match_reasons.get(startup_id_normalized) or match_reasons.get(startup_id_str) or match_reasons.get(startup_id)
+                        
+                        if score is not None:
+                            new_scores[startup_id] = score
+                        if match_reason:
+                            new_match_reasons[startup_id] = match_reason
+                
+                results['scores'] = new_scores if new_scores else scores
+                results['match_reasons'] = new_match_reasons if new_match_reasons else match_reasons
         
         # Create session data
         from services.session_service import SessionService
