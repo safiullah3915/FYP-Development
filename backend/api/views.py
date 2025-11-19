@@ -11,9 +11,13 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.db.models import Q, Count
+from typing import Dict
 import re
 import bcrypt
 import logging
+import json
+import hashlib
+from copy import deepcopy
 from .models import Startup, StartupTag, Position, Application, Notification, Favorite, Interest
 from .messaging_models import Conversation, Message, UserProfile, FileUpload
 from .serializers import (
@@ -25,8 +29,29 @@ from .serializers import (
 	UserProfileSerializer, UserProfileUpdateSerializer, FileUploadSerializer, FileUploadCreateSerializer,
 	UserOnboardingPreferencesSerializer, UserInteractionSerializer, StartupInteractionStatusSerializer
 )
+from .services.cache_service import RecommendationCacheService
 
 User = get_user_model()
+
+
+def _make_params_fingerprint(params: Dict[str, str]) -> str:
+	normalized = json.dumps(
+		{k: str(v) for k, v in sorted(params.items())},
+		separators=(',', ':')
+	)
+	return hashlib.sha1(normalized.encode('utf-8')).hexdigest()[:12]
+
+
+def _build_cache_use_case(base_use_case: str, params: Dict[str, str]) -> str:
+	if not params:
+		return base_use_case
+	return f"{base_use_case}:{_make_params_fingerprint(params)}"
+
+
+def _invalidate_user_cache(user_id: str, startup_id: str, interaction_type: str) -> None:
+	RecommendationCacheService.invalidate_user_recommendations(str(user_id))
+	RecommendationCacheService.record_interaction_indicator(str(user_id), str(startup_id), interaction_type)
+	RecommendationCacheService.record_startup_indicator(str(startup_id), f"user:{user_id}:{interaction_type}")
 
 
 # Helper function to get authenticated user from session or token
@@ -608,20 +633,36 @@ class StartupDetailView(generics.RetrieveDestroyAPIView):
 		# Track user interaction if user is logged in
 		user = get_session_user(request)
 		if user:
-			from .recommendation_models import UserInteraction
+			from .services.interaction_service import InteractionService
 			from django.db import IntegrityError
 			try:
-				UserInteraction.objects.get_or_create(
+				# Get recommendation context from query params (frontend can pass this)
+				recommendation_session_id = request.query_params.get('recommendation_session_id')
+				recommendation_rank = request.query_params.get('recommendation_rank')
+				
+				# Build metadata and recommendation context
+				metadata, recommendation_context = InteractionService.build_interaction_metadata(
+					recommendation_session_id=recommendation_session_id,
+					recommendation_rank=int(recommendation_rank) if recommendation_rank else None,
+					user_id=str(user.id),
+					source='view'
+				)
+				
+				# Create view interaction with recommendation context
+				InteractionService.create_interaction(
 					user=user,
 					startup=instance,
 					interaction_type='view',
-					defaults={}
+					metadata=metadata,
+					recommendation_context=recommendation_context
 				)
 			except IntegrityError:
 				# Race condition - interaction already exists, ignore
 				pass
 			except Exception as e:
 				print(f"⚠️ Warning: Failed to track user interaction: {str(e)}")
+				import traceback
+				print(traceback.format_exc())
 		
 		try:
 			return super().retrieve(request, *args, **kwargs)
@@ -764,6 +805,7 @@ class ApplyForCollaborationView(generics.CreateAPIView):
 					"createdAt": application.created_at
 				}
 			}
+			_invalidate_user_cache(user.id, startup.id, 'apply')
 			print(f"✅ Sending success response")
 			print(f"{'='*80}\n")
 			return Response(response_data, status=status.HTTP_201_CREATED)
@@ -1402,6 +1444,7 @@ class ToggleFavoriteView(generics.GenericAPIView):
             return Response({"detail": "Startup not found"}, status=status.HTTP_404_NOT_FOUND)
         fav, created = Favorite.objects.get_or_create(user=user, startup=startup)
         print(f"[ToggleFavoriteView POST] Favorite created: {created}, Favorite ID: {fav.id}")
+        _invalidate_user_cache(user.id, startup.id, 'favorite')
         if created:
             return Response(self.get_serializer(fav).data, status=status.HTTP_201_CREATED)
         return Response(self.get_serializer(fav).data, status=status.HTTP_200_OK)
@@ -1415,6 +1458,8 @@ class ToggleFavoriteView(generics.GenericAPIView):
         print(f"[ToggleFavoriteView DELETE] Startup ID: {startup_id}")
         deleted_count, _ = Favorite.objects.filter(user=user, startup_id=startup_id).delete()
         print(f"[ToggleFavoriteView DELETE] Deleted count: {deleted_count}")
+        if deleted_count:
+            _invalidate_user_cache(user.id, startup_id, 'unfavorite')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1569,6 +1614,7 @@ class ExpressInterestView(generics.CreateAPIView):
             # Don't fail the interest API if messaging setup fails; log to console
             print(f"⚠️ Messaging setup failed for interest: {e}")
 
+        _invalidate_user_cache(user.id, startup.id, 'interest')
         serializer = self.get_serializer(interest)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
@@ -2265,6 +2311,7 @@ def like_startup(request, pk):
 	)
 	
 	print(f"✅ [like_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
+	_invalidate_user_cache(user.id, startup.id, 'like')
 	return Response({
 		"message": "Startup liked" if created else "Startup already liked",
 		"interaction_id": str(interaction.id),
@@ -2304,6 +2351,7 @@ def unlike_startup(request, pk):
 	).delete()
 	
 	print(f"✅ [unlike_startup] Deleted {deleted[0]} like interaction(s)")
+	_invalidate_user_cache(user.id, startup.id, 'unlike')
 	return Response({
 		"message": "Like removed",
 		"deleted": deleted[0] > 0
@@ -2364,6 +2412,7 @@ def dislike_startup(request, pk):
 	)
 	
 	print(f"✅ [dislike_startup] Interaction {'created' if created else 'already exists'}: {interaction.id}")
+	_invalidate_user_cache(user.id, startup.id, 'dislike')
 	return Response({
 		"message": "Startup disliked" if created else "Startup already disliked",
 		"interaction_id": str(interaction.id),
@@ -2403,6 +2452,7 @@ def undislike_startup(request, pk):
 	).delete()
 	
 	print(f"✅ [undislike_startup] Deleted {deleted[0]} dislike interaction(s)")
+	_invalidate_user_cache(user.id, startup.id, 'undislike')
 	return Response({
 		"message": "Dislike removed",
 		"deleted": deleted[0] > 0
@@ -2480,6 +2530,7 @@ def store_recommendation_session(request):
 	method = data.get('method')
 	recommendations = data.get('recommendations', [])
 	model_version = data.get('model_version', '')
+	startup_id = data.get('startup_id')
 	
 	if not all([session_id, use_case, method]):
 		return Response(
@@ -2489,20 +2540,65 @@ def store_recommendation_session(request):
 	
 	from django.utils import timezone
 	from datetime import timedelta
+	from .models import Startup
 	
 	logger = logging.getLogger(__name__)
+	
+	# Determine if this is a reverse use case
+	reverse_use_cases = ['startup_developer', 'startup_investor']
+	forward_use_cases = ['developer_startup', 'investor_startup', 'founder_developer', 'founder_startup']
+	
+	# Validate use_case and required fields
+	if use_case in reverse_use_cases:
+		if not startup_id:
+			return Response(
+				{"error": f"For use_case '{use_case}', startup_id is required"},
+				status=status.HTTP_400_BAD_REQUEST
+			)
+		# Validate startup ownership
+		try:
+			startup = Startup.objects.get(id=startup_id)
+			if startup.owner_id != user.id:
+				return Response(
+					{"error": "You do not own this startup"},
+					status=status.HTTP_403_FORBIDDEN
+				)
+		except Startup.DoesNotExist:
+			return Response(
+				{"error": "Startup not found"},
+				status=status.HTTP_404_NOT_FOUND
+			)
+	elif use_case in forward_use_cases:
+		# For forward use cases, user_id is required (already authenticated)
+		pass
+	else:
+		return Response(
+			{"error": f"Invalid use_case: {use_case}"},
+			status=status.HTTP_400_BAD_REQUEST
+		)
 	
 	# Use service to create/update session
 	try:
 		from .recommendation_models import RecommendationSession
 		normalized_recommendations = []
+		
+		# For reverse use cases, recommendations contain user_ids (developers/investors)
+		# For forward use cases, recommendations contain startup_ids
 		for idx, recommendation in enumerate(recommendations, start=1):
 			if isinstance(recommendation, dict):
-				startup_id = recommendation.get('startup_id') or recommendation.get('id')
-				if not startup_id:
+				# For reverse: user_id, for forward: startup_id
+				if use_case in reverse_use_cases:
+					item_id = recommendation.get('user_id') or recommendation.get('id') or recommendation.get('developer_id') or recommendation.get('investor_id')
+					item_key = 'user_id'
+				else:
+					item_id = recommendation.get('startup_id') or recommendation.get('id')
+					item_key = 'startup_id'
+				
+				if not item_id:
 					continue
+				
 				normalized_recommendations.append({
-					'startup_id': str(startup_id),
+					item_key: str(item_id),
 					'rank': recommendation.get('rank') or idx,
 					'score': recommendation.get('score'),
 					'method': recommendation.get('method') or method,
@@ -2510,8 +2606,13 @@ def store_recommendation_session(request):
 					'context': recommendation.get('context', {}),
 				})
 			else:
+				# Simple ID format
+				if use_case in reverse_use_cases:
+					item_key = 'user_id'
+				else:
+					item_key = 'startup_id'
 				normalized_recommendations.append({
-					'startup_id': str(recommendation),
+					item_key: str(recommendation),
 					'rank': idx,
 					'score': None,
 					'method': method,
@@ -2519,16 +2620,26 @@ def store_recommendation_session(request):
 					'context': {},
 				})
 		
+		# Prepare session defaults
+		session_defaults = {
+			'use_case': use_case,
+			'recommendation_method': method,
+			'model_version': model_version,
+			'recommendations_shown': normalized_recommendations,
+			'expires_at': timezone.now() + timedelta(hours=24)
+		}
+		
+		# Set user_id or startup_id based on use_case
+		if use_case in reverse_use_cases:
+			session_defaults['startup_id'] = startup
+			session_defaults['user_id'] = None
+		else:
+			session_defaults['user_id'] = user
+			session_defaults['startup_id'] = None
+		
 		session, created = RecommendationSession.objects.update_or_create(
 			id=session_id,
-			defaults={
-				'user_id': user,
-				'use_case': use_case,
-				'recommendation_method': method,
-				'model_version': model_version,
-				'recommendations_shown': normalized_recommendations,
-				'expires_at': timezone.now() + timedelta(hours=24)
-			}
+			defaults=session_defaults
 		)
 		
 		return Response({
@@ -2566,9 +2677,17 @@ class TrendingStartupsView(generics.ListAPIView):
 		
 		# Prepare request to Flask service
 		params = {
-			'limit': limit,
-			'sort_by': sort_by
+			'limit': str(limit),
+			'sort_by': str(sort_by)
 		}
+		params_fingerprint = _make_params_fingerprint(params)
+		
+		cached_trending = RecommendationCacheService.get_cached_trending(params_fingerprint)
+		if cached_trending:
+			cached_response = deepcopy(cached_trending)
+			cached_response['cache_hit'] = True
+			print(f"📦 Django: Returning cached trending data for params fingerprint {params_fingerprint}")
+			return Response(cached_response, status=status.HTTP_200_OK)
 		
 		print(f"📡 Django: Calling Flask trending endpoint: {flask_service_url} with params: {params}")
 		
@@ -2589,7 +2708,10 @@ class TrendingStartupsView(generics.ListAPIView):
 				if not first_startup.get('id'):
 					print(f"⚠️ Django: WARNING - Startup missing ID!")
 			
+			RecommendationCacheService.cache_trending(params_fingerprint, deepcopy(flask_data))
+			
 			# Return Flask service response
+			flask_data['cache_hit'] = False
 			return Response(flask_data, status=status.HTTP_200_OK)
 			
 		except requests.exceptions.RequestException as e:
@@ -2623,16 +2745,20 @@ def get_personalized_startup_recommendations(request):
 	params = {}
 	
 	# Determine Flask endpoint based on user role
+	cache_base_use_case = None
 	if user.role == 'student' or user.role == 'developer':
 		endpoint = f'/api/recommendations/startups/for-developer/{user.id}'
+		cache_base_use_case = 'developer_startup'
 	elif user.role == 'entrepreneur':
 		# Entrepreneurs seeking collaboration use the developer endpoint
 		endpoint = f'/api/recommendations/startups/for-developer/{user.id}'
+		cache_base_use_case = 'founder_startup'
 		# Force collaboration type for entrepreneurs if not specified
 		if 'type' not in request.query_params:
 			params['type'] = 'collaboration'
 	elif user.role == 'investor':
 		endpoint = f'/api/recommendations/startups/for-investor/{user.id}'
+		cache_base_use_case = 'investor_startup'
 	else:
 		return Response(
 			{'error': f'Personalized recommendations not available for role: {user.role}'},
@@ -2670,6 +2796,19 @@ def get_personalized_startup_recommendations(request):
 	if 'offset' in request.query_params:
 		params['offset'] = request.query_params.get('offset')
 	# Intentionally skip forwarding 'require_open_positions' to Flask
+
+	cache_params = {k: str(v) for k, v in params.items()}
+	cache_params['require_open_positions'] = str(require_open_positions)
+	cache_use_case = _build_cache_use_case(cache_base_use_case, cache_params)
+	cached_personalized = RecommendationCacheService.get_cached_recommendations(str(user.id), cache_use_case)
+	if cached_personalized:
+		cached_response = deepcopy(cached_personalized)
+		cached_response['cache_hit'] = True
+		print(f"📦 Django: Returning cached personalized recommendations for user {user.id} with use case {cache_use_case}")
+		return Response(cached_response, status=status.HTTP_200_OK)
+	
+	cache_indicator = RecommendationCacheService.get_user_indicator(str(user.id))
+	params['cache_indicator'] = cache_indicator
 	
 	try:
 		print(f"📡 Django: Calling Flask personalized endpoint: {flask_url} with params: {params}")
@@ -2690,11 +2829,9 @@ def get_personalized_startup_recommendations(request):
 				s = str(sid)
 				if len(s) == 32 and '-' not in s:
 					try:
-						# Flask returns UUIDs without dashes (from SQLite), convert to UUID with dashes for Django
-						s = str(uuid.UUID(hex=s))
-					except Exception as e:
+						s = str(uuid.UUID(s))
+					except Exception:
 						# Keep original if it can't be parsed; logging below will help diagnose
-						print(f"⚠️ Django: Failed to convert UUID {s}: {e}")
 						pass
 				normalized_ids.append(s)
 			
@@ -2730,18 +2867,6 @@ def get_personalized_startup_recommendations(request):
 				scores_map = flask_data.get('scores', {})
 				reasons_map = flask_data.get('match_reasons', {})
 				
-				# Create mapping from normalized (no-dash) IDs to original startup_ids for score lookup
-				normalized_to_original = {}
-				for orig_sid in startup_ids:
-					orig_str = str(orig_sid)
-					if len(orig_str) == 32 and '-' not in orig_str:
-						try:
-							normalized_to_original[orig_str] = str(uuid.UUID(hex=orig_str))
-						except:
-							normalized_to_original[orig_str] = orig_str
-					else:
-						normalized_to_original[orig_str] = orig_str
-				
 				for startup_id in normalized_ids:
 					startup_obj = startups_dict.get(startup_id)
 					open_positions = positions_map.get(startup_id, [])
@@ -2774,18 +2899,9 @@ def get_personalized_startup_recommendations(request):
 					})
 					
 					sid = str(startup_obj.id)
-					# Try both formats: with dashes (Django format) and without dashes (Flask format)
-					sid_normalized = sid.replace('-', '')
-					
-					# Look up score/match_reasons using normalized ID (Flask format)
-					if sid_normalized in scores_map:
-						filtered_scores[sid] = scores_map[sid_normalized]
-					elif sid in scores_map:
+					if sid in scores_map:
 						filtered_scores[sid] = scores_map[sid]
-					
-					if sid_normalized in reasons_map:
-						filtered_match_reasons[sid] = reasons_map[sid_normalized]
-					elif sid in reasons_map:
+					if sid in reasons_map:
 						filtered_match_reasons[sid] = reasons_map[sid]
 			
 			print(f"🧩 Django: Hydration - startups_after_filter={len(startups)} (require_open_positions={require_open_positions})")
@@ -2848,18 +2964,9 @@ def get_personalized_startup_recommendations(request):
 					})
 					
 					sid = str(startup_obj.id)
-					# Try both formats: with dashes (Django format) and without dashes (Flask format)
-					sid_normalized = sid.replace('-', '')
-					
-					# Look up score/match_reasons using normalized ID (Flask format)
-					if sid_normalized in scores_map:
-						filtered_scores[sid] = scores_map[sid_normalized]
-					elif sid in scores_map:
+					if sid in scores_map:
 						filtered_scores[sid] = scores_map[sid]
-					
-					if sid_normalized in reasons_map:
-						filtered_match_reasons[sid] = reasons_map[sid_normalized]
-					elif sid in reasons_map:
+					if sid in reasons_map:
 						filtered_match_reasons[sid] = reasons_map[sid]
 				
 				flask_data['enforced_open_positions'] = False
@@ -2881,126 +2988,26 @@ def get_personalized_startup_recommendations(request):
 				if not startup_id:
 					continue
 				startup_id_str = str(startup_id)
-				# Try both formats: with dashes (Django format) and without dashes (Flask format)
-				startup_id_normalized = startup_id_str.replace('-', '')
-				
-				# Look up score/match_reasons using normalized ID (Flask format)
-				score = None
-				if isinstance(flask_data.get('scores'), dict):
-					score = flask_data['scores'].get(startup_id_normalized) or flask_data['scores'].get(startup_id_str)
-				
-				match_reasons = []
-				if isinstance(flask_data.get('match_reasons'), dict):
-					match_reasons = flask_data['match_reasons'].get(startup_id_normalized, flask_data['match_reasons'].get(startup_id_str, []))
-				
 				recommendations_payload.append({
 					'startup_id': startup_id_str,
 					'rank': idx,
-					'score': score,
+					'score': (flask_data['scores'].get(startup_id_str)
+					          if isinstance(flask_data['scores'], dict) else None),
 					'method': method_hint,
-					'match_reasons': match_reasons
+					'match_reasons': flask_data['match_reasons'].get(startup_id_str, [])
+						if isinstance(flask_data['match_reasons'], dict) else []
 				})
 			flask_data['recommendations'] = recommendations_payload
-		
-		# Handle case where Flask returns 'startups' array directly (not 'startup_ids')
-		# This happens when ensemble returns startups with normalized IDs
-		if 'startups' in flask_data and flask_data.get('startups') and 'startup_ids' not in flask_data:
-			flask_startups = flask_data.get('startups', [])
-			print(f"🧩 Django: Flask returned {len(flask_startups)} startups directly (not startup_ids)")
-			
-			# Extract startup IDs from Flask startups array (may be normalized without dashes)
-			flask_startup_ids = []
-			for startup in flask_startups:
-				startup_id = startup.get('id')
-				if startup_id:
-					flask_startup_ids.append(str(startup_id))
-			
-			# Normalize IDs to Django format (with dashes)
-			normalized_ids = []
-			for sid in flask_startup_ids:
-				s = str(sid)
-				if len(s) == 32 and '-' not in s:
-					try:
-						s = str(uuid.UUID(hex=s))
-					except Exception as e:
-						print(f"⚠️ Django: Failed to convert UUID {s}: {e}")
-						pass
-				normalized_ids.append(s)
-			
-			# Query Django database for full startup details
-			if normalized_ids:
-				startups_dict = {
-					str(s.id): s
-					for s in Startup.objects.filter(id__in=normalized_ids, status='active')
-				}
-				print(f"🧩 Django: Found {len(startups_dict)} startups in database")
-				
-				# Build startups array with Django data, preserving Flask scores/match_reasons
-				startups = []
-				scores_map = flask_data.get('scores', {})
-				reasons_map = flask_data.get('match_reasons', {})
-				
-				for startup_id in normalized_ids:
-					startup_obj = startups_dict.get(startup_id)
-					if not startup_obj:
-						print(f"⚠️ Django: Startup not found for id={startup_id}")
-						continue
-					
-					# Get positions
-					active_positions = Position.objects.filter(
-						startup_id=startup_id,
-						is_active=True
-					).order_by('-created_at')
-					
-					if require_open_positions and not active_positions.exists():
-						continue
-					
-					positions_list = [{
-						'id': str(p.id),
-						'title': p.title,
-						'description': p.description,
-						'requirements': p.requirements,
-						'created_at': p.created_at.isoformat() if p.created_at else None
-					} for p in active_positions]
-					
-					sid = str(startup_obj.id)
-					sid_normalized = sid.replace('-', '')
-					
-					# Look up score/match_reasons using normalized ID (Flask format)
-					score = scores_map.get(sid_normalized) or scores_map.get(sid)
-					match_reasons = reasons_map.get(sid_normalized, reasons_map.get(sid, []))
-					
-					startups.append({
-						'id': sid,
-						'title': startup_obj.title,
-						'description': startup_obj.description,
-						'category': startup_obj.category,
-						'phase': startup_obj.phase,
-						'team_size': startup_obj.team_size,
-						'earn_through': startup_obj.earn_through,
-						'positions': positions_list,
-						'open_positions': positions_list,
-						'open_positions_count': len(positions_list),
-						'has_open_positions': bool(positions_list),
-						'primary_position': positions_list[0] if positions_list else None,
-						'top_position': positions_list[0] if positions_list else None
-					})
-					
-					# Update scores/match_reasons with Django-formatted IDs
-					if score is not None:
-						flask_data.setdefault('scores', {})[sid] = score
-					if match_reasons:
-						flask_data.setdefault('match_reasons', {})[sid] = match_reasons
-				
-				flask_data['startups'] = startups
-				flask_data['total'] = len(startups)
-				print(f"🧩 Django: Processed {len(startups)} startups from Flask startups array")
 		
 		# Return Flask service response with additional user context (for other roles)
 		flask_data['user_id'] = str(user.id)
 		flask_data['user_role'] = user.role
 		
-		return Response(flask_data, status=status.HTTP_200_OK)
+		cache_payload = deepcopy(flask_data)
+		RecommendationCacheService.cache_recommendations(str(user.id), cache_use_case, deepcopy(cache_payload))
+		cache_payload['cache_hit'] = False
+		
+		return Response(cache_payload, status=status.HTTP_200_OK)
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error
@@ -3061,6 +3068,20 @@ def get_personalized_developer_recommendations(request, startup_id):
 	if 'skills' in request.query_params:
 		params['skills'] = request.query_params.get('skills')
 	
+	cache_params = {k: str(v) for k, v in params.items()}
+	cache_params['startup_id'] = str(startup_id)
+	cache_use_case = _build_cache_use_case('founder_developer', cache_params)
+	cached_developers = RecommendationCacheService.get_cached_recommendations(str(user.id), cache_use_case)
+	if cached_developers:
+		cached_response = deepcopy(cached_developers)
+		cached_response['cache_hit'] = True
+		print(f"📦 Django: Returning cached developer recommendations for startup {startup_id}")
+		return Response(cached_response, status=status.HTTP_200_OK)
+	
+	cache_indicator = RecommendationCacheService.get_user_indicator(str(user.id))
+	params['cache_indicator'] = cache_indicator
+	params['requesting_user_id'] = str(user.id)
+	
 	try:
 		print(f"📡 Django: Calling Flask developer recommendations: {flask_url} with params: {params}")
 		# Call Flask service
@@ -3120,14 +3141,17 @@ def get_personalized_developer_recommendations(request, startup_id):
 					})
 		
 		# Return formatted response
-		return Response({
+		# Note: recommendation_session_id is generated by frontend, not Flask
+		response_payload = {
 			'developers': developers,
 			'total': flask_data.get('total', 0),
 			'startup_id': str(startup_id),
-			'recommendation_session_id': flask_data.get('recommendation_session_id'),
 			'method': flask_data.get('method'),
 			'model_version': flask_data.get('model_version')
-		}, status=status.HTTP_200_OK)
+		}
+		RecommendationCacheService.cache_recommendations(str(user.id), cache_use_case, deepcopy(response_payload))
+		response_payload['cache_hit'] = False
+		return Response(response_payload, status=status.HTTP_200_OK)
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error
@@ -3184,6 +3208,20 @@ def get_personalized_investor_recommendations(request, startup_id):
 		params['limit'] = request.query_params.get('limit')
 	if 'min_investment' in request.query_params:
 		params['min_investment'] = request.query_params.get('min_investment')
+	
+	cache_params = {k: str(v) for k, v in params.items()}
+	cache_params['startup_id'] = str(startup_id)
+	cache_use_case = _build_cache_use_case('founder_investor', cache_params)
+	cached_investors = RecommendationCacheService.get_cached_recommendations(str(user.id), cache_use_case)
+	if cached_investors:
+		cached_response = deepcopy(cached_investors)
+		cached_response['cache_hit'] = True
+		print(f"📦 Django: Returning cached investor recommendations for startup {startup_id}")
+		return Response(cached_response, status=status.HTTP_200_OK)
+	
+	cache_indicator = RecommendationCacheService.get_user_indicator(str(user.id))
+	params['cache_indicator'] = cache_indicator
+	params['requesting_user_id'] = str(user.id)
 	
 	try:
 		print(f"📡 Django: Calling Flask investor recommendations: {flask_url} with params: {params}")
@@ -3243,14 +3281,17 @@ def get_personalized_investor_recommendations(request, startup_id):
 			print(f"🧩 Django: Investor Hydration - investors_after_hydration={len(investors)}")
 		
 		# Return formatted response
-		return Response({
+		# Note: recommendation_session_id is generated by frontend, not Flask
+		response_payload = {
 			'investors': investors,
 			'total': flask_data.get('total', 0),
 			'startup_id': str(startup_id),
-			'recommendation_session_id': flask_data.get('recommendation_session_id'),
 			'method': flask_data.get('method'),
 			'model_version': flask_data.get('model_version')
-		}, status=status.HTTP_200_OK)
+		}
+		RecommendationCacheService.cache_recommendations(str(user.id), cache_use_case, deepcopy(response_payload))
+		response_payload['cache_hit'] = False
+		return Response(response_payload, status=status.HTTP_200_OK)
 		
 	except requests.exceptions.RequestException as e:
 		# If Flask service is unavailable, return error

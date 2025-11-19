@@ -277,8 +277,19 @@ class TwoTowerRecommender(BaseRecommender):
         try:
             logger.info(f"Generating Two-Tower recommendations for user {user_id}")
             
-            # Get user from database
-            user = self.db.query(User).filter(User.id == user_id).first()
+            # Get user from database (handle UUID format - Django stores WITH dashes)
+            uid = str(user_id)
+            user_candidates = [uid]
+            if '-' in uid:
+                user_candidates.append(uid.replace('-', ''))
+            elif len(uid) == 32:
+                try:
+                    import uuid as _uuid
+                    user_candidates.append(str(_uuid.UUID(uid)))
+                except Exception:
+                    pass
+            
+            user = self.db.query(User).filter(User.id.in_(user_candidates)).first()
             if not user:
                 logger.warning(f"User {user_id} not found")
                 return self._empty_result()

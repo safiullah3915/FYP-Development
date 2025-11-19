@@ -74,7 +74,7 @@ def check_db_connection() -> bool:
         from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        logger.info(f"Database connection successful: {DATABASE_PATH}")
+        # Database connection logged at app startup
         return True
     except Exception as e:
         logger.error(f"Database connection failed: {e}")

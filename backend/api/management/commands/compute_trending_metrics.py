@@ -5,6 +5,9 @@ import math
 from api.models import Startup
 from api.recommendation_models import UserInteraction, StartupTrendingMetrics
 
+MIN_VIEWS_7D = 3
+MIN_ACTIVITY_7D = 5
+
 
 def normalize(value, max_value=1):
     """Normalize value between 0 and 1"""
@@ -22,6 +25,7 @@ class Command(BaseCommand):
         now = timezone.now()
         cutoff_24h = now - timedelta(hours=24)
         cutoff_7d = now - timedelta(days=7)
+        cutoff_14d = now - timedelta(days=14)
         cutoff_30d = now - timedelta(days=30)
         
         startups = Startup.objects.filter(status='active')
@@ -37,6 +41,7 @@ class Command(BaseCommand):
             )
             interactions_7d = interactions_30d.filter(created_at__gte=cutoff_7d)
             interactions_24h = interactions_7d.filter(created_at__gte=cutoff_24h)
+            interactions_prev_7d = interactions_30d.filter(created_at__lt=cutoff_7d, created_at__gte=cutoff_14d)
             
             view_count_24h = interactions_24h.filter(interaction_type='view').count()
             view_count_7d = interactions_7d.filter(interaction_type='view').count()
@@ -50,6 +55,10 @@ class Command(BaseCommand):
             favorite_count_30d = interactions_30d.filter(interaction_type='favorite').count()
             interest_count_7d = interactions_7d.filter(interaction_type='interest').count()
             interest_count_30d = interactions_30d.filter(interaction_type='interest').count()
+            favorite_count_prev_7d = interactions_prev_7d.filter(interaction_type='favorite').count()
+            interest_count_prev_7d = interactions_prev_7d.filter(interaction_type='interest').count()
+            view_count_prev_7d = interactions_prev_7d.filter(interaction_type='view').count()
+            application_count_prev_7d = interactions_prev_7d.filter(interaction_type='apply').count()
             
             all_metrics.append({
                 'startup': startup,
@@ -63,6 +72,10 @@ class Command(BaseCommand):
                 'favorite_count_30d': favorite_count_30d,
                 'interest_count_7d': interest_count_7d,
                 'interest_count_30d': interest_count_30d,
+                'view_count_prev_7d': view_count_prev_7d,
+                'application_count_prev_7d': application_count_prev_7d,
+                'favorite_count_prev_7d': favorite_count_prev_7d,
+                'interest_count_prev_7d': interest_count_prev_7d,
             })
         
         # Find global maximums across all startups
@@ -91,6 +104,10 @@ class Command(BaseCommand):
             favorite_count_30d = metrics_data['favorite_count_30d']
             interest_count_7d = metrics_data['interest_count_7d']
             interest_count_30d = metrics_data['interest_count_30d']
+            view_count_prev_7d = metrics_data['view_count_prev_7d']
+            application_count_prev_7d = metrics_data['application_count_prev_7d']
+            favorite_count_prev_7d = metrics_data['favorite_count_prev_7d']
+            interest_count_prev_7d = metrics_data['interest_count_prev_7d']
             
             # Count active positions
             active_positions_count = startup.positions.filter(is_active=True).count()
@@ -120,24 +137,34 @@ class Command(BaseCommand):
                 0.30 * log_normalize(favorite_count_7d + interest_count_7d, max_engagement_7d)
             )
             
-            # Velocity score (activity_7d / activity_30d) - measures growth momentum
+            # Velocity score compares last 7 days vs previous 7 days to capture momentum
             activity_7d = view_count_7d + application_count_7d + favorite_count_7d + interest_count_7d
-            activity_30d = view_count_30d + application_count_30d + favorite_count_30d + interest_count_30d
-            velocity_score = activity_7d / max(activity_30d, 1)
+            activity_prev_7d = (
+                view_count_prev_7d +
+                application_count_prev_7d +
+                favorite_count_prev_7d +
+                interest_count_prev_7d
+            )
+            velocity_score = activity_7d / max(activity_prev_7d, 1)
+            
+            if activity_7d < MIN_ACTIVITY_7D:
+                velocity_score = 0.0
             
             # Apply velocity boost to trending score (startups with increasing activity get higher scores)
             # Cap velocity boost to prevent extreme scores
             velocity_boost = min(velocity_score, 2.0) * 0.25  # Max 50% boost
             trending_score = trending_score * (1 + velocity_boost)
-            # Cap trending score at 1.0
             trending_score = min(trending_score, 1.0)
+            
+            if view_count_7d < MIN_VIEWS_7D:
+                trending_score = 0.0
             
             # Update or create metrics
             StartupTrendingMetrics.objects.update_or_create(
                 startup=startup,
                 defaults={
                     'popularity_score': popularity_score,
-                    'trending_score': trending_score * velocity_score,
+                    'trending_score': trending_score,
                     'view_count_24h': view_count_24h,
                     'view_count_7d': view_count_7d,
                     'view_count_30d': view_count_30d,

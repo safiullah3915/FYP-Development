@@ -3,12 +3,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Navbar } from '../../components/Navbar/Navbar';
 import { Footer } from '../../components/Footer/Footer';
 import { recommendationAPI, userAPI } from '../../utils/apiServices';
+import { useRecommendationContext } from '../../hooks/useRecommendationContext';
 import { toast } from 'react-toastify';
 import styles from './PotentialInvestors.module.css';
 import { Link } from 'react-router-dom';
 
 const PotentialInvestors = () => {
   const { user, isEntrepreneur } = useAuth();
+  const { storeSession } = useRecommendationContext();
   const [loading, setLoading] = useState(true);
   const [investors, setInvestors] = useState([]);
   const [myStartups, setMyStartups] = useState([]);
@@ -71,8 +73,33 @@ const PotentialInvestors = () => {
         toast.warning('Recommendation service temporarily unavailable');
         setInvestors([]);
       } else {
-        setInvestors(response.data.investors || []);
+        const investorsList = response.data.investors || [];
+        setInvestors(investorsList);
         setTotalInvestors(response.data.total || 0);
+        
+        // Store recommendation session for feedback tracking
+        if (investorsList.length > 0 && selectedStartup) {
+          const recommendations = investorsList.map((investor, index) => {
+            const investorKey = investor?.id ? String(investor.id) : String(index);
+            const score = response.data.scores?.[investorKey] ?? response.data.scores?.[investor?.id] ?? 0.0;
+            return {
+              user_id: investor.id,
+              rank: index + 1,
+              score: score,
+              method: response.data.method_used || 'two_tower'
+            };
+          });
+          
+          storeSession({
+            recommendations: recommendations,
+            useCase: 'startup_investor',
+            method: response.data.method_used || 'two_tower',
+            modelVersion: response.data.model_version || 'two_tower_v1.0',
+            startupId: selectedStartup.id
+          }).catch(err => {
+            console.error('[PotentialInvestors] Failed to store recommendation session:', err);
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to load investor recommendations:', error);

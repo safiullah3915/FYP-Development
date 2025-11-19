@@ -43,9 +43,33 @@ export const startupAPI = {
   getStartupPositions: (id) => apiClient.get(`/api/startups/${withStartupId(id)}/positions`),
   createStartupPosition: (id, positionData) => apiClient.post(`/api/startups/${withStartupId(id)}/positions`, positionData),
   getStartupInterests: (id) => apiClient.get(`/api/startups/${withStartupId(id)}/interests`),
-  expressInterest: (id, data = {}) => apiClient.post(`/api/startups/${withStartupId(id)}/interest`, data),
-  toggleFavorite: (id) => apiClient.post(`/api/startups/${withStartupId(id)}/favorite`),
-  deleteFavorite: (id) => apiClient.delete(`/api/startups/${withStartupId(id)}/favorite`),
+  expressInterest: (id, data = {}, recommendationContext = null) => {
+    const normalizedId = withStartupId(id);
+    const requestData = { ...data };
+    if (recommendationContext) {
+      requestData.recommendation_session_id = recommendationContext.sessionId;
+      requestData.recommendation_rank = recommendationContext.rank;
+    }
+    return apiClient.post(`/api/startups/${normalizedId}/interest`, requestData);
+  },
+  toggleFavorite: (id, recommendationContext = null) => {
+    const normalizedId = withStartupId(id);
+    const data = {};
+    if (recommendationContext) {
+      data.recommendation_session_id = recommendationContext.sessionId;
+      data.recommendation_rank = recommendationContext.rank;
+    }
+    return apiClient.post(`/api/startups/${normalizedId}/favorite`, data);
+  },
+  deleteFavorite: (id, recommendationContext = null) => {
+    const normalizedId = withStartupId(id);
+    const params = {};
+    if (recommendationContext) {
+      params.recommendation_session_id = recommendationContext.sessionId;
+      params.recommendation_rank = recommendationContext.rank;
+    }
+    return apiClient.delete(`/api/startups/${normalizedId}/favorite`, { params });
+  },
   convertToMarketplace: (id, data) => apiClient.post(`/api/startups/${withStartupId(id)}/convert-to-marketplace`, data),
 };
 

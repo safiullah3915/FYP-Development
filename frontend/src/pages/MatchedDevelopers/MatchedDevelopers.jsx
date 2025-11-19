@@ -3,12 +3,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Navbar } from '../../components/Navbar/Navbar';
 import { Footer } from '../../components/Footer/Footer';
 import { recommendationAPI, userAPI } from '../../utils/apiServices';
+import { useRecommendationContext } from '../../hooks/useRecommendationContext';
 import { toast } from 'react-toastify';
 import styles from './MatchedDevelopers.module.css';
 import { Link } from 'react-router-dom';
 
 const MatchedDevelopers = () => {
   const { user, isEntrepreneur } = useAuth();
+  const { storeSession } = useRecommendationContext();
   const [loading, setLoading] = useState(true);
   const [developers, setDevelopers] = useState([]);
   const [myStartups, setMyStartups] = useState([]);
@@ -74,8 +76,33 @@ const MatchedDevelopers = () => {
         toast.warning('Recommendation service temporarily unavailable');
         setDevelopers([]);
       } else {
-        setDevelopers(response.data.developers || []);
+        const developersList = response.data.developers || [];
+        setDevelopers(developersList);
         setTotalDevelopers(response.data.total || 0);
+        
+        // Store recommendation session for feedback tracking
+        if (developersList.length > 0 && selectedStartup) {
+          const recommendations = developersList.map((developer, index) => {
+            const developerKey = developer?.id ? String(developer.id) : String(index);
+            const score = response.data.scores?.[developerKey] ?? response.data.scores?.[developer?.id] ?? 0.0;
+            return {
+              user_id: developer.id,
+              rank: index + 1,
+              score: score,
+              method: response.data.method_used || 'two_tower'
+            };
+          });
+          
+          storeSession({
+            recommendations: recommendations,
+            useCase: 'startup_developer',
+            method: response.data.method_used || 'two_tower',
+            modelVersion: response.data.model_version || 'two_tower_v1.0',
+            startupId: selectedStartup.id
+          }).catch(err => {
+            console.error('[MatchedDevelopers] Failed to store recommendation session:', err);
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to load developer recommendations:', error);

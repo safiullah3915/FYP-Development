@@ -6,6 +6,7 @@ import styles from "./MarketPlace.module.css";
 import { useAuth } from '../../contexts/AuthContext';
 import apiClient from '../../utils/axiosConfig';
 import { recommendationAPI, marketplaceAPI } from '../../utils/apiServices';
+import { useRecommendationContext } from '../../hooks/useRecommendationContext';
 import { toast } from 'react-toastify';
 
 const Marketplace = () => {
@@ -22,6 +23,7 @@ const Marketplace = () => {
     category: ''
   });
   const { isInvestor, isStudent, user } = useAuth();
+  const { storeSession, getRecommendationContext } = useRecommendationContext();
   
   // New states for recommendation mode (only for investors)
   // Initialize to 'recommended' for investors, 'all' for others
@@ -111,6 +113,30 @@ const Marketplace = () => {
       );
       setRecommendationScores(response.data.scores || {});
       setRecommendationReasons(response.data.match_reasons || {});
+      
+      // Store recommendation session for feedback tracking
+      if (startupsResponse.length > 0) {
+        const recommendations = startupsResponse.map((startup, index) => {
+          const startupKey = startup?.id ? String(startup.id) : String(index);
+          const score = response.data.scores?.[startupKey] ?? response.data.scores?.[startup?.id] ?? 0.0;
+          return {
+            startup_id: startup.id,
+            rank: index + 1,
+            score: score,
+            method: response.data.method_used || 'two_tower'
+          };
+        });
+        
+        storeSession({
+          recommendations: recommendations,
+          useCase: 'investor_startup',
+          method: response.data.method_used || 'two_tower',
+          modelVersion: response.data.model_version || 'two_tower_v1.0'
+        }).catch(err => {
+          console.error('[Marketplace] Failed to store recommendation session:', err);
+          // Don't block UI if session storage fails
+        });
+      }
     } catch (error) {
       console.error('Failed to load recommended startups:', error);
       toast.error('Failed to load personalized recommendations');
@@ -285,12 +311,16 @@ const Marketplace = () => {
                 const score = recommendationScores[startupKey] ?? recommendationScores[startup?.id];
                 const reasons = recommendationReasons[startupKey] ?? recommendationReasons[startup?.id];
                 
+                // Get recommendation context for this startup
+                const recommendationContext = getRecommendationContext(startup.id);
+                
                 return (
                   <MarketPlaceCard
                     key={startup.id || index}
                     {...startup}
                     score={score}
                     matchReasons={reasons}
+                    recommendationContext={recommendationContext}
                   />
                 );
               })

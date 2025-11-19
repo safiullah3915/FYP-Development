@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: startup_platform_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - FLASK_RECOMMENDATION_SERVICE_URL=http://recommendation-service:5000
+      - DB_ENGINE=django.db.backends.sqlite3
+      - DB_NAME=/app/db.sqlite3
+    volumes:
+      - ./backend/db.sqlite3:/app/db.sqlite3
+      - ./backend/media:/app/media
+    depends_on:
+      - recommendation-service
+    networks:
+      - startup_network
+    restart: unless-stopped
+
+  recommendation-service:
+    build:
+      context: ./recommendation_service
+      dockerfile: Dockerfile
+    container_name: startup_platform_recommendation
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - FLASK_DEBUG=False
+      - DATABASE_PATH=/app/db.sqlite3
+    volumes:
+      - ./backend/db.sqlite3:/app/db.sqlite3:ro
+      - ./recommendation_service/models:/app/models
+      - ./recommendation_service/logs:/app/logs
+    networks:
+      - startup_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  startup_network:
+    driver: bridge
+

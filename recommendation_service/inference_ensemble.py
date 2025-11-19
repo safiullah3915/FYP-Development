@@ -41,13 +41,12 @@ class EnsembleInference:
     
     def _load_models(self, als_path: str, two_tower_path: str):
         """Load both ALS and Two-Tower models"""
-        logger.info("Loading ensemble models...")
         
         # Load ALS
         try:
             if os.path.exists(als_path):
                 self.als_model = ALSInference(als_path)
-                logger.info("  ALS model loaded")
+                # ALS model loaded silently
             else:
                 logger.warning(f"  ALS model not found: {als_path}")
         except Exception as e:
@@ -57,7 +56,7 @@ class EnsembleInference:
         try:
             if os.path.exists(two_tower_path):
                 self.two_tower_model = TwoTowerInference(two_tower_path)
-                logger.info("  Two-Tower model loaded")
+                # Two-Tower model loaded silently
             else:
                 logger.warning(f"  Two-Tower model not found: {two_tower_path}")
         except Exception as e:
@@ -66,7 +65,7 @@ class EnsembleInference:
         if not self.als_model and not self.two_tower_model:
             raise RuntimeError("Failed to load any models for ensemble")
         
-        logger.info(f"Ensemble initialized with weights: ALS={self.als_weight:.2f}, Two-Tower={self.two_tower_weight:.2f}")
+        # Ensemble initialized silently - status logged at app startup
     
     def recommend(self, user_id: str, limit: int = 10, filters: Optional[Dict] = None, fetch_multiplier: int = 1) -> Dict:
         """

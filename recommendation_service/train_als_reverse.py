@@ -1,6 +1,6 @@
 """
 SVD Reverse Model Training Script
-Trains TruncatedSVD on the reverse (Startup × User) matrix for founder use cases
+Trains TruncatedSVD on the reverse (Startup × User) matrix for startup_developer and startup_investor use cases
 """
 import argparse
 import os
@@ -70,11 +70,22 @@ def create_train_test_split(interactions, test_ratio=0.2, seed=42):
 
 def train_reverse_svd(interactions, factors=128, n_iter=10, random_state=42):
     """Train TruncatedSVD on the reverse matrix"""
+    # Get matrix dimensions
+    n_startups, n_users = interactions.shape
+    
+    # Adjust factors to not exceed matrix dimensions
+    max_factors = min(n_startups, n_users)
+    if factors > max_factors:
+        print(f"Warning: Requested {factors} components, but matrix has only {max_factors} features.")
+        print(f"Reducing components to {max_factors}")
+        factors = max_factors
+    
     print(f"\n=== Training Reverse SVD Model ===")
     print("Hyperparameters:")
     print(f"  components (factors): {factors}")
     print(f"  n_iter: {n_iter}")
     print(f"  random_state: {random_state}")
+    print(f"  Matrix shape: {interactions.shape}")
 
     model = TruncatedSVD(
         n_components=factors,
@@ -126,7 +137,7 @@ def evaluate_model(model_dict, train_matrix, test_matrix):
     }
 
 
-def save_artifacts(model_dict, user_mapping, item_mapping, output_dir, model_name="als_reverse_v1"):
+def save_artifacts(model_dict, user_mapping, item_mapping, output_dir, model_name="als_reverse_v1", use_case="startup_developer"):
     """Persist embeddings, mappings, and model metadata"""
     print(f"\n=== Saving Reverse Model Artifacts ===")
     os.makedirs(output_dir, exist_ok=True)
@@ -155,6 +166,7 @@ def save_artifacts(model_dict, user_mapping, item_mapping, output_dir, model_nam
     config_payload = {
         "algorithm": "svd_reverse",
         "library": "scikit-learn",
+        "use_case": use_case,
         "created_at": datetime.utcnow().isoformat() + "Z",
         "n_startups": len(user_mapping),
         "n_users": len(item_mapping),
@@ -189,12 +201,15 @@ def main():
                         help='Optional test split ratio for diagnostics')
     parser.add_argument('--no-eval', action='store_true',
                         help='Skip diagnostics')
+    parser.add_argument('--use-case', type=str, default='startup_developer',
+                        choices=['startup_developer', 'startup_investor'],
+                        help='Use case for training (default: startup_developer)')
 
     args = parser.parse_args()
 
     print("=" * 60)
     print("SVD REVERSE COLLABORATIVE FILTERING TRAINING")
-    print("(Startup → User Recommendations)")
+    print(f"(Startup → User Recommendations for {args.use_case})")
     print("=" * 60)
 
     interactions, user_mapping, item_mapping = load_data(
@@ -218,7 +233,7 @@ def main():
     if not args.no_eval:
         evaluate_model(model_dict, train_matrix, test_matrix)
 
-    save_artifacts(model_dict, user_mapping, item_mapping, args.output_dir, args.model_name)
+    save_artifacts(model_dict, user_mapping, item_mapping, args.output_dir, args.model_name, args.use_case)
 
     print("\n" + "=" * 60)
     print("TRAINING COMPLETE!")

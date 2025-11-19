@@ -9,6 +9,7 @@ const CollaborationCard = ({
   matchReasons, 
   appliedPositionIds, 
   appliedStartupIds,
+  recommendationContext, // Optional: { sessionId, rank, score, method }
   // Legacy props for backward compatibility
   id, 
   title, 
@@ -29,9 +30,19 @@ const CollaborationCard = ({
   // Calculate match percentage from score
   const matchPercentage = score ? Math.round(score * 100) : null;
   
-  // Always navigate to startup detail page
+  // Build link destination with recommendation context if available
   const getLinkDestination = () => {
-      return getStartupDetailPath(normalizedStartupId);
+    const basePath = getStartupDetailPath(normalizedStartupId);
+    if (recommendationContext?.sessionId) {
+      const params = new URLSearchParams({
+        recommendation_session_id: recommendationContext.sessionId,
+      });
+      if (recommendationContext.rank) {
+        params.append('recommendation_rank', recommendationContext.rank.toString());
+      }
+      return `${basePath}?${params.toString()}`;
+    }
+    return basePath;
   };
 
   return (

@@ -73,18 +73,34 @@ class NeuralRanker:
     def _load_model(self, model_path: str):
         """Load trained neural ranker"""
         try:
-            if not Path(model_path).exists():
+            model_path_obj = Path(model_path)
+            if not model_path_obj.exists():
                 logger.warning(f"Model not found at {model_path}, using rule-based ranker")
                 return
             
-            self.model = RankerMLP().to(self.device)
-            state_dict = torch.load(model_path, map_location=self.device)
+            # Resolve absolute path to avoid any path issues
+            abs_path = model_path_obj.resolve()
+            logger.info(f"Loading ranker model from: {abs_path}")
+            
+            # Load state dict first to check shape
+            state_dict = torch.load(str(abs_path), map_location=self.device)
+            fc1_shape = state_dict.get('fc1.weight', torch.empty(0)).shape
+            logger.info(f"Model checkpoint fc1.weight shape: {fc1_shape}")
+            
+            # Create model with correct input dimension
+            input_dim = fc1_shape[1] if len(fc1_shape) > 1 else 5
+            logger.info(f"Creating RankerMLP with input_dim={input_dim}")
+            self.model = RankerMLP(input_dim=input_dim).to(self.device)
+            
+            # Load state dict
             self.model.load_state_dict(state_dict)
             self.model.eval()
-            logger.info(f"Neural ranker loaded from {model_path}")
+            logger.info(f"Neural ranker loaded successfully from {abs_path}")
             
         except Exception as e:
             logger.error(f"Error loading ranker model: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             logger.info("Falling back to rule-based ranker")
             self.model = None
     

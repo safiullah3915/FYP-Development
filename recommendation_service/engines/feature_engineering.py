@@ -214,19 +214,45 @@ class FeatureEncoder:
         dim += len(self.startup_stages_mlb.classes_)
         return dim
     
+    def __getstate__(self):
+        """Custom pickle state - exclude non-serializable objects"""
+        state = self.__dict__.copy()
+        return state
+    
+    def __setstate__(self, state):
+        """Custom unpickle state"""
+        self.__dict__.update(state)
+    
     def save(self, filepath: str):
         """Save encoder to file"""
         try:
             import sys
-            import engines.feature_engineering
-            # Register module for pickle
-            sys.modules['feature_engineering'] = engines.feature_engineering
+            # Get current module - handle both dynamic and normal imports
+            module_name = self.__class__.__module__
+            current_module = sys.modules.get(module_name)
+            
+            if current_module is None:
+                # Module not in sys.modules, try to get it
+                import engines.feature_engineering
+                current_module = engines.feature_engineering
+            
+            # Register module under all possible names for pickle compatibility
+            sys.modules['engines.feature_engineering'] = current_module
+            sys.modules['feature_engineering'] = current_module
+            if module_name not in sys.modules:
+                sys.modules[module_name] = current_module
+            
+            # Ensure class is accessible
+            if not hasattr(current_module, 'FeatureEncoder'):
+                current_module.FeatureEncoder = self.__class__
             
             with open(filepath, 'wb') as f:
                 pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
             logger.info(f"Encoder saved to {filepath}")
-        except (ImportError, AttributeError) as e:
-            logger.warning(f"Could not save encoder (circular import): {e}")
+        except Exception as e:
+            logger.warning(f"Could not save encoder: {e}")
+            import traceback
+            logger.warning(traceback.format_exc())
             logger.info("Encoder not saved - model will still work for inference")
     
     @staticmethod

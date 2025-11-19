@@ -27,9 +27,14 @@ class RankerDataset(Dataset):
         self.data = pd.read_csv(data_path)
         
         # Features
+        # original_score: Teacher signal - what the base model predicted (recommendation_score)
+        # Model learns to adjust original_score based on actual feedback
         if 'original_score' not in self.data.columns:
             self.data['original_score'] = self.data['model_score']
         self.data['original_score'] = self.data['original_score'].fillna(self.data['model_score'])
+        
+        # exposure_weight: Corrects for position bias (1 / log2(rank + 1))
+        # Higher ranks get lower weight (less exposure), but interactions from deeper ranks are rarer
         if 'exposure_weight' not in self.data.columns:
             self.data['exposure_weight'] = 1.0
         self.data['exposure_weight'] = self.data['exposure_weight'].fillna(1.0)
@@ -38,6 +43,8 @@ class RankerDataset(Dataset):
         self.features = self.data[feature_cols].values.astype(np.float32)
         
         # Labels (1 = positive, 0 = negative)
+        # Positive: User liked/applied/favorited from recommendations
+        # Negative: User disliked OR high-score recommendation but no interaction (hard negative)
         self.labels = self.data['label'].values.astype(np.float32)
         self.weights = self.data['exposure_weight'].values.astype(np.float32)
         
@@ -83,7 +90,7 @@ def create_pairwise_batches(batch, device):
     return pos_features, neg_features, pos_weights, neg_weights
 
 
-def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001, output_dir='models'):
+def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001, output_dir='models', model_name='ranker_v1'):
     """
     Train neural ranker model
     
@@ -162,7 +169,9 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
                 pos_weights[:min_len], neg_weights[:min_len]
             )
             
-            # Loss
+            # Loss with exposure bias correction
+            # Weight loss by exposure_weight to correct for position bias
+            # Teacher-student learning: Model learns to adjust original_score based on feedback
             raw_loss = criterion(pos_scores, neg_scores)
             loss = (raw_loss * pair_weight).mean()
             
@@ -215,7 +224,7 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
             if avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
                 os.makedirs(output_dir, exist_ok=True)
-                model_path = os.path.join(output_dir, 'ranker_v1_best.pth')
+                model_path = os.path.join(output_dir, f'{model_name}_best.pth')
                 torch.save(model.state_dict(), model_path)
         
         print(f"Epoch {epoch+1}/{epochs} | "
@@ -225,7 +234,7 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
     
     # Save final model
     os.makedirs(output_dir, exist_ok=True)
-    final_path = os.path.join(output_dir, 'ranker_v1.pth')
+    final_path = os.path.join(output_dir, f'{model_name}.pth')
     torch.save(model.state_dict(), final_path)
     
     print()
@@ -235,7 +244,7 @@ def train_ranker(train_path, val_path=None, epochs=20, batch_size=128, lr=0.001,
     print()
     print(f"Final model saved: {final_path}")
     if val_loader:
-        best_path = os.path.join(output_dir, 'ranker_v1_best.pth')
+        best_path = os.path.join(output_dir, f'{model_name}_best.pth')
         print(f"Best model saved: {best_path}")
         print(f"Best validation loss: {best_val_loss:.4f}")
     print()
@@ -255,8 +264,27 @@ def main():
                         help='Learning rate')
     parser.add_argument('--output-dir', type=str, default='models',
                         help='Output directory for trained model')
+    parser.add_argument('--model-name', type=str, default=None,
+                        help='Model name (auto-generated if not provided)')
+    parser.add_argument('--use-case', type=str, default='developer_startup',
+                        choices=['developer_startup', 'investor_startup', 'startup_developer', 'startup_investor'],
+                        help='Use case for training (default: developer_startup)')
     
     args = parser.parse_args()
+    
+    # Determine if this is a reverse use case
+    reverse_use_cases = ['startup_developer', 'startup_investor']
+    is_reverse = args.use_case in reverse_use_cases
+    
+    # Auto-generate model name if not provided
+    if args.model_name is None:
+        if is_reverse:
+            args.model_name = 'ranker_reverse_v1'
+        else:
+            args.model_name = 'ranker_v1'
+    
+    print(f"Use case: {args.use_case} (reverse: {is_reverse})")
+    print(f"Model name: {args.model_name}")
     
     # Check if training data exists
     if not os.path.exists(args.data):
@@ -264,7 +292,7 @@ def main():
         print()
         print("Please generate training data first:")
         print("  cd backend")
-        print("  python manage.py generate_ranker_dataset")
+        print(f"  python manage.py generate_ranker_dataset --use-case {args.use_case}")
         print()
         return
     
@@ -275,7 +303,8 @@ def main():
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,
-        output_dir=args.output_dir
+        output_dir=args.output_dir,
+        model_name=args.model_name
     )
 
 

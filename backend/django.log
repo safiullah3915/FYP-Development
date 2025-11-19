@@ -1,7 +1,443 @@
+"OPTIONS /api/users/profile-data HTTP/1.1" 200 0
+"OPTIONS /api/users/profile-data HTTP/1.1" 200 0
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"OPTIONS /api/messages HTTP/1.1" 200 0
+"OPTIONS /api/messages HTTP/1.1" 200 0
+"OPTIONS /api/users/startups HTTP/1.1" 200 0
+"OPTIONS /api/notifications HTTP/1.1" 200 0
+"OPTIONS /api/notifications HTTP/1.1" 200 0
+"OPTIONS /api/notifications HTTP/1.1" 200 0
+"OPTIONS /api/users/startups HTTP/1.1" 200 0
+"OPTIONS /api/notifications HTTP/1.1" 200 0
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/profile-data HTTP/1.1" 200 1395
-"GET /api/users/profile-data HTTP/1.1" 200 1395
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\recommendation_models.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+Starting APScheduler...
+APScheduler started successfully
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\recommendation_models.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\recommendation_models.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\recommendation_models.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\recommendation_models.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+Starting periodic trending metrics computation task...
+Trending metrics computation task completed successfully
+C:\Users\serma\Downloads\FYP-Development\backend\api\recommendation_models.py changed, reloading.
+Starting periodic user embedding update task...
+Found 7 users needing embedding updates. Processing in batches...
+Processing 7 users in batches of 50
+Processing batch 1/1 (7 users)
+Loading embedding model: all-MiniLM-L6-v2
+Starting periodic user embedding update task...
+Starting periodic startup embedding update task...
+No startups need embedding updates.
+Found 7 users needing embedding updates. Processing in batches...
+Processing 7 users in batches of 50
+Processing batch 1/1 (7 users)
+Loading embedding model: all-MiniLM-L6-v2
+Successfully generated embedding for user bf812712-351a-4176-b854-758f4d674296 (dimension: 384)
+Successfully generated embedding for user bf812712-351a-4176-b854-758f4d674296 (dimension: 384)
+Successfully generated embedding for user 9a29f3f1-bff4-4edc-b41b-619638ead416 (dimension: 384)
+Successfully generated embedding for user 9a29f3f1-bff4-4edc-b41b-619638ead416 (dimension: 384)
+Successfully generated embedding for user 48c4d564-1b00-4c34-a9bd-46e9da5b24d0 (dimension: 384)
+Successfully generated embedding for user 48c4d564-1b00-4c34-a9bd-46e9da5b24d0 (dimension: 384)
+Successfully generated embedding for user 27bbe8e8-f9e2-4770-a988-dc95b4e9113a (dimension: 384)
+Successfully generated embedding for user 27bbe8e8-f9e2-4770-a988-dc95b4e9113a (dimension: 384)
+Successfully generated embedding for user f3ae1526-5462-41a2-a35f-59b49907af00 (dimension: 384)
+Successfully generated embedding for user f3ae1526-5462-41a2-a35f-59b49907af00 (dimension: 384)
+Successfully generated embedding for user 5438af59-b1ad-408b-8789-cb0cf7ffb919 (dimension: 384)
+Successfully generated embedding for user 5438af59-b1ad-408b-8789-cb0cf7ffb919 (dimension: 384)
+Successfully generated embedding for user 45beae59-85f3-4635-9247-64889c8e1384 (dimension: 384)
+Batch processing complete: 7 succeeded, 0 failed
+User embedding update task completed: 7 succeeded, 0 failed out of 7 users
+Successfully generated embedding for user 45beae59-85f3-4635-9247-64889c8e1384 (dimension: 384)
+Batch processing complete: 7 succeeded, 0 failed
+User embedding update task completed: 7 succeeded, 0 failed out of 7 users
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"OPTIONS /api/users/profile-data HTTP/1.1" 200 0
+"OPTIONS /api/users/profile-data HTTP/1.1" 200 0
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"OPTIONS /api/messages HTTP/1.1" 200 0
+"OPTIONS /api/messages HTTP/1.1" 200 0
+"OPTIONS /api/notifications HTTP/1.1" 200 0
+"OPTIONS /api/notifications HTTP/1.1" 200 0
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"OPTIONS /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 0
+"OPTIONS /api/users/applications HTTP/1.1" 200 0
+"OPTIONS /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 0
+"OPTIONS /api/users/applications HTTP/1.1" 200 0
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+Service Unavailable: /api/recommendations/personalized/startups
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 503 601
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+Service Unavailable: /api/recommendations/personalized/startups
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 503 601
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"OPTIONS /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 0
+"OPTIONS /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 0
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+Service Unavailable: /api/recommendations/trending/startups
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 503 101
+Service Unavailable: /api/recommendations/personalized/startups
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 503 601
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+Service Unavailable: /api/recommendations/trending/startups
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 503 101
+Service Unavailable: /api/recommendations/personalized/startups
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 503 601
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"OPTIONS /api/users/startups HTTP/1.1" 200 0
+"OPTIONS /api/users/startups HTTP/1.1" 200 0
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/startups HTTP/1.1" 200 52
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6407
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6407
+"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/users/applications HTTP/1.1" 200 52
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/users/applications HTTP/1.1" 200 52
@@ -9,15 +445,157 @@
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33513
+"OPTIONS /api/recommendations/session HTTP/1.1" 200 0
+"POST /api/recommendations/session HTTP/1.1" 201 80
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33513
+"POST /api/recommendations/session HTTP/1.1" 201 80
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/profile-data HTTP/1.1" 200 687
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33513
+"POST /api/recommendations/session HTTP/1.1" 201 80
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33513
+"POST /api/recommendations/session HTTP/1.1" 201 80
+"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 960
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 960
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
@@ -44,293 +622,308 @@ C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading
 Starting APScheduler...
 APScheduler started successfully
 Watching for file changes with StatReloader
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
 C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
 Starting APScheduler...
 APScheduler started successfully
 Watching for file changes with StatReloader
-C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
-Starting APScheduler...
-APScheduler started successfully
-Watching for file changes with StatReloader
-C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
-Starting APScheduler...
-APScheduler started successfully
-Watching for file changes with StatReloader
-C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
-Starting APScheduler...
-APScheduler started successfully
-Watching for file changes with StatReloader
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
-Starting APScheduler...
-APScheduler started successfully
-Watching for file changes with StatReloader
-C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
-Starting APScheduler...
-APScheduler started successfully
-Watching for file changes with StatReloader
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/profile-data HTTP/1.1" 200 1395
-"GET /api/users/profile-data HTTP/1.1" 200 1395
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/users/applications HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/applications HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 960
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 960
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/profile-data HTTP/1.1" 200 1395
-"GET /api/users/profile-data HTTP/1.1" 200 1395
-"GET /api/users/applications HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/users/applications HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 960
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 960
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/profile-data HTTP/1.1" 200 1395
-"GET /api/users/profile-data HTTP/1.1" 200 1395
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/users/applications HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/applications HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 28437
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 28437
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"POST /auth/logout HTTP/1.1" 200 37
 "OPTIONS /signup HTTP/1.1" 200 0
 Loading embedding model: all-MiniLM-L6-v2
-Successfully generated embedding for user e07d09a4-fa58-4e74-80ef-0e8587b00d55 (dimension: 384)
-Successfully generated embedding for new user e07d09a4-fa58-4e74-80ef-0e8587b00d55
-- Broken pipe from ('127.0.0.1', 16471)
-Bad Request: /signup
-"POST /signup HTTP/1.1" 400 58
+Successfully generated embedding for user 4f2de1cc-3857-4899-82d6-547e56f2a11f (dimension: 384)
+Successfully generated embedding for new user 4f2de1cc-3857-4899-82d6-547e56f2a11f
+"POST /signup HTTP/1.1" 201 235
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"OPTIONS /api/onboarding/preferences HTTP/1.1" 200 0
+"OPTIONS /api/onboarding/preferences HTTP/1.1" 200 0
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/onboarding/preferences HTTP/1.1" 200 331
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/onboarding/preferences HTTP/1.1" 200 331
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"POST /api/onboarding/preferences HTTP/1.1" 200 436
+"GET /api/users/profile-data HTTP/1.1" 200 688
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 688
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6425
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6424
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"OPTIONS /auth/login HTTP/1.1" 200 0
+Unauthorized: /auth/login
+"POST /auth/login HTTP/1.1" 401 29
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
 Loading embedding model: all-MiniLM-L6-v2
-Successfully generated embedding for user 45beae59-85f3-4635-9247-64889c8e1384 (dimension: 384)
-Successfully generated embedding for new user 45beae59-85f3-4635-9247-64889c8e1384
-"POST /signup HTTP/1.1" 201 234
+Successfully generated embedding for user bfc55ac2-ce6a-4cfc-ab9b-234daff72a48 (dimension: 384)
+Successfully generated embedding for new user bfc55ac2-ce6a-4cfc-ab9b-234daff72a48
+"POST /signup HTTP/1.1" 201 235
 "GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"OPTIONS /api/onboarding/preferences HTTP/1.1" 200 0
-"OPTIONS /api/onboarding/preferences HTTP/1.1" 200 0
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/onboarding/preferences HTTP/1.1" 200 331
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/onboarding/preferences HTTP/1.1" 200 331
 "GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /admin/api/user/ HTTP/1.1" 200 90736
-"GET /admin/jsi18n/ HTTP/1.1" 200 3342
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"POST /admin/api/user/ HTTP/1.1" 200 9740
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"POST /admin/api/user/ HTTP/1.1" 302 0
-"GET /admin/api/user/ HTTP/1.1" 302 0
-"GET /admin/login/?next=/admin/api/user/ HTTP/1.1" 200 4308
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"POST /api/onboarding/preferences HTTP/1.1" 200 384
-"GET /api/users/profile-data HTTP/1.1" 200 687
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/users/profile-data HTTP/1.1" 200 687
-"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/onboarding/preferences HTTP/1.1" 200 331
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"POST /api/onboarding/preferences HTTP/1.1" 200 401
+"GET /api/users/profile-data HTTP/1.1" 200 688
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 688
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6483
-"OPTIONS /api/messages/users/online HTTP/1.1" 200 0
-"OPTIONS /api/messages/users/online HTTP/1.1" 200 0
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages/users/online HTTP/1.1" 200 13246
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6483
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages/users/online HTTP/1.1" 200 13246
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/users/applications HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/users/applications HTTP/1.1" 200 52
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 34160
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 34160
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"OPTIONS /api/users/startups HTTP/1.1" 200 0
-"OPTIONS /api/users/startups HTTP/1.1" 200 0
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/users/startups HTTP/1.1" 200 52
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/startups HTTP/1.1" 200 52
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/users/startups HTTP/1.1" 200 52
 "GET /api/messages HTTP/1.1" 200 2
-"GET /api/users/startups HTTP/1.1" 200 52
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/profile-data HTTP/1.1" 200 688
+"GET /api/users/profile-data HTTP/1.1" 200 688
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6425
+"GET /api/recommendations/trending/startups?limit=10&sort_by=trending_score HTTP/1.1" 200 6424
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33531
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33530
+"POST /api/recommendations/session HTTP/1.1" 201 80
+"POST /api/recommendations/session HTTP/1.1" 201 80
+"OPTIONS /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6?recommendation_session_id=4df5b22d-a25c-44b7-ae05-9b1734f1b4cc&recommendation_rank=1 HTTP/1.1" 200 0
+"OPTIONS /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/interaction-status HTTP/1.1" 200 0
+"OPTIONS /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/positions HTTP/1.1" 200 0
+"OPTIONS /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/interaction-status HTTP/1.1" 200 0
+"OPTIONS /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6?recommendation_session_id=4df5b22d-a25c-44b7-ae05-9b1734f1b4cc&recommendation_rank=1 HTTP/1.1" 200 0
+"OPTIONS /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/positions HTTP/1.1" 200 0
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/interaction-status HTTP/1.1" 200 104
+"GET /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/positions HTTP/1.1" 200 1073
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/interaction-status HTTP/1.1" 200 104
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6/positions HTTP/1.1" 200 1073
+"GET /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6?recommendation_session_id=4df5b22d-a25c-44b7-ae05-9b1734f1b4cc&recommendation_rank=1 HTTP/1.1" 200 2371
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/startups/53a44e1b-7b48-4adc-a51b-cb7a62262fd6?recommendation_session_id=4df5b22d-a25c-44b7-ae05-9b1734f1b4cc&recommendation_rank=1 HTTP/1.1" 200 2371
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33530
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/users/applications HTTP/1.1" 200 52
+"GET /api/notifications HTTP/1.1" 200 2
+"POST /api/recommendations/session HTTP/1.1" 201 80
+"GET /api/recommendations/personalized/startups?limit=20&offset=0&require_open_positions=true&type=collaboration HTTP/1.1" 200 33530
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"POST /api/recommendations/session HTTP/1.1" 201 80
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\services\cache_service.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+"GET /api/notifications HTTP/1.1" 200 2
+"GET /api/messages HTTP/1.1" 200 2
+C:\Users\serma\Downloads\FYP-Development\backend\api\views.py changed, reloading.
+Starting APScheduler...
+APScheduler started successfully
+Watching for file changes with StatReloader
 "GET /api/notifications HTTP/1.1" 200 2
 "GET /api/messages HTTP/1.1" 200 2
 "GET /api/notifications HTTP/1.1" 200 2
@@ -348,11 +941,3 @@ APScheduler started successfully
 Starting APScheduler...
 APScheduler started successfully
 Watching for file changes with StatReloader
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2
-"GET /api/notifications HTTP/1.1" 200 2
-"GET /api/messages HTTP/1.1" 200 2

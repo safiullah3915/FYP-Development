@@ -8,7 +8,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, save_npz
 from django.core.management.base import BaseCommand
 from django.db.models import Count
-from api.recommendation_models import UserInteraction
+from api.recommendation_models import UserInteraction, StartupInteraction
 from api.models import User, Startup
 
 
@@ -28,19 +28,35 @@ class Command(BaseCommand):
             default=1,
             help='Minimum interactions required for user/startup inclusion'
         )
+        parser.add_argument(
+            '--use-case',
+            type=str,
+            default='developer_startup',
+            choices=['developer_startup', 'investor_startup', 'startup_developer', 'startup_investor'],
+            help='Use case to generate dataset for (default: developer_startup)'
+        )
 
     def handle(self, *args, **options):
         output_dir = options['output_dir']
         min_interactions = options['min_interactions']
+        use_case = options['use_case']
 
         self.stdout.write(self.style.SUCCESS('\n=== ALS Dataset Generation ===\n'))
+        self.stdout.write(f'Use case: {use_case}')
+
+        # Determine if this is a reverse use case
+        reverse_use_cases = ['startup_developer', 'startup_investor']
+        is_reverse = use_case in reverse_use_cases
 
         # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
 
         # Step 1: Load interactions
         self.stdout.write('Loading interactions from database...')
-        interactions = self.load_interactions(min_interactions)
+        if is_reverse:
+            interactions = self.load_startup_interactions(min_interactions, use_case)
+        else:
+            interactions = self.load_interactions(min_interactions, use_case)
         
         if interactions.empty:
             self.stdout.write(self.style.ERROR('No interactions found!'))
@@ -108,10 +124,22 @@ class Command(BaseCommand):
             count=Count('id')
         ).filter(count__gte=min_interactions).values_list('startup_id', flat=True)
 
+        # Filter by user roles based on use case
+        user_filter = {}
+        if use_case == 'developer_startup':
+            user_filter['user__role'] = 'student'
+        elif use_case == 'investor_startup':
+            user_filter['user__role'] = 'investor'
+        
         # Load interactions for valid users and startups
+        # Filter out dislikes (explicit negatives) - ALS uses implicit feedback (all positive signals)
+        # Weighted by interaction type: apply (3.0) > favorite (2.5) > like (2.0) > click (1.0) > view (0.5)
         interactions = UserInteraction.objects.filter(
             user_id__in=valid_users,
-            startup_id__in=valid_startups
+            startup_id__in=valid_startups,
+            **user_filter
+        ).exclude(
+            interaction_type='dislike'  # Exclude explicit negatives
         ).select_related('user', 'startup').values(
             'user_id', 'startup_id', 'interaction_type', 'weight', 'created_at'
         )
@@ -124,6 +152,51 @@ class Command(BaseCommand):
         # Convert UUIDs to strings
         df['user_id'] = df['user_id'].astype(str)
         df['startup_id'] = df['startup_id'].astype(str)
+
+        return df
+
+    def load_startup_interactions(self, min_interactions, use_case='startup_developer'):
+        """Load startup interactions for reverse use cases (startup → user)"""
+        import pandas as pd
+        
+        # Determine target user roles
+        if use_case == 'startup_developer':
+            target_user_roles = ['student']
+        elif use_case == 'startup_investor':
+            target_user_roles = ['investor']
+        else:
+            target_user_roles = ['student', 'investor']
+        
+        # Get startups and users with minimum interactions
+        valid_startups = StartupInteraction.objects.values('startup_id').annotate(
+            count=Count('id')
+        ).filter(count__gte=min_interactions).values_list('startup_id', flat=True)
+
+        valid_users = StartupInteraction.objects.values('target_user_id').annotate(
+            count=Count('id')
+        ).filter(
+            target_user__role__in=target_user_roles
+        ).filter(count__gte=min_interactions).values_list('target_user_id', flat=True)
+
+        # Load startup interactions
+        # Weighted by interaction type: apply_received (3.0) > contact (2.0) > click (1.0) > view (0.5)
+        interactions = StartupInteraction.objects.filter(
+            startup_id__in=valid_startups,
+            target_user_id__in=valid_users
+        ).select_related('startup', 'target_user').values(
+            'startup_id', 'target_user_id', 'interaction_type', 'weight', 'created_at'
+        )
+
+        df = pd.DataFrame(list(interactions))
+        
+        if df.empty:
+            return df
+
+        # Convert UUIDs to strings and rename columns for consistency
+        # For reverse: startup_id becomes user_id, target_user_id becomes startup_id
+        df['user_id'] = df['startup_id'].astype(str)
+        df['startup_id'] = df['target_user_id'].astype(str)
+        df = df.drop(columns=['target_user_id'])
 
         return df
 
@@ -144,7 +217,16 @@ class Command(BaseCommand):
         return user_mapping, item_mapping
 
     def build_sparse_matrix(self, interactions, user_mapping, item_mapping):
-        """Build sparse CSR matrix from interactions"""
+        """
+        Build sparse CSR matrix from interactions
+        
+        Uses weighted interactions based on interaction type:
+        - apply: 3.0 (strongest signal)
+        - favorite: 2.5
+        - like: 2.0
+        - click: 1.0
+        - view: 0.5 (weakest signal)
+        """
         # Map UUIDs to indices
         row_indices = interactions['user_id'].map(lambda x: user_mapping.get(x, -1))
         col_indices = interactions['startup_id'].map(lambda x: item_mapping.get(x, -1))
@@ -153,6 +235,7 @@ class Command(BaseCommand):
         valid_mask = (row_indices != -1) & (col_indices != -1)
         row_indices = row_indices[valid_mask].values
         col_indices = col_indices[valid_mask].values
+        # Use interaction weights (already calculated based on interaction type)
         weights = interactions.loc[valid_mask, 'weight'].values
 
         # Create sparse matrix
@@ -168,7 +251,10 @@ class Command(BaseCommand):
         return sparse_matrix
 
     def build_reverse_sparse_matrix(self, interactions, user_mapping, item_mapping):
-        """Build reverse sparse CSR matrix (Startups × Users) - just transpose!"""
+        """
+        Build reverse sparse CSR matrix (Startups × Users) - just transpose!
+        Uses same weighted interactions as forward matrix
+        """
         # Map UUIDs to indices (SWAP row and col for reverse)
         row_indices = interactions['startup_id'].map(lambda x: item_mapping.get(x, -1))
         col_indices = interactions['user_id'].map(lambda x: user_mapping.get(x, -1))
@@ -177,6 +263,7 @@ class Command(BaseCommand):
         valid_mask = (row_indices != -1) & (col_indices != -1)
         row_indices = row_indices[valid_mask].values
         col_indices = col_indices[valid_mask].values
+        # Use interaction weights (already calculated based on interaction type)
         weights = interactions.loc[valid_mask, 'weight'].values
 
         # Create sparse matrix (Startups × Users)

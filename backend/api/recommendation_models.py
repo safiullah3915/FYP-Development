@@ -114,6 +114,103 @@ class UserInteraction(models.Model):
         return f"{self.user.username} - {self.interaction_type} - {self.startup.title}"
 
 
+class StartupInteraction(models.Model):
+    """Interaction tracking for reverse recommendations (startup → developer/investor)"""
+    INTERACTION_TYPE_CHOICES = [
+        ('view', 'View'),
+        ('click', 'Click'),
+        ('contact', 'Contact'),
+        ('apply_received', 'Apply Received'),
+    ]
+    
+    # Weight mapping (computed on save):
+    # 'view': 0.5
+    # 'click': 1.0
+    # 'contact': 2.0
+    # 'apply_received': 3.0
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    startup = models.ForeignKey('api.Startup', on_delete=models.CASCADE, related_name='startup_interactions', db_column='startup_id')
+    target_user = models.ForeignKey('api.User', on_delete=models.CASCADE, related_name='received_startup_interactions', db_column='target_user_id')
+    interaction_type = models.CharField(max_length=30, choices=INTERACTION_TYPE_CHOICES)
+    
+    # Recommendation context (extracted from metadata for analytics/perf)
+    recommendation_session = models.ForeignKey(
+        'api.RecommendationSession',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='recommendation_session_id',
+        related_name='startup_interaction_events'
+    )
+    recommendation_source = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        choices=[('organic', 'Organic'), ('recommendation', 'Recommendation')],
+        db_index=True
+    )
+    recommendation_rank = models.IntegerField(null=True, blank=True)
+    recommendation_score = models.FloatField(null=True, blank=True)
+    recommendation_method = models.CharField(max_length=50, null=True, blank=True)
+    
+    # Precomputed weight for training (calculated on save)
+    weight = models.FloatField(default=1.0)
+    
+    # Additional context
+    metadata = models.JSONField(default=dict, blank=True)  # session_id, device, etc.
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'startup_interactions'
+        indexes = [
+            models.Index(fields=['startup', 'target_user', 'created_at']),
+            models.Index(fields=['startup', 'created_at']),
+            models.Index(fields=['target_user', 'created_at']),
+            models.Index(fields=['interaction_type']),
+            # ETL-optimized index for date-range queries
+            models.Index(fields=['created_at', 'interaction_type']),
+            models.Index(fields=['recommendation_session', 'created_at'], name='idx_startup_int_session_time'),
+            models.Index(fields=['recommendation_source', 'created_at'], name='idx_startup_int_source_time'),
+            models.Index(fields=['startup', 'interaction_type', 'created_at'], name='idx_startup_int_type_time'),
+        ]
+        # Unique constraint to prevent duplicate interactions of same type
+        unique_together = [['startup', 'target_user', 'interaction_type']]
+    
+    def save(self, *args, **kwargs):
+        # Calculate weight based on interaction type
+        weight_mapping = {
+            'view': 0.5,
+            'click': 1.0,
+            'contact': 2.0,
+            'apply_received': 3.0,
+        }
+        self.weight = weight_mapping.get(self.interaction_type, 1.0)
+        super().save(*args, **kwargs)
+    
+    def get_metadata_value(self, key: str, default=None):
+        """Helper to safely get metadata value"""
+        if isinstance(self.metadata, dict):
+            return self.metadata.get(key, default)
+        return default
+    
+    def is_recommendation_interaction(self) -> bool:
+        """Check if interaction is from recommendation"""
+        return self.get_metadata_value('source') == 'recommendation'
+    
+    def get_recommendation_session_id(self) -> str:
+        """Get recommendation session ID if exists"""
+        return self.get_metadata_value('recommendation_session_id')
+    
+    def get_recommendation_rank(self) -> int:
+        """Get recommendation rank if exists"""
+        return self.get_metadata_value('recommendation_rank')
+    
+    def __str__(self):
+        return f"{self.startup.title} - {self.interaction_type} - {self.target_user.username}"
+
+
 class UserOnboardingPreferences(models.Model):
     """Initial user preferences for cold-start recommendations"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -224,6 +321,8 @@ class RecommendationModel(models.Model):
         ('founder_developer', 'Founder → Developer'),
         ('founder_startup', 'Founder → Startup'),
         ('investor_startup', 'Investor → Startup'),
+        ('startup_developer', 'Startup → Developer'),
+        ('startup_investor', 'Startup → Investor'),
     ]
     
     MODEL_TYPE_CHOICES = [
@@ -272,8 +371,9 @@ class RecommendationSession(models.Model):
     """Track recommendation sessions for feedback analysis and training"""
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user_id = models.ForeignKey('api.User', on_delete=models.CASCADE, db_column='user_id')
-    use_case = models.CharField(max_length=50)  # 'developer_startup', 'founder_developer', etc.
+    user_id = models.ForeignKey('api.User', on_delete=models.CASCADE, db_column='user_id', null=True, blank=True)
+    startup_id = models.ForeignKey('api.Startup', on_delete=models.CASCADE, db_column='startup_id', null=True, blank=True, related_name='recommendation_sessions')
+    use_case = models.CharField(max_length=50)  # 'developer_startup', 'startup_developer', etc.
     recommendation_method = models.CharField(max_length=50)  # 'content_based', 'collaborative', etc.
     model_version = models.CharField(max_length=50, blank=True)  # Model version used (for future training tracking)
     recommendations_shown = models.JSONField(default=list)  # Full recommendation data with ranks
@@ -301,6 +401,7 @@ class RecommendationSession(models.Model):
         indexes = [
             # Existing indexes
             models.Index(fields=['user_id', 'created_at']),
+            models.Index(fields=['startup_id', 'created_at']),
             models.Index(fields=['use_case', 'created_at']),
             models.Index(fields=['recommendation_method']),
             # ETL-optimized indexes
@@ -313,10 +414,18 @@ class RecommendationSession(models.Model):
     def get_interactions(self):
         """Get all interactions linked to this session - ETL-ready method"""
         from django.db.models import Q
-        return UserInteraction.objects.filter(
+        # Get both UserInteraction and StartupInteraction
+        user_interactions = UserInteraction.objects.filter(
             Q(metadata__recommendation_session_id=str(self.id)) |
             Q(metadata__contains={'recommendation_session_id': str(self.id)})
         )
+        startup_interactions = StartupInteraction.objects.filter(
+            Q(metadata__recommendation_session_id=str(self.id)) |
+            Q(metadata__contains={'recommendation_session_id': str(self.id)}) |
+            Q(recommendation_session=self)
+        )
+        # Return combined queryset (note: this returns a list, not a queryset)
+        return list(user_interactions) + list(startup_interactions)
     
     def calculate_metrics(self):
         """Calculate metrics - can be called by ETL or cron jobs"""
@@ -351,6 +460,24 @@ class RecommendationSession(models.Model):
         
         return metrics
     
+    def clean(self):
+        """Validate that either user_id or startup_id is set based on use_case"""
+        from django.core.exceptions import ValidationError
+        reverse_use_cases = ['startup_developer', 'startup_investor']
+        forward_use_cases = ['developer_startup', 'investor_startup', 'founder_developer', 'founder_startup']
+        
+        if self.use_case in reverse_use_cases:
+            if not self.startup_id:
+                raise ValidationError(f"For use_case '{self.use_case}', startup_id is required")
+        elif self.use_case in forward_use_cases:
+            if not self.user_id:
+                raise ValidationError(f"For use_case '{self.use_case}', user_id is required")
+    
     def __str__(self):
-        return f"Session {self.id} - {self.use_case} - {self.user_id.username}"
+        if self.startup_id:
+            return f"Session {self.id} - {self.use_case} - Startup: {self.startup_id.title}"
+        elif self.user_id:
+            return f"Session {self.id} - {self.use_case} - {self.user_id.username}"
+        else:
+            return f"Session {self.id} - {self.use_case}"
 

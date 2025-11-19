@@ -14,16 +14,34 @@ def load_user_with_relations(db_session, user_id):
     
     Args:
         db_session: SQLAlchemy database session
-        user_id: User ID (UUID)
+        user_id: User ID (UUID) - can be with or without dashes
         
     Returns:
         User object with relations loaded or None
     """
     try:
+        # Be robust to UUID representation (hyphenated vs 32-hex)
+        # Django stores UUIDs WITH dashes, but some code normalizes them
+        uid = str(user_id)
+        candidates = [uid]
+        try:
+            import uuid as _uuid
+            if '-' in uid:
+                # If UUID has dashes, also try without dashes
+                candidates.append(uid.replace('-', ''))
+            elif len(uid) == 32:
+                # If UUID has no dashes (32 hex chars), also try with dashes
+                try:
+                    candidates.append(str(_uuid.UUID(uid)))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        
         user = db_session.query(User).options(
             joinedload(User.profile),
             joinedload(User.onboarding_preferences)
-        ).filter(User.id == user_id).first()
+        ).filter(User.id.in_(candidates)).first()
         
         return user
     except Exception as e:

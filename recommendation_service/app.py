@@ -6,6 +6,11 @@ import sys
 from pathlib import Path
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import json
+import hashlib
+from copy import deepcopy
+from datetime import datetime
+import numpy as np
 
 # Add current directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -13,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from config import FLASK_HOST, FLASK_PORT, FLASK_DEBUG, CORS_ORIGINS
 from database.connection import check_db_connection, SessionLocal
 from database.models import User, Startup, UserInteraction
+# Note: StartupInteraction is in Django backend, accessed via API if needed
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -33,6 +39,8 @@ MODELS_DIR = Path(__file__).parent / "models"
 ALS_MODEL_NAME = "als_v1"
 ALS_REVERSE_MODEL_NAME = "als_reverse_v1"
 TWO_TOWER_MODEL_PATH = MODELS_DIR / "two_tower_v1_best.pth"
+TWO_TOWER_REVERSE_MODEL_PATH = MODELS_DIR / "two_tower_reverse_v1_best.pth"
+RANKER_REVERSE_MODEL_PATH = MODELS_DIR / "ranker_reverse_v1.pth"
 
 
 def resolve_model_artifact(base_name: str, prefer_config: bool = True) -> Path:
@@ -52,33 +60,47 @@ def resolve_model_artifact(base_name: str, prefer_config: bool = True) -> Path:
             return candidate
     return candidates[0]
 
-# Load Two-Tower Model
+# Load recommendation models
+logger.info("Loading recommendation models...")
+
+# Load Two-Tower Model (Forward: User -> Startup)
 try:
     from inference_two_tower import TwoTowerInference
     model_path = TWO_TOWER_MODEL_PATH
     
     if model_path.exists():
         two_tower_model = TwoTowerInference(str(model_path))
-        logger.info("✓ Two-Tower model loaded successfully!")
     else:
-        logger.warning(f"Two-Tower model not found at {model_path}")
+        logger.warning(f"Two-Tower Forward model not found at {model_path}")
 except Exception as e:
-    logger.error(f"Failed to load Two-Tower model: {e}")
+    logger.error(f"Failed to load Two-Tower Forward model: {e}")
 
-# Load ALS Model (Forward: User → Startup)
+# Load Two-Tower Reverse Model (Reverse: Startup -> User)
+two_tower_reverse_model = None
+try:
+    from inference_two_tower import TwoTowerInference
+    model_path = TWO_TOWER_REVERSE_MODEL_PATH
+    
+    if model_path.exists():
+        two_tower_reverse_model = TwoTowerInference(str(model_path))
+    else:
+        logger.warning(f"Two-Tower Reverse model not found at {TWO_TOWER_REVERSE_MODEL_PATH}")
+except Exception as e:
+    logger.error(f"Failed to load Two-Tower Reverse model: {e}")
+
+# Load ALS Model (Forward: User -> Startup)
 try:
     from inference_als import ALSInference
     als_pointer = resolve_model_artifact(ALS_MODEL_NAME)
     
     if als_pointer.exists():
         als_model = ALSInference(str(als_pointer))
-        logger.info("✓ ALS Forward (SVD) model loaded successfully!")
     else:
         logger.warning(f"ALS Forward artifacts not found (expected {als_pointer})")
 except Exception as e:
     logger.error(f"Failed to load ALS Forward model: {e}")
 
-# Load ALS Reverse Model (Reverse: Startup → User)
+# Load ALS Reverse Model (Reverse: Startup -> User)
 als_reverse_model = None
 try:
     from inference_als_reverse import ALSReverseInference
@@ -86,11 +108,8 @@ try:
     
     if als_reverse_pointer.exists():
         als_reverse_model = ALSReverseInference(str(als_reverse_pointer))
-        logger.info("✓ ALS Reverse (SVD) model loaded successfully!")
-        logger.info("  -> Will be used for Founder → Developer/Investor recommendations")
     else:
         logger.warning(f"ALS Reverse artifacts not found (expected {als_reverse_pointer})")
-        logger.info("  -> Founder use cases will use content-based only")
 except Exception as e:
     logger.error(f"Failed to load ALS Reverse model: {e}")
 
@@ -103,20 +122,10 @@ try:
             two_tower_model_path=str(TWO_TOWER_MODEL_PATH),
             als_weight=0.6
         )
-        logger.info("✓ Ensemble model initialized successfully!")
-        logger.info("  -> Routing: cold start(<5) -> content, warm(5-19) -> ALS, hot(20+) -> ensemble")
-    else:
-        logger.warning("Ensemble not initialized (requires both ALS and Two-Tower)")
-        if two_tower_model:
-            logger.info("  -> Will use: content-based + Two-Tower")
-        elif als_model:
-            logger.info("  -> Will use: content-based + ALS")
-        else:
-            logger.info("  -> Will use: content-based only")
 except Exception as e:
     logger.error(f"Failed to initialize ensemble: {e}")
 
-# Load Ranker Model (reranks recommendations for better quality)
+# Load Ranker Model (reranks forward recommendations for better quality)
 ranker_model = None
 try:
     ranker_path = Path(__file__).parent / "models" / "ranker_v1.pth"
@@ -132,31 +141,75 @@ try:
     
     if ranker_path.exists():
         ranker_model = NeuralRanker(str(ranker_path))
-        logger.info("✓ Ranker model loaded successfully!")
-        logger.info("  -> Will rerank all personalized recommendations")
     else:
-        logger.info("Ranker model not found, using rule-based ranker")
         ranker_model = NeuralRanker(use_rule_based=True)
 except Exception as e:
-    logger.warning(f"Could not load ranker: {e}")
-    logger.info("  -> Recommendations will work without ranker")
+    logger.warning(f"Could not load ranker forward: {e}")
     ranker_model = None
 
+# Load Ranker Reverse Model (reranks reverse recommendations for better quality)
+ranker_reverse_model = None
+try:
+    ranker_reverse_path = RANKER_REVERSE_MODEL_PATH
+    
+    # Import directly from module to avoid circular import through __init__
+    import sys
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ranker_module", 
+                                                   Path(__file__).parent / "engines" / "ranker.py")
+    ranker_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ranker_module)
+    NeuralRanker = ranker_module.NeuralRanker
+    
+    if ranker_reverse_path.exists():
+        ranker_reverse_model = NeuralRanker(str(ranker_reverse_path))
+    else:
+        ranker_reverse_model = NeuralRanker(use_rule_based=True)
+except Exception as e:
+    logger.warning(f"Could not load ranker reverse: {e}")
+    ranker_reverse_model = None
 
-def apply_ranker(results, user_id, limit, method_used):
+# Log model loading summary
+loaded_models = []
+if 'two_tower_model' in locals() and two_tower_model:
+    loaded_models.append("Two-Tower Forward")
+if 'two_tower_reverse_model' in locals() and two_tower_reverse_model:
+    loaded_models.append("Two-Tower Reverse")
+if 'als_model' in locals() and als_model:
+    loaded_models.append("ALS Forward")
+if 'als_reverse_model' in locals() and als_reverse_model:
+    loaded_models.append("ALS Reverse")
+if 'ensemble_model' in locals() and ensemble_model:
+    loaded_models.append("Ensemble")
+if 'ranker_model' in locals() and ranker_model:
+    loaded_models.append("Ranker Forward")
+if 'ranker_reverse_model' in locals() and ranker_reverse_model:
+    loaded_models.append("Ranker Reverse")
+
+if loaded_models:
+    logger.info(f"Models loaded successfully: {', '.join(loaded_models)}")
+else:
+    logger.warning("No models loaded - using content-based recommendations only")
+
+
+def apply_ranker(results, user_id, limit, method_used, use_reverse_ranker=False):
     """
     Apply ranker to reorder recommendations
     
     Args:
         results: Dict with 'startups' or similar key containing recommendations
-        user_id: User ID for context
+        user_id: User ID or Startup ID for context
         limit: Final number of items to return
         method_used: Which recommendation method was used
+        use_reverse_ranker: If True, use reverse ranker model
     
     Returns:
         Updated results dict with reranked items
     """
-    if not ranker_model:
+    # Select appropriate ranker model
+    ranker = ranker_reverse_model if use_reverse_ranker else ranker_model
+    
+    if not ranker:
         return results
     
     # Only rank personalized recommendations (not trending/popular)
@@ -180,7 +233,7 @@ def apply_ranker(results, user_id, limit, method_used):
     
     try:
         # Rerank candidates
-        reranked = ranker_model.rank(
+        reranked = ranker.rank(
             candidates=candidates,
             user_id=user_id,
             already_ranked=[]
@@ -190,7 +243,8 @@ def apply_ranker(results, user_id, limit, method_used):
         results[candidates_key] = reranked[:limit]
         results['reranked'] = True
         
-        logger.info(f"Reranked {len(candidates)} candidates to {len(results[candidates_key])} items")
+        ranker_type = "reverse" if use_reverse_ranker else "forward"
+        logger.info(f"Reranked {len(candidates)} candidates to {len(results[candidates_key])} items using {ranker_type} ranker")
         
     except Exception as e:
         logger.error(f"Error applying ranker: {e}")
@@ -288,54 +342,9 @@ def test_startups():
 # RECOMMENDATION API ENDPOINTS
 # ============================================================================
 
-def generate_recommendation_session(
-    user_id: str,
-    use_case: str,
-    method: str,
-    recommendations: list,
-    model_version: str = None
-) -> dict:
-    """
-    Generate recommendation session data
-    This will be stored in Django via API call
-    Abstraction allows future direct DB writes or async processing
-    """
-    import uuid
-    from datetime import datetime, timedelta
-    
-    session_id = str(uuid.uuid4())
-    expires_at = datetime.now() + timedelta(hours=24)
-    
-    # Format recommendations with rank
-    recommendations_with_rank = []
-    for idx, rec in enumerate(recommendations):
-        if isinstance(rec, dict):
-            rec_data = {
-                'startup_id': rec.get('startup_id') or rec.get('id'),
-                'rank': idx + 1,
-                'score': rec.get('score', 0.0),
-                'match_reasons': rec.get('match_reasons', [])
-            }
-        else:
-            # If rec is just startup_id
-            rec_data = {
-                'startup_id': str(rec),
-                'rank': idx + 1,
-                'score': 0.0,
-                'match_reasons': []
-            }
-        recommendations_with_rank.append(rec_data)
-    
-    return {
-        'recommendation_session_id': session_id,
-        'user_id': user_id,
-        'use_case': use_case,
-        'method': method,
-        'model_version': model_version or '',
-        'recommendations': recommendations_with_rank,
-        'created_at': datetime.now().isoformat(),
-        'expires_at': expires_at.isoformat()
-    }
+# NOTE: Session ID generation removed - frontend generates session_id
+# This function is deprecated and not used. Session data is formatted by SessionService.
+# Frontend generates session_id and sends it to Django for storage.
 
 
 @app.route('/api/recommendations/startups/for-developer/<user_id>', methods=['GET'])
@@ -355,6 +364,9 @@ def get_startups_for_developer(user_id):
         # Validate user_id
         if not user_id or not isinstance(user_id, str):
             return jsonify({'error': 'Invalid user_id'}), 400
+        
+        cache_indicator = request.args.get('cache_indicator', 'default')
+        force_refresh = _should_bust_cache()
         
         # Validate and sanitize limit
         try:
@@ -380,6 +392,22 @@ def get_startups_for_developer(user_id):
         require_open_positions_param = request.args.get('require_open_positions')
         if require_open_positions_param is not None and require_open_positions_param.lower() in ['1', 'true', 'yes']:
             filters['require_open_positions'] = True
+        
+        cache_params = {
+            'limit': limit,
+            'type': startup_type or '',
+            'filters': json.dumps(filters, sort_keys=True),
+            'offset': request.args.get('offset')
+        }
+        params_hash = _make_params_fingerprint(cache_params)
+        namespace = 'developer_startup'
+        if not force_refresh:
+            cached_entry = _get_personalized_cache_entry(namespace, user_id, params_hash, cache_indicator)
+            if cached_entry:
+                cached_data, cache_meta = cached_entry
+                logger.info(f"📦 Flask: Cache hit for {namespace} user={user_id} params={params_hash}")
+                cached_data['cache_meta'] = cache_meta
+                return jsonify(cached_data), 200
         
         # Check interaction count for routing
         # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
@@ -508,7 +536,11 @@ def get_startups_for_developer(user_id):
         response['interaction_count'] = interaction_count
         response['method_used'] = method_used
         
-        return jsonify(response), 200
+        cache_meta = _set_personalized_cache_entry(namespace, user_id, params_hash, cache_indicator, response)
+        response_payload = deepcopy(response)
+        response_payload['cache_meta'] = cache_meta
+        
+        return jsonify(response_payload), 200
         
     except Exception as e:
         logger.error(f"Error in get_startups_for_developer: {e}", exc_info=True)
@@ -535,6 +567,9 @@ def get_startups_for_investor(user_id):
         if not user_id or not isinstance(user_id, str):
             return jsonify({'error': 'Invalid user_id'}), 400
         
+        cache_indicator = request.args.get('cache_indicator', 'default')
+        force_refresh = _should_bust_cache()
+        
         # Validate and sanitize limit
         try:
             limit = int(request.args.get('limit', 10))
@@ -551,6 +586,23 @@ def get_startups_for_investor(user_id):
         filters = {'type': 'marketplace'}
         if category:
             filters['category'] = category
+        
+        cache_params = {
+            'limit': limit,
+            'category': category or '',
+            'filters': json.dumps(filters, sort_keys=True),
+            'min_funding': request.args.get('min_funding'),
+            'max_funding': request.args.get('max_funding')
+        }
+        params_hash = _make_params_fingerprint(cache_params)
+        namespace = 'investor_startup'
+        if not force_refresh:
+            cached_entry = _get_personalized_cache_entry(namespace, user_id, params_hash, cache_indicator)
+            if cached_entry:
+                cached_data, cache_meta = cached_entry
+                logger.info(f"📦 Flask: Cache hit for {namespace} user={user_id} params={params_hash}")
+                cached_data['cache_meta'] = cache_meta
+                return jsonify(cached_data), 200
         
         # Check interaction count for routing
         # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
@@ -676,7 +728,11 @@ def get_startups_for_investor(user_id):
         response['interaction_count'] = interaction_count
         response['method_used'] = method_used
         
-        return jsonify(response), 200
+        cache_meta = _set_personalized_cache_entry(namespace, user_id, params_hash, cache_indicator, response)
+        response_payload = deepcopy(response)
+        response_payload['cache_meta'] = cache_meta
+        
+        return jsonify(response_payload), 200
         
     except Exception as e:
         logger.error(f"Error in get_startups_for_investor: {e}", exc_info=True)
@@ -700,6 +756,10 @@ def get_developers_for_startup(startup_id):
     """
     db = SessionLocal()
     try:
+        force_refresh = _should_bust_cache()
+        cache_indicator = request.args.get('cache_indicator', 'default')
+        requesting_user_id = request.args.get('requesting_user_id')
+        
         # Validate startup_id
         if not startup_id or not isinstance(startup_id, str):
             return jsonify({'error': 'Invalid startup_id'}), 400
@@ -736,13 +796,33 @@ def get_developers_for_startup(startup_id):
             return jsonify({'error': 'Startup not found'}), 404
         
         founder_id = str(startup.owner_id)
+        user_cache_key = requesting_user_id or founder_id
         
         # Build filters (role: student for developers)
         filters = {'role': 'student'}
         if position_id:
             filters['position_id'] = position_id
         
+        cache_params = {
+            'limit': limit,
+            'position_id': position_id or '',
+            'startup_id': startup_id,
+            'skills': request.args.get('skills')
+        }
+        params_hash = _make_params_fingerprint(cache_params)
+        namespace = 'startup_developer'
+        if not force_refresh:
+            cached_entry = _get_personalized_cache_entry(namespace, user_cache_key, params_hash, cache_indicator)
+            if cached_entry:
+                cached_data, cache_meta = cached_entry
+                logger.info(f"📦 Flask: Cache hit for {namespace} startup={startup_id} requester={user_cache_key}")
+                cached_data['cache_meta'] = cache_meta
+                return jsonify(cached_data), 200
+        
         # Check interaction count for this startup (reverse direction)
+        # Note: For reverse, we check how many users this startup has interacted with
+        # Using UserInteraction as proxy (startup_id -> user_id interactions)
+        # In production, this should check StartupInteraction table via API
         interaction_count = db.query(UserInteraction).filter(
             UserInteraction.startup_id == startup_id
         ).distinct(UserInteraction.user_id).count()
@@ -756,53 +836,123 @@ def get_developers_for_startup(startup_id):
             from services.recommendation_service import RecommendationService
             rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
-                user_id=startup_id,  # Pass startup_id as per service API (founder_* expects startup_id)
-                use_case='founder_developer',
+                user_id=startup_id,  # Pass startup_id as per service API
+                use_case='startup_developer',
                 limit=limit,
                 filters=filters
             )
             method_used = results.get('method_used', 'content_based')
             model_version = 'content_based_v1.0'
-        elif interaction_count >= 5:
-            # Warm/Hot startups: ALS Reverse
-            logger.info(f"-> Using ALS Reverse (warm/hot startup: {interaction_count} interactions)")
-            if als_reverse_model:
+        elif interaction_count >= 5 and interaction_count < 20:
+            # Warm startups: Try Two-Tower Reverse, fallback to ALS Reverse
+            logger.info(f"-> Using Two-Tower Reverse or ALS Reverse (warm startup: {interaction_count} interactions)")
+            if two_tower_reverse_model:
+                try:
+                    results = two_tower_reverse_model.recommend(startup_id, limit, filters)
+                    method_used = 'two_tower_reverse'
+                    model_version = 'two_tower_reverse_v1.0'
+                except Exception as e:
+                    logger.warning(f"Two-Tower Reverse failed: {e}, falling back to ALS Reverse")
+                    if als_reverse_model:
+                        results = als_reverse_model.recommend(startup_id, limit, filters)
+                        method_used = 'als_reverse'
+                        model_version = 'als_reverse_v1.0'
+                    else:
+                        # Fallback to content-based
+                        from services.recommendation_service import RecommendationService
+                        rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                        results = rec_service.get_recommendations(
+                            user_id=startup_id,
+                            use_case='startup_developer',
+                            limit=limit,
+                            filters=filters
+                        )
+                        method_used = results.get('method_used', 'content_based')
+                        model_version = 'content_based_v1.0'
+            elif als_reverse_model:
                 results = als_reverse_model.recommend(startup_id, limit, filters)
                 method_used = 'als_reverse'
                 model_version = 'als_reverse_v1.0'
             else:
-                logger.info("  ALS Reverse unavailable, falling back to content-based")
+                logger.info("  No reverse models available, falling back to content-based")
                 from services.recommendation_service import RecommendationService
                 rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
                 results = rec_service.get_recommendations(
-                    user_id=startup_id,  # Pass startup_id
-                    use_case='founder_developer',
+                    user_id=startup_id,
+                    use_case='startup_developer',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
+        else:
+            # Hot startups: Prefer Two-Tower Reverse, fallback to ALS Reverse
+            logger.info(f"-> Using Two-Tower Reverse or ALS Reverse (hot startup: {interaction_count} interactions)")
+            if two_tower_reverse_model:
+                try:
+                    results = two_tower_reverse_model.recommend(startup_id, limit, filters)
+                    method_used = 'two_tower_reverse'
+                    model_version = 'two_tower_reverse_v1.0'
+                except Exception as e:
+                    logger.warning(f"Two-Tower Reverse failed: {e}, falling back to ALS Reverse")
+                    if als_reverse_model:
+                        results = als_reverse_model.recommend(startup_id, limit, filters)
+                        method_used = 'als_reverse'
+                        model_version = 'als_reverse_v1.0'
+                    else:
+                        # Fallback to content-based
+                        from services.recommendation_service import RecommendationService
+                        rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                        results = rec_service.get_recommendations(
+                            user_id=startup_id,
+                            use_case='startup_developer',
+                            limit=limit,
+                            filters=filters
+                        )
+                        method_used = results.get('method_used', 'content_based')
+                        model_version = 'content_based_v1.0'
+            elif als_reverse_model:
+                results = als_reverse_model.recommend(startup_id, limit, filters)
+                method_used = 'als_reverse'
+                model_version = 'als_reverse_v1.0'
+            else:
+                logger.info("  No reverse models available, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=startup_id,
+                    use_case='startup_developer',
                     limit=limit,
                     filters=filters
                 )
                 method_used = results.get('method_used', 'content_based')
                 model_version = 'content_based_v1.0'
         
-        # Apply ranker to reorder recommendations
-        results = apply_ranker(results, founder_id, limit, method_used)
+        # Apply reverse ranker to reorder recommendations
+        results = apply_ranker(results, startup_id, limit, method_used, use_reverse_ranker=True)
         
         # Create session data
         from services.session_service import SessionService
         session_service = SessionService()
         
         session_data = session_service.create_session_data(
-            user_id=founder_id,
-            use_case='founder_developer',
+            user_id=startup_id,  # Use startup_id for reverse use cases
+            use_case='startup_developer',
             method=method_used,
             recommendations=results,
-            model_version=model_version
+            model_version=model_version,
+            startup_id=startup_id  # Pass startup_id for reverse
         )
         
         # Format for API response
         response = session_service.format_for_api_response(session_data, results)
         response['startup_id'] = startup_id
         
-        return jsonify(response), 200
+        cache_meta = _set_personalized_cache_entry(namespace, user_cache_key, params_hash, cache_indicator, response)
+        response_payload = deepcopy(response)
+        response_payload['cache_meta'] = cache_meta
+        
+        return jsonify(response_payload), 200
         
     except Exception as e:
         logger.error(f"Error in get_developers_for_startup: {e}", exc_info=True)
@@ -825,6 +975,10 @@ def get_investors_for_startup(startup_id):
     """
     db = SessionLocal()
     try:
+        force_refresh = _should_bust_cache()
+        cache_indicator = request.args.get('cache_indicator', 'default')
+        requesting_user_id = request.args.get('requesting_user_id')
+        
         # Validate startup_id
         if not startup_id or not isinstance(startup_id, str):
             return jsonify({'error': 'Invalid startup_id'}), 400
@@ -861,11 +1015,29 @@ def get_investors_for_startup(startup_id):
             return jsonify({'error': 'Startup not found'}), 404
         
         founder_id = str(startup.owner_id)
+        user_cache_key = requesting_user_id or founder_id
         
         # Build filters (role: investor)
         filters = {'role': 'investor'}
         
+        cache_params = {
+            'limit': limit,
+            'startup_id': startup_id
+        }
+        params_hash = _make_params_fingerprint(cache_params)
+        namespace = 'startup_investor'
+        if not force_refresh:
+            cached_entry = _get_personalized_cache_entry(namespace, user_cache_key, params_hash, cache_indicator)
+            if cached_entry:
+                cached_data, cache_meta = cached_entry
+                logger.info(f"📦 Flask: Cache hit for {namespace} startup={startup_id} requester={user_cache_key}")
+                cached_data['cache_meta'] = cache_meta
+                return jsonify(cached_data), 200
+        
         # Check interaction count for this startup (reverse direction)
+        # Note: For reverse, we check how many users this startup has interacted with
+        # Using UserInteraction as proxy (startup_id -> user_id interactions)
+        # In production, this should check StartupInteraction table via API
         interaction_count = db.query(UserInteraction).filter(
             UserInteraction.startup_id == startup_id
         ).distinct(UserInteraction.user_id).count()
@@ -879,53 +1051,123 @@ def get_investors_for_startup(startup_id):
             from services.recommendation_service import RecommendationService
             rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
             results = rec_service.get_recommendations(
-                user_id=startup_id,  # Pass startup_id as per service API (founder_* expects startup_id)
-                use_case='founder_investor',
+                user_id=startup_id,  # Pass startup_id as per service API
+                use_case='startup_investor',
                 limit=limit,
                 filters=filters
             )
             method_used = results.get('method_used', 'content_based')
             model_version = 'content_based_v1.0'
-        elif interaction_count >= 5:
-            # Warm/Hot startups: ALS Reverse
-            logger.info(f"-> Using ALS Reverse (warm/hot startup: {interaction_count} interactions)")
-            if als_reverse_model:
+        elif interaction_count >= 5 and interaction_count < 20:
+            # Warm startups: Try Two-Tower Reverse, fallback to ALS Reverse
+            logger.info(f"-> Using Two-Tower Reverse or ALS Reverse (warm startup: {interaction_count} interactions)")
+            if two_tower_reverse_model:
+                try:
+                    results = two_tower_reverse_model.recommend(startup_id, limit, filters)
+                    method_used = 'two_tower_reverse'
+                    model_version = 'two_tower_reverse_v1.0'
+                except Exception as e:
+                    logger.warning(f"Two-Tower Reverse failed: {e}, falling back to ALS Reverse")
+                    if als_reverse_model:
+                        results = als_reverse_model.recommend(startup_id, limit, filters)
+                        method_used = 'als_reverse'
+                        model_version = 'als_reverse_v1.0'
+                    else:
+                        # Fallback to content-based
+                        from services.recommendation_service import RecommendationService
+                        rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                        results = rec_service.get_recommendations(
+                            user_id=startup_id,
+                            use_case='startup_investor',
+                            limit=limit,
+                            filters=filters
+                        )
+                        method_used = results.get('method_used', 'content_based')
+                        model_version = 'content_based_v1.0'
+            elif als_reverse_model:
                 results = als_reverse_model.recommend(startup_id, limit, filters)
                 method_used = 'als_reverse'
                 model_version = 'als_reverse_v1.0'
             else:
-                logger.info("  ALS Reverse unavailable, falling back to content-based")
+                logger.info("  No reverse models available, falling back to content-based")
                 from services.recommendation_service import RecommendationService
                 rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
                 results = rec_service.get_recommendations(
-                    user_id=startup_id,  # Pass startup_id
-                    use_case='founder_investor',
+                    user_id=startup_id,
+                    use_case='startup_investor',
+                    limit=limit,
+                    filters=filters
+                )
+                method_used = results.get('method_used', 'content_based')
+                model_version = 'content_based_v1.0'
+        else:
+            # Hot startups: Prefer Two-Tower Reverse, fallback to ALS Reverse
+            logger.info(f"-> Using Two-Tower Reverse or ALS Reverse (hot startup: {interaction_count} interactions)")
+            if two_tower_reverse_model:
+                try:
+                    results = two_tower_reverse_model.recommend(startup_id, limit, filters)
+                    method_used = 'two_tower_reverse'
+                    model_version = 'two_tower_reverse_v1.0'
+                except Exception as e:
+                    logger.warning(f"Two-Tower Reverse failed: {e}, falling back to ALS Reverse")
+                    if als_reverse_model:
+                        results = als_reverse_model.recommend(startup_id, limit, filters)
+                        method_used = 'als_reverse'
+                        model_version = 'als_reverse_v1.0'
+                    else:
+                        # Fallback to content-based
+                        from services.recommendation_service import RecommendationService
+                        rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                        results = rec_service.get_recommendations(
+                            user_id=startup_id,
+                            use_case='startup_investor',
+                            limit=limit,
+                            filters=filters
+                        )
+                        method_used = results.get('method_used', 'content_based')
+                        model_version = 'content_based_v1.0'
+            elif als_reverse_model:
+                results = als_reverse_model.recommend(startup_id, limit, filters)
+                method_used = 'als_reverse'
+                model_version = 'als_reverse_v1.0'
+            else:
+                logger.info("  No reverse models available, falling back to content-based")
+                from services.recommendation_service import RecommendationService
+                rec_service = RecommendationService(db, enable_two_tower=False, enable_als=False, enable_ensemble=False)
+                results = rec_service.get_recommendations(
+                    user_id=startup_id,
+                    use_case='startup_investor',
                     limit=limit,
                     filters=filters
                 )
                 method_used = results.get('method_used', 'content_based')
                 model_version = 'content_based_v1.0'
         
-        # Apply ranker to reorder recommendations
-        results = apply_ranker(results, founder_id, limit, method_used)
+        # Apply reverse ranker to reorder recommendations
+        results = apply_ranker(results, startup_id, limit, method_used, use_reverse_ranker=True)
         
         # Create session data
         from services.session_service import SessionService
         session_service = SessionService()
         
         session_data = session_service.create_session_data(
-            user_id=founder_id,
-            use_case='founder_investor',
+            user_id=startup_id,  # Use startup_id for reverse use cases
+            use_case='startup_investor',
             method=method_used,
             recommendations=results,
-            model_version=model_version
+            model_version=model_version,
+            startup_id=startup_id  # Pass startup_id for reverse
         )
         
         # Format for API response
         response = session_service.format_for_api_response(session_data, results)
         response['startup_id'] = startup_id
         
-        return jsonify(response), 200
+        cache_meta = _set_personalized_cache_entry(namespace, user_cache_key, params_hash, cache_indicator, response)
+        response_payload = deepcopy(response)
+        response_payload['cache_meta'] = cache_meta
+        
+        return jsonify(response_payload), 200
         
     except Exception as e:
         logger.error(f"Error in get_investors_for_startup: {e}", exc_info=True)
@@ -934,13 +1176,67 @@ def get_investors_for_startup(startup_id):
         db.close()
 
 
-# Cache for trending startups (5-minute TTL)
+# Cache for trending startups (very short TTL for near real-time updates)
 _trending_cache = {
     'data': None,
     'timestamp': None,
-    'params': None
+    'params': None,
+    'version': 0
 }
-TRENDING_CACHE_TTL = 300  # 5 minutes in seconds
+TRENDING_CACHE_TTL = 15  # seconds
+PERSONALIZED_CACHE_TTL = 30  # seconds
+_personalized_cache = {}
+
+
+def _truthy_flag(value) -> bool:
+    return str(value).lower() in ('1', 'true', 'yes', 'force', 'refresh')
+
+
+def _should_bust_cache() -> bool:
+    param_flag = request.args.get('cache_bust')
+    header_flag = request.headers.get('X-Cache-Bust')
+    return (_truthy_flag(param_flag) if param_flag else False) or (_truthy_flag(header_flag) if header_flag else False)
+
+
+def _make_params_fingerprint(params: dict) -> str:
+    cleaned = {k: str(v) for k, v in sorted(params.items()) if v is not None}
+    normalized = json.dumps(cleaned, separators=(',', ':'))
+    return hashlib.sha1(normalized.encode('utf-8')).hexdigest()[:16]
+
+
+def _get_personalized_cache_entry(namespace: str, user_key: str, params_hash: str, indicator: str):
+    cache_key = (namespace, str(user_key), params_hash)
+    entry = _personalized_cache.get(cache_key)
+    if not entry:
+        return None
+    age = (datetime.now() - entry['timestamp']).total_seconds()
+    if age >= entry['ttl']:
+        return None
+    if entry['indicator'] != indicator:
+        return None
+    return deepcopy(entry['data']), {
+        'hit': True,
+        'indicator': entry['indicator'],
+        'cached_at': entry['timestamp'].isoformat(),
+        'ttl_seconds': entry['ttl'] - age
+    }
+
+
+def _set_personalized_cache_entry(namespace: str, user_key: str, params_hash: str, indicator: str, data: dict, ttl: int = PERSONALIZED_CACHE_TTL):
+    cache_key = (namespace, str(user_key), params_hash)
+    now = datetime.now()
+    _personalized_cache[cache_key] = {
+        'data': deepcopy(data),
+        'timestamp': now,
+        'indicator': indicator,
+        'ttl': ttl
+    }
+    return {
+        'hit': False,
+        'indicator': indicator,
+        'cached_at': now.isoformat(),
+        'ttl_seconds': ttl
+    }
 
 
 @app.route('/api/recommendations/trending/startups', methods=['GET'])
@@ -957,19 +1253,24 @@ def get_trending_startups():
         List of trending startups with metrics
     """
     try:
-        from datetime import datetime
-        
-        # Get request params
         limit_param = request.args.get('limit', '50')
         sort_by_param = request.args.get('sort_by', 'trending_score')
         cache_key = f"{limit_param}_{sort_by_param}"
+        force_refresh = _should_bust_cache()
         
         # Check cache
-        if _trending_cache['data'] and _trending_cache['timestamp'] and _trending_cache['params'] == cache_key:
+        if not force_refresh and _trending_cache['data'] and _trending_cache['timestamp'] and _trending_cache['params'] == cache_key:
             time_elapsed = (datetime.now() - _trending_cache['timestamp']).total_seconds()
             if time_elapsed < TRENDING_CACHE_TTL:
                 logger.info(f"📦 Flask: Returning cached trending data (age: {time_elapsed:.1f}s)")
-                return jsonify(_trending_cache['data']), 200
+                cached_payload = deepcopy(_trending_cache['data'])
+                cached_payload['cache_meta'] = {
+                    'hit': True,
+                    'indicator': f"trending::{_trending_cache['version']}",
+                    'cached_at': _trending_cache['timestamp'].isoformat(),
+                    'ttl_seconds': max(TRENDING_CACHE_TTL - time_elapsed, 0)
+                }
+                return jsonify(cached_payload), 200
             else:
                 logger.info(f"⏰ Flask: Cache expired (age: {time_elapsed:.1f}s), fetching fresh data")
         
@@ -1007,7 +1308,7 @@ def get_trending_startups():
             elif sort_by == 'velocity_score':
                 metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.velocity_score))
             elif sort_by == 'views':
-                metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.total_views))
+                metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.view_count_7d))
             elif sort_by == 'created_at':
                 metrics_query = metrics_query.order_by(desc(StartupTrendingMetrics.computed_at))
             
@@ -1064,17 +1365,37 @@ def get_trending_startups():
             }
             
             # Update cache
-            _trending_cache['data'] = response_data
+            _trending_cache['data'] = deepcopy(response_data)
             _trending_cache['timestamp'] = datetime.now()
             _trending_cache['params'] = cache_key
+            _trending_cache['version'] += 1
             logger.info(f"💾 Flask: Cached trending data for {TRENDING_CACHE_TTL}s")
             
-            return jsonify(response_data), 200
+            response_payload = deepcopy(response_data)
+            response_payload['cache_meta'] = {
+                'hit': False,
+                'indicator': f"trending::{_trending_cache['version']}",
+                'cached_at': _trending_cache['timestamp'].isoformat(),
+                'ttl_seconds': TRENDING_CACHE_TTL
+            }
+            
+            return jsonify(response_payload), 200
         finally:
             db.close()
     except Exception as e:
         logger.error(f"Error in get_trending_startups: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+
+@app.route('/metrics', methods=['GET'])
+def metrics_dashboard():
+    """Serve the metrics dashboard HTML page"""
+    try:
+        from flask import render_template
+        return render_template('metrics_dashboard.html')
+    except Exception as e:
+        logger.error(f"Error serving metrics dashboard: {e}")
+        return f"Error loading dashboard: {e}", 500
 
 
 @app.route('/api/recommendations/metrics', methods=['GET'])
@@ -1101,17 +1422,81 @@ def get_recommendation_metrics():
         if model_type and model_type not in ['content_based', 'als', 'two_tower', 'ranker']:
             model_type = None
         
-        # TODO: Implement metrics retrieval from RecommendationModel table
-        # For now, return empty structure
-        return jsonify({
-            'models': [],
-            'overall_metrics': {
+        # Load metrics from evaluation file
+        metrics_file = MODELS_DIR / "all_models_metrics.json"
+        all_metrics_data = {}
+        
+        if metrics_file.exists():
+            try:
+                import json
+                with open(metrics_file, 'r') as f:
+                    all_metrics_data = json.load(f)
+            except Exception as e:
+                logger.warning(f"Error loading metrics file: {e}")
+        
+        # Filter models based on query params
+        filtered_models = []
+        for model_key, model_data in all_metrics_data.items():
+            # Skip if only training_history exists (incomplete evaluation)
+            if 'metrics' not in model_data:
+                continue
+            
+            # Apply filters
+            if use_case and model_data.get('use_case') != use_case:
+                continue
+            if model_type and model_data.get('model_type') != model_type:
+                continue
+            
+            filtered_models.append({
+                'name': model_data.get('model_name', model_key),
+                'type': model_data.get('model_type', 'unknown'),
+                'use_case': model_data.get('use_case', 'unknown'),
+                'is_reverse': model_data.get('is_reverse', False),
+                'evaluation_date': model_data.get('evaluation_date'),
+                'metrics': model_data.get('metrics', {}),
+                'num_test_entities': model_data.get('num_test_entities', 0),
+                'coverage_details': model_data.get('coverage_details', {})
+            })
+        
+        # Calculate overall metrics
+        if filtered_models:
+            total_models = len(filtered_models)
+            active_models = total_models  # All evaluated models are considered active
+            
+            # Average metrics across all models
+            precision_values = []
+            recall_values = []
+            ndcg_values = []
+            
+            for model in filtered_models:
+                metrics = model.get('metrics', {})
+                # Get metrics at K=10 for averaging
+                if 'precision@10' in metrics:
+                    precision_values.append(metrics['precision@10'])
+                if 'recall@10' in metrics:
+                    recall_values.append(metrics['recall@10'])
+                if 'ndcg@10' in metrics:
+                    ndcg_values.append(metrics['ndcg@10'])
+            
+            overall_metrics = {
+                'total_models': total_models,
+                'active_models': active_models,
+                'average_precision': float(np.mean(precision_values)) if precision_values else 0.0,
+                'average_recall': float(np.mean(recall_values)) if recall_values else 0.0,
+                'average_ndcg': float(np.mean(ndcg_values)) if ndcg_values else 0.0
+            }
+        else:
+            overall_metrics = {
                 'total_models': 0,
                 'active_models': 0,
                 'average_precision': 0.0,
                 'average_recall': 0.0,
                 'average_ndcg': 0.0
-            },
+            }
+        
+        return jsonify({
+            'models': filtered_models,
+            'overall_metrics': overall_metrics,
             'filters': {
                 'use_case': use_case,
                 'model_type': model_type

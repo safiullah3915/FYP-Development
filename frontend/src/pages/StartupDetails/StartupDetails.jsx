@@ -6,6 +6,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import { startupAPI, userAPI, recommendationAPI } from '../../utils/apiServices';
+import { useRecommendationContext } from '../../hooks/useRecommendationContext';
 import apiClient from '../../utils/axiosConfig';
 import { BarChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer, LabelList, Label } from 'recharts';
 
@@ -13,6 +14,7 @@ const StartupDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isStudent, isInvestor, isEntrepreneur } = useAuth();
+  const { getRecommendationContext } = useRecommendationContext();
   const [startup, setStartup] = useState(null);
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,33 @@ const StartupDetails = () => {
   const loadStartupDetails = async () => {
     try {
       console.log('[StartupDetails] Loading startup with ID:', id);
-      const response = await startupAPI.getStartup(id);
+      
+      // Get recommendation context from URL query params or hook
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionIdFromUrl = urlParams.get('recommendation_session_id');
+      const rankFromUrl = urlParams.get('recommendation_rank');
+      
+      // Also check hook for recommendation context
+      const contextFromHook = getRecommendationContext(id);
+      
+      // Use URL params if available, otherwise use hook context
+      const recommendationContext = sessionIdFromUrl 
+        ? { sessionId: sessionIdFromUrl, rank: rankFromUrl ? parseInt(rankFromUrl) : null }
+        : contextFromHook;
+      
+      // Build request URL with recommendation context if available
+      let requestUrl = `/api/startups/${id}`;
+      if (recommendationContext?.sessionId) {
+        const params = new URLSearchParams({
+          recommendation_session_id: recommendationContext.sessionId,
+        });
+        if (recommendationContext.rank) {
+          params.append('recommendation_rank', recommendationContext.rank.toString());
+        }
+        requestUrl += `?${params.toString()}`;
+      }
+      
+      const response = await apiClient.get(requestUrl);
       console.log('[StartupDetails] Startup loaded successfully:', response.data?.title);
       setStartup(response.data);
     } catch (error) {
@@ -164,12 +192,15 @@ const StartupDetails = () => {
     }
 
     try {
+      // Get recommendation context if this startup was from a recommendation
+      const recommendationContext = getRecommendationContext(id);
+      
       if (hasLike) {
-        await recommendationAPI.unlikeStartup(id);
+        await recommendationAPI.unlikeStartup(id, recommendationContext);
         setHasLike(false);
         toast.success('Like removed');
       } else {
-        await recommendationAPI.likeStartup(id);
+        await recommendationAPI.likeStartup(id, recommendationContext);
         setHasLike(true);
         setHasDislike(false);
         toast.success('Startup liked!');
@@ -188,12 +219,15 @@ const StartupDetails = () => {
     }
 
     try {
+      // Get recommendation context if this startup was from a recommendation
+      const recommendationContext = getRecommendationContext(id);
+      
       if (hasDislike) {
-        await recommendationAPI.undislikeStartup(id);
+        await recommendationAPI.undislikeStartup(id, recommendationContext);
         setHasDislike(false);
         toast.success('Dislike removed');
       } else {
-        await recommendationAPI.dislikeStartup(id);
+        await recommendationAPI.dislikeStartup(id, recommendationContext);
         setHasDislike(true);
         setHasLike(false);
         toast.success('Startup disliked');
@@ -251,17 +285,20 @@ const StartupDetails = () => {
     console.log('Toggle Favorite - Startup ID:', id);
 
     try {
+      // Get recommendation context if this startup was from a recommendation
+      const recommendationContext = getRecommendationContext(id);
+      
       if (isFavorited) {
         // Remove from favorites using DELETE
         console.log('Removing from favorites...');
-        await apiClient.delete(`/api/startups/${id}/favorite`);
+        await startupAPI.deleteFavorite(id, recommendationContext);
         setIsFavorited(false);
         console.log('Successfully removed from favorites');
         toast.success('Removed from favorites');
       } else {
         // Add to favorites using POST
         console.log('Adding to favorites...');
-      await startupAPI.toggleFavorite(id);
+        await startupAPI.toggleFavorite(id, recommendationContext);
         setIsFavorited(true);
         console.log('Successfully added to favorites');
         toast.success('Added to favorites');
@@ -294,7 +331,10 @@ const StartupDetails = () => {
     }
 
     try {
-      await startupAPI.expressInterest(id, { message: interestMessage });
+      // Get recommendation context if this startup was from a recommendation
+      const recommendationContext = getRecommendationContext(id);
+      
+      await startupAPI.expressInterest(id, { message: interestMessage }, recommendationContext);
       setHasInterest(true);
       setInterestMessage('');
       toast.success('Interest expressed successfully!');

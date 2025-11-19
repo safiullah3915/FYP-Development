@@ -101,10 +101,11 @@ class Tower(nn.Module):
 class TwoTowerModel(nn.Module):
     """Two-Tower model for recommendation"""
     
-    def __init__(self, config: TwoTowerConfig):
+    def __init__(self, config: TwoTowerConfig, is_reverse: bool = False):
         super(TwoTowerModel, self).__init__()
         
         self.config = config
+        self.is_reverse = is_reverse
         
         self.user_tower = Tower(
             input_dim=config.user_feature_dim,
@@ -123,8 +124,16 @@ class TwoTowerModel(nn.Module):
         )
     
     def forward(self, user_features: torch.Tensor, startup_features: torch.Tensor) -> torch.Tensor:
-        user_emb = self.user_tower(user_features)
-        startup_emb = self.startup_tower(startup_features)
+        # In reverse mode: user_features are actually startup features, startup_features are user features
+        # But the towers are initialized with swapped dimensions, so we need to swap inputs
+        if self.is_reverse:
+            # Swap inputs: user_features (startup data) goes to startup_tower, startup_features (user data) goes to user_tower
+            user_emb = self.user_tower(startup_features)  # User tower receives user features (from startup_features)
+            startup_emb = self.startup_tower(user_features)  # Startup tower receives startup features (from user_features)
+        else:
+            user_emb = self.user_tower(user_features)
+            startup_emb = self.startup_tower(startup_features)
+        
         similarity = torch.sum(user_emb * startup_emb, dim=1)
         scores = torch.sigmoid(similarity)
         return scores
@@ -162,8 +171,9 @@ class TwoTowerDataset(Dataset):
         Args:
             user_features: User feature array (N, D_user)
             startup_features: Startup feature array (N, D_startup)
-            labels: Label array (N,)
-            weights: Weight array (N,)
+            labels: Label array (N,) - 0.0 to 1.0 based on interaction type
+            weights: Weight array (N,) - base_weight * rank_weight
+                     rank_weight = 1 / log2(rank + 1) corrects for exposure bias
         """
         self.user_features = torch.tensor(user_features, dtype=torch.float32)
         self.startup_features = torch.tensor(startup_features, dtype=torch.float32)
@@ -261,6 +271,8 @@ class Trainer:
             weights = batch['weights'].to(self.device)
             
             # Forward pass
+            # Weighted loss: weights include rank-based exposure correction
+            # Hard negatives (high score but no interaction) are prioritized
             predictions = self.model(user_features, startup_features)
             loss = self.criterion(predictions, labels, weights)
             
@@ -402,7 +414,11 @@ class Trainer:
         }
         
         if is_best:
-            checkpoint_path = models_dir / f"{self.config.model_name}.pth"
+            # For reverse models, save with _best suffix
+            if 'reverse' in self.config.model_name:
+                checkpoint_path = models_dir / f"{self.config.model_name}_best.pth"
+            else:
+                checkpoint_path = models_dir / f"{self.config.model_name}.pth"
             torch.save(checkpoint, checkpoint_path)
             logger.info(f"  Saved best model to {checkpoint_path}")
         
@@ -416,7 +432,10 @@ def main():
     parser = argparse.ArgumentParser(description='Train Two-Tower recommendation model')
     parser.add_argument('--data', type=str, required=True, help='Path to training dataset CSV')
     parser.add_argument('--output-dir', type=str, default='models', help='Output directory for models')
-    parser.add_argument('--model-name', type=str, default='two_tower_v1', help='Model name')
+    parser.add_argument('--model-name', type=str, default=None, help='Model name (auto-generated if not provided)')
+    parser.add_argument('--use-case', type=str, default='developer_startup', 
+                        choices=['developer_startup', 'investor_startup', 'startup_developer', 'startup_investor'],
+                        help='Use case for training (default: developer_startup)')
     parser.add_argument('--epochs', type=int, default=50, help='Number of epochs')
     parser.add_argument('--batch-size', type=int, default=256, help='Batch size')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
@@ -427,9 +446,21 @@ def main():
     
     args = parser.parse_args()
     
+    # Determine if this is a reverse use case
+    reverse_use_cases = ['startup_developer', 'startup_investor']
+    is_reverse = args.use_case in reverse_use_cases
+    
+    # Auto-generate model name if not provided
+    if args.model_name is None:
+        if is_reverse:
+            args.model_name = f'two_tower_reverse_v1'
+        else:
+            args.model_name = f'two_tower_v1'
+    
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f"Using device: {device}")
+    logger.info(f"Use case: {args.use_case} (reverse: {is_reverse})")
     
     # Load configuration
     if args.config:
@@ -463,16 +494,30 @@ def main():
     train_data, val_data, test_data = processor.prepare_dataset(raw_data)
     
     # Update config with feature dimensions
-    config.user_feature_dim = encoder.get_user_feature_dim()
-    config.startup_feature_dim = encoder.get_startup_feature_dim()
-    
-    logger.info(f"Feature dimensions:")
-    logger.info(f"  User: {config.user_feature_dim}")
-    logger.info(f"  Startup: {config.startup_feature_dim}")
+    # For reverse: user features are actually startup features, startup features are user features
+    if is_reverse:
+        # For reverse use cases, swap feature dimensions
+        config.user_feature_dim = encoder.get_startup_feature_dim()  # Startups as "users"
+        config.startup_feature_dim = encoder.get_user_feature_dim()  # Users as "items"
+        logger.info(f"Feature dimensions (reverse mode):")
+        logger.info(f"  Entity (Startup): {config.user_feature_dim}")
+        logger.info(f"  Item (User): {config.startup_feature_dim}")
+    else:
+        config.user_feature_dim = encoder.get_user_feature_dim()
+        config.startup_feature_dim = encoder.get_startup_feature_dim()
+        logger.info(f"Feature dimensions:")
+        logger.info(f"  User: {config.user_feature_dim}")
+        logger.info(f"  Startup: {config.startup_feature_dim}")
     
     # Save encoder
     encoder_path = Path(config.model_save_dir) / f"{config.model_name}_encoder.pkl"
     encoder_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Register module for pickle compatibility
+    import sys
+    sys.modules['engines.feature_engineering'] = feature_engineering_module
+    sys.modules['feature_engineering'] = feature_engineering_module
+    
     encoder.save(str(encoder_path))
     
     # Save config
@@ -489,7 +534,9 @@ def main():
         
         # Load model
         checkpoint = torch.load(args.model, map_location=device)
-        model = TwoTowerModel(config)
+        # Determine if reverse from config or model name
+        is_reverse_eval = 'reverse' in config.model_name or 'reverse' in str(args.model)
+        model = TwoTowerModel(config, is_reverse=is_reverse_eval)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.to(device)
         model.eval()
@@ -571,7 +618,7 @@ def main():
         
         # Initialize model
         logger.info("Initializing model...")
-        model = TwoTowerModel(config)
+        model = TwoTowerModel(config, is_reverse=is_reverse)
         
         # Initialize trainer
         trainer = Trainer(model, config, train_loader, val_loader, device)

@@ -63,7 +63,6 @@ class ALSInference:
         """Load embeddings, mappings, and config metadata"""
         try:
             prefix = self._resolve_prefix(model_path)
-            logger.info(f"Loading ALS/SVD artifacts using prefix {prefix}")
 
             user_factors_path = f"{prefix}_user_factors.npy"
             item_factors_path = f"{prefix}_item_factors.npy"
@@ -96,10 +95,7 @@ class ALSInference:
             self.user_reverse = {idx: user_id for user_id, idx in self.user_mapping.items()}
             self.item_reverse = {idx: item_id for item_id, idx in self.item_mapping.items()}
 
-            logger.info("ALS/SVD embeddings loaded successfully:")
-            logger.info(f"  Users: {len(self.user_mapping)}")
-            logger.info(f"  Items: {len(self.item_mapping)}")
-            logger.info(f"  Factors: {self.user_factors.shape[1]}")
+            # ALS model loaded silently - status logged at app startup
 
         except Exception as e:
             logger.error(f"Failed to load ALS/SVD artifacts: {e}")

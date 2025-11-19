@@ -55,7 +55,6 @@ class ALSReverseInference:
         """Load embeddings and mappings"""
         try:
             prefix = self._resolve_prefix(model_path)
-            logger.info(f"Loading ALS Reverse artifacts using prefix {prefix}")
 
             startup_factors_path = f"{prefix}_user_factors.npy"
             user_factors_path = f"{prefix}_item_factors.npy"
@@ -83,10 +82,7 @@ class ALSReverseInference:
             self.user_reverse = {idx: startup_id for startup_id, idx in self.user_mapping.items()}
             self.item_reverse = {idx: user_id for user_id, idx in self.item_mapping.items()}
 
-            logger.info("ALS Reverse embeddings loaded successfully")
-            logger.info(f"  Startups: {len(self.user_mapping)}")
-            logger.info(f"  Users: {len(self.item_mapping)}")
-            logger.info(f"  Factors: {self.user_factors.shape[1]}")
+            # ALS Reverse model loaded silently - status logged at app startup
 
         except Exception as e:
             logger.error(f"Failed to load ALS Reverse artifacts: {e}")

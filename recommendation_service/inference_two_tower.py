@@ -105,22 +105,52 @@ class TwoTowerInference:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # Load checkpoint first to detect dimensions
-        logger.info(f"Loading model from {model_path}")
         checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
         
         # Handle different checkpoint formats
         if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
             # Checkpoint contains metadata
             state_dict = checkpoint['model_state_dict']
-            # Try to get dimensions from config
+            # Try to get dimensions from checkpoint config
             if 'config' in checkpoint and user_dim is None:
-                user_dim = checkpoint['config'].get('user_dim', 502)
-                startup_dim = checkpoint['config'].get('startup_dim', 471)
+                user_dim = checkpoint['config'].get('user_feature_dim') or checkpoint['config'].get('user_dim')
+                startup_dim = checkpoint['config'].get('startup_feature_dim') or checkpoint['config'].get('startup_dim')
         else:
             # Direct state dict
             state_dict = checkpoint
         
-        # Auto-detect dimensions from state_dict if not provided
+        # Try to load dimensions from config.json file if not in checkpoint
+        if (user_dim is None or startup_dim is None) and Path(model_path).exists():
+            # Try multiple config path patterns
+            model_stem = Path(model_path).stem
+            config_candidates = [
+                Path(model_path).parent / f"{model_stem.replace('_best', '')}_config.json",
+                Path(model_path).parent / f"{model_stem}_config.json",
+                Path(model_path).parent / "two_tower_reverse_v1_config.json",  # Fallback for reverse
+            ]
+            
+            config_loaded = False
+            for config_path in config_candidates:
+                if config_path.exists():
+                    try:
+                        with open(config_path, 'r') as f:
+                            config = json.load(f)
+                            if user_dim is None:
+                                user_dim = config.get('user_feature_dim') or config.get('user_dim')
+                            if startup_dim is None:
+                                startup_dim = config.get('startup_feature_dim') or config.get('startup_dim')
+                            if user_dim and startup_dim:
+                                # Dimensions loaded silently - only log errors
+                                config_loaded = True
+                                break
+                    except Exception as e:
+                        logger.warning(f"Could not load config from {config_path}: {e}")
+                        continue
+            
+            if not config_loaded and (user_dim is None or startup_dim is None):
+                logger.warning("Could not load dimensions from config file, will auto-detect from model weights")
+        
+        # Auto-detect dimensions from state_dict if still not provided
         if user_dim is None or startup_dim is None:
             # Get dimensions from the first layer weights
             if 'user_tower.model.0.weight' in state_dict:
@@ -144,7 +174,7 @@ class TwoTowerInference:
         self.model.load_state_dict(state_dict)
         self.model.eval()
         
-        logger.info(f"Model loaded successfully on {self.device}")
+        # Model loaded silently - status logged at app startup
         
         self.db = SessionLocal()
     
@@ -283,17 +313,40 @@ class TwoTowerInference:
             Dict mapping startup_id to score
         """
         try:
-            # Normalize UUID format (remove dashes) since SQLite stores UUIDs without dashes
-            normalized_user_id = str(user_id).replace('-', '')
+            # Handle UUID format (Django stores WITH dashes, but some code normalizes them)
+            # Try both formats for robustness
+            uid = str(user_id)
+            user_candidates = [uid]
+            if '-' in uid:
+                user_candidates.append(uid.replace('-', ''))
+            elif len(uid) == 32:
+                try:
+                    import uuid as _uuid
+                    user_candidates.append(str(_uuid.UUID(uid)))
+                except Exception:
+                    pass
             
             # Get user
-            user = self.db.query(User).filter(User.id == normalized_user_id).first()
+            user = self.db.query(User).filter(User.id.in_(user_candidates)).first()
             if not user:
-                logger.warning(f"User {user_id} (normalized: {normalized_user_id}) not found")
+                logger.warning(f"User {user_id} not found")
                 return {}
             
-            # Normalize startup IDs (remove dashes) since SQLite stores UUIDs without dashes
-            normalized_startup_ids = [str(sid).replace('-', '') for sid in startup_ids]
+            # Handle startup IDs similarly
+            startup_candidates_list = []
+            for sid in startup_ids:
+                sid_str = str(sid)
+                candidates = [sid_str]
+                if '-' in sid_str:
+                    candidates.append(sid_str.replace('-', ''))
+                elif len(sid_str) == 32:
+                    try:
+                        import uuid as _uuid
+                        candidates.append(str(_uuid.UUID(sid_str)))
+                    except Exception:
+                        pass
+                startup_candidates_list.extend(candidates)
+            normalized_startup_ids = startup_candidates_list
             
             # Get startups
             startups = self.db.query(Startup).filter(Startup.id.in_(normalized_startup_ids)).all()

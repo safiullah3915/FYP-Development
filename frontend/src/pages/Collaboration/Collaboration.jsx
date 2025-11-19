@@ -6,6 +6,7 @@ import JobCard from "../../components/JobCard/JobCard";
 import styles from "./Collaboration.module.css";
 import { positionAPI, userAPI, recommendationAPI } from '../../utils/apiServices';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRecommendationContext } from '../../hooks/useRecommendationContext';
 import { toast } from 'react-toastify';
 
 const Collaboration = () => {
@@ -23,6 +24,7 @@ const Collaboration = () => {
   const [appliedPositionIds, setAppliedPositionIds] = useState(new Set());
   const [appliedStartupIds, setAppliedStartupIds] = useState(new Set());
   const { isStudent, isInvestor, isEntrepreneur, user } = useAuth();
+  const { storeSession, getRecommendationContext } = useRecommendationContext();
   const positionsPerPage = 9;
   
   // New states for recommendation mode
@@ -166,6 +168,29 @@ const Collaboration = () => {
           );
           setRecommendationScores(fallbackResp.data.scores || {});
           setRecommendationReasons(fallbackResp.data.match_reasons || {});
+          
+          // Store recommendation session for fallback response too
+          if (fbStartups.length > 0) {
+            const recommendations = fbStartups.map((startup, index) => {
+              const startupKey = startup?.id ? String(startup.id) : String(index);
+              const score = fallbackResp.data.scores?.[startupKey] ?? fallbackResp.data.scores?.[startup?.id] ?? 0.0;
+              return {
+                startup_id: startup.id,
+                rank: index + 1,
+                score: score,
+                method: fallbackResp.data.method_used || 'two_tower'
+              };
+            });
+            
+            storeSession({
+              recommendations: recommendations,
+              useCase: 'developer_startup',
+              method: fallbackResp.data.method_used || 'two_tower',
+              modelVersion: fallbackResp.data.model_version || 'two_tower_v1.0'
+            }).catch(err => {
+              console.error('[Collaboration] Failed to store recommendation session (fallback):', err);
+            });
+          }
           return;
         }
       }
@@ -179,6 +204,30 @@ const Collaboration = () => {
       );
       setRecommendationScores(response.data.scores || {});
       setRecommendationReasons(response.data.match_reasons || {});
+      
+      // Store recommendation session for feedback tracking
+      if (startupsResponse.length > 0) {
+        const recommendations = startupsResponse.map((startup, index) => {
+          const startupKey = startup?.id ? String(startup.id) : String(index);
+          const score = response.data.scores?.[startupKey] ?? response.data.scores?.[startup?.id] ?? 0.0;
+          return {
+            startup_id: startup.id,
+            rank: index + 1,
+            score: score,
+            method: response.data.method_used || 'two_tower'
+          };
+        });
+        
+        storeSession({
+          recommendations: recommendations,
+          useCase: 'developer_startup',
+          method: response.data.method_used || 'two_tower',
+          modelVersion: response.data.model_version || 'two_tower_v1.0'
+        }).catch(err => {
+          console.error('[Collaboration] Failed to store recommendation session:', err);
+          // Don't block UI if session storage fails
+        });
+      }
     } catch (error) {
       console.error('Failed to load recommended startups:', error);
       toast.error('Failed to load personalized recommendations');
@@ -377,6 +426,9 @@ const Collaboration = () => {
                 const score = recommendationScores[startupKey] ?? recommendationScores[startup?.id];
                 const reasons = recommendationReasons[startupKey] ?? recommendationReasons[startup?.id];
                 
+                // Get recommendation context for this startup
+                const recommendationContext = getRecommendationContext(startup.id);
+                
                 return (
                   <CollaborationCard
                     key={startup.id || index}
@@ -385,6 +437,7 @@ const Collaboration = () => {
                     matchReasons={reasons}
                     appliedPositionIds={appliedPositionIds}
                     appliedStartupIds={appliedStartupIds}
+                    recommendationContext={recommendationContext}
                   />
                 );
               })

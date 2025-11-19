@@ -4,7 +4,20 @@ import styles from "./MarketPlaceCard.module.css";
 import { Link } from "react-router-dom";
 import { getStartupDetailPath } from "../../utils/idUtils";
 
-const MarketPlaceCard = ({ startup, id, title, description, revenue, profit, asking_price, category, type, field, ...rest }) => {
+const MarketPlaceCard = ({ 
+  startup, 
+  id, 
+  title, 
+  description, 
+  revenue, 
+  profit, 
+  asking_price, 
+  category, 
+  type, 
+  field,
+  recommendationContext, // Optional: { sessionId, rank, score, method }
+  ...rest 
+}) => {
   // If startup object is passed, use it directly; otherwise construct from individual props
   // Also merge with rest props in case there are additional fields from the API
   const startupData = startup || {
@@ -27,8 +40,20 @@ const MarketPlaceCard = ({ startup, id, title, description, revenue, profit, ask
   console.log('[MarketPlaceCard] Profit value:', startupData.profit);
   console.log('[MarketPlaceCard] Asking Price value:', startupData.asking_price);
   
-  // Always navigate to startup detail page
-  const getLinkDestination = () => getStartupDetailPath(startupData.id);
+  // Build link destination with recommendation context if available
+  const getLinkDestination = () => {
+    const basePath = getStartupDetailPath(startupData.id);
+    if (recommendationContext?.sessionId) {
+      const params = new URLSearchParams({
+        recommendation_session_id: recommendationContext.sessionId,
+      });
+      if (recommendationContext.rank) {
+        params.append('recommendation_rank', recommendationContext.rank.toString());
+      }
+      return `${basePath}?${params.toString()}`;
+    }
+    return basePath;
+  };
 
   return (
     <Link to={getLinkDestination()} className={styles.linkWrapper}>
