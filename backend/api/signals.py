@@ -59,12 +59,10 @@ def update_trending_metrics_realtime(sender, instance, created, **kwargs):
                 interaction_type=instance.interaction_type
             )
             
-            print(f"✅ [Signal] Updated trending metrics for startup {instance.startup.id} - {instance.interaction_type}")
+            logger.info(f"✅ [Signal] Updated trending metrics for startup {instance.startup.id} - {instance.interaction_type}")
         except Exception as e:
             # Don't let metrics update failure break the interaction creation
-            print(f"⚠️ [Signal] Failed to update trending metrics: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"⚠️ [Signal] Failed to update trending metrics: {str(e)}", exc_info=True)
 
 
 # Embedding update signals

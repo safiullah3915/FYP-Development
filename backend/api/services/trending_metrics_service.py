@@ -12,7 +12,7 @@ import math
 class TrendingMetricsService:
     """Service for real-time trending metrics calculation"""
     
-    MIN_VIEWS_7D = 3
+    MIN_VIEWS_7D = 1  # Lowered from 3 to allow startups with at least 1 view to have trending scores
     MIN_ACTIVITY_7D = 5
     
     def __init__(self):
@@ -66,8 +66,10 @@ class TrendingMetricsService:
         self.recalculate_scores(metrics, startup, counts)
         metrics.save()
         
-        print(f"✅ [TrendingMetrics] Updated metrics for startup {startup_id} - {interaction_type}")
-        print(f"   Trending Score: {metrics.trending_score:.3f}, Popularity: {metrics.popularity_score:.3f}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"✅ [TrendingMetrics] Updated metrics for startup {startup_id} - {interaction_type}")
+        logger.info(f"   Trending Score: {metrics.trending_score:.3f}, Popularity: {metrics.popularity_score:.3f}, View Count 7d: {metrics.view_count_7d}")
     
     def recalculate_scores(self, metrics, startup, counts):
         """

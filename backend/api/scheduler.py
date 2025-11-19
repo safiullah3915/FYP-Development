@@ -4,6 +4,7 @@ APScheduler configuration for periodic background tasks
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from django_apscheduler.jobstores import DjangoJobStore, register_events
 from django_apscheduler.models import DjangoJobExecution
 from django.conf import settings
@@ -167,10 +168,12 @@ def start_scheduler():
         replace_existing=True,
     )
     
-    # Schedule the trending metrics computation task to run every hour
+    # Schedule the trending metrics computation task to run every 1 minute
+    # This runs periodically to ensure all metrics are recalculated with global max values
+    # Real-time updates happen via signals when interactions occur
     _scheduler.add_job(
         compute_trending_metrics,
-        trigger=CronTrigger(minute=0),  # Every hour at minute 0
+        trigger=IntervalTrigger(minutes=1),  # Every 1 minute
         id="compute_trending_metrics",
         name="Compute trending metrics for all active startups",
         replace_existing=True,

@@ -5,7 +5,7 @@ import math
 from api.models import Startup
 from api.recommendation_models import UserInteraction, StartupTrendingMetrics
 
-MIN_VIEWS_7D = 3
+MIN_VIEWS_7D = 1  # Lowered from 3 to allow startups with at least 1 view to have trending scores
 MIN_ACTIVITY_7D = 5
 
 
